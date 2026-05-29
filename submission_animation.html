@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" type="image/jpeg" href="E09EB739-7DA5-43EE-AA6D-868C79A0F082_1_105_c.jpeg">
+<title>CodeMas — Platform Flows</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0f1117;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 60px 40px 60px;
+  }
+
+  /* ── Header ── */
+  .header { text-align: center; margin-bottom: 14px; }
+  .header h1 { font-size: 22px; font-weight: 800; color: #f8fafc; letter-spacing: -0.3px; }
+  .header p  { font-size: 12px; color: #64748b; margin-top: 4px; }
+  .sample-box {
+    display: inline-block;
+    margin-top: 10px;
+    background: #0a0d14;
+    border: 1px solid #1e2538;
+    border-left: 3px solid #10b981;
+    border-radius: 6px;
+    padding: 7px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #94a3b8;
+  }
+  .sample-box .kw  { color: #c792ea; }
+  .sample-box .fn  { color: #82aaff; }
+  .sample-box .str { color: #c3e88d; }
+
+  /* ── Stage ── */
+  .stage {
+    position: relative;
+    width: 100%;
+    height: 320px;
+    background: #0a0d14;
+    border: 1px solid #1e2538;
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+
+  /* ── Nodes ── */
+  .node {
+    position: absolute;
+    width: 100px;
+    border-radius: 10px;
+    padding: 12px 8px 10px;
+    text-align: center;
+    border: 1.5px solid;
+    transition: box-shadow 0.25s, transform 0.25s;
+    user-select: none;
+  }
+  .node .icon { font-size: 22px; line-height: 1; margin-bottom: 5px; }
+  .node .name { font-size: 12px; font-weight: 700; }
+  .node .role { font-size: 10px; opacity: 0.65; margin-top: 2px; line-height: 1.3; }
+
+  .n-browser  { border-color:#6366f1; background:rgba(99,102,241,.08);  color:#6366f1; }
+  .n-trainer  { border-color:#f97316; background:rgba(249,115,22,.08);  color:#f97316; }
+  .n-django   { border-color:#10b981; background:rgba(16,185,129,.08);  color:#10b981; }
+  .n-redis    { border-color:#f59e0b; background:rgba(245,158,11,.08);  color:#f59e0b; }
+  .n-celery   { border-color:#e63946; background:rgba(230,57,70,.08);   color:#e63946; }
+  .n-docker   { border-color:#3b82f6; background:rgba(59,130,246,.08);  color:#3b82f6; }
+  .n-postgres { border-color:#8b5cf6; background:rgba(139,92,246,.08);  color:#8b5cf6; }
+
+  .n-browser.active  { box-shadow:0 0 22px rgba(99,102,241,.55);  transform:scale(1.05); }
+  .n-trainer.active  { box-shadow:0 0 22px rgba(249,115,22,.55);  transform:scale(1.05); }
+  .n-django.active   { box-shadow:0 0 22px rgba(16,185,129,.55);  transform:scale(1.05); }
+  .n-redis.active    { box-shadow:0 0 22px rgba(245,158,11,.55);  transform:scale(1.05); }
+  .n-celery.active   { box-shadow:0 0 22px rgba(230,57,70,.55);   transform:scale(1.05); }
+  .n-docker.active   { box-shadow:0 0 22px rgba(59,130,246,.55);  transform:scale(1.05); }
+  .n-postgres.active { box-shadow:0 0 22px rgba(139,92,246,.55);  transform:scale(1.05); }
+
+  /* ── SVG connection lines ── */
+  .connections { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
+
+  /* ── Packet ── */
+  .packet {
+    position: absolute;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 20;
+    opacity: 0;
+  }
+  .pkt-label {
+    position: absolute;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 21;
+    background: #0a0d14;
+    border: 1px solid;
+    border-radius: 4px;
+    padding: 3px 8px;
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+
+  /* ── Progress ── */
+  .progress-wrap { height: 3px; background: #1e2538; border-radius: 2px; margin-bottom: 14px; }
+  .progress-fill { height: 100%; background: #10b981; border-radius: 2px; transition: width 0.4s ease, background 0.4s; width: 0%; }
+
+  /* ── Phase banner ── */
+  .phase-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(16,185,129,.06);
+    border: 1px solid rgba(16,185,129,.18);
+    border-radius: 10px;
+    padding: 10px 18px;
+    margin-bottom: 14px;
+    transition: border-color 0.4s, background 0.4s;
+  }
+  .phase-banner.idle {
+    background: rgba(100,116,139,.04);
+    border-color: rgba(100,116,139,.18);
+  }
+  .phase-pill {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #10b981;
+    background: rgba(16,185,129,.14);
+    border: 1px solid rgba(16,185,129,.28);
+    border-radius: 20px;
+    padding: 3px 11px;
+    white-space: nowrap;
+    transition: color 0.3s, background 0.3s, border-color 0.3s;
+    flex-shrink: 0;
+  }
+  .phase-banner.idle .phase-pill { color:#64748b; background:rgba(100,116,139,.1); border-color:rgba(100,116,139,.2); }
+  .phase-name {
+    font-size: 15px; font-weight: 700; color: #f1f5f9; flex-shrink: 0; transition: color 0.3s;
+  }
+  .phase-banner.idle .phase-name { color: #64748b; }
+  .phase-sep {
+    width: 1px; height: 16px; background: rgba(16,185,129,.25); flex-shrink: 0; transition: background 0.4s;
+  }
+  .phase-banner.idle .phase-sep { background: rgba(100,116,139,.2); }
+  .phase-tagline { font-size: 12px; color: #64748b; line-height: 1.4; }
+
+  /* ── Info panel ── */
+  .info-panel {
+    background: #1a1f2e;
+    border: 1px solid #2a3045;
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin-bottom: 16px;
+    min-height: 130px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    transition: border-color 0.4s;
+  }
+  .step-counter { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .step-title   { font-size: 16px; font-weight: 700; color: #f1f5f9; margin-bottom: 6px; line-height: 1.3; }
+  .step-desc    { font-size: 12px; color: #94a3b8; line-height: 1.6; }
+  .payload-label { font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .payload-box {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: #0a0d14;
+    border: 1px solid #1e2538;
+    border-left: 3px solid;
+    border-radius: 6px;
+    padding: 10px 12px;
+    white-space: pre;
+    line-height: 1.6;
+    min-height: 80px;
+    overflow-x: auto;
+  }
+
+  /* ── Controls ── */
+  .controls {
+    display: flex; align-items: center; gap: 10px; justify-content: center; flex-wrap: wrap;
+  }
+  .btn {
+    background: #1a1f2e; border: 1px solid #2a3045; color: #e2e8f0;
+    padding: 9px 22px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background 0.15s, border-color 0.15s; font-family: 'Inter', sans-serif;
+  }
+  .btn:hover { background: #242a3d; }
+  .btn.play-btn {
+    background: #10b981; border-color: #10b981; color: #fff;
+    padding: 9px 32px; transition: background 0.4s, border-color 0.4s;
+  }
+  .btn.play-btn:hover { opacity: 0.85; }
+  .speed-wrap { display:flex; align-items:center; gap:8px; font-size:12px; color:#64748b; margin-left:8px; }
+  input[type=range] { width:90px; accent-color:#10b981; }
+
+  /* ── Step dots ── */
+  .step-list {
+    display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+    margin-top: 16px; align-items: flex-end;
+  }
+  .phase-group { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .phase-group-label {
+    font-size: 9px; color: #2a3045; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.6px; transition: color 0.25s; white-space: nowrap;
+  }
+  .phase-group.phase-active .phase-group-label { color: #10b981; }
+  .phase-group.phase-done   .phase-group-label { color: #334155; }
+  .phase-dots { display: flex; gap: 5px; }
+  .step-dot {
+    width: 24px; height: 6px; border-radius: 3px; background: #1e2538;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .step-dot.done    { background: #334155; }
+  .step-dot.current { background: #10b981; }
+
+  /* ── Final celebration ── */
+  .celebration {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    pointer-events: none; opacity: 0; transition: opacity 0.5s;
+    font-size: 22px; font-weight: 800; letter-spacing: -0.5px;
+    color: #10b981; text-shadow: 0 0 30px rgba(16,185,129,.5);
+  }
+  .celebration.show { opacity: 1; }
+
+  /* ── Flow divider between sections ── */
+  .flow-divider {
+    display: flex; align-items: center; gap: 16px; margin: 44px 0;
+  }
+  .flow-divider-line { flex: 1; height: 1px; background: #2a3045; }
+  .flow-divider-badge {
+    background: #1a1f2e;
+    border: 1px solid #f9731640;
+    border-radius: 20px;
+    padding: 8px 24px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    color: #f97316; white-space: nowrap;
+  }
+
+  /* ── Back nav ── */
+  .back-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+    height: 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px;
+    background: rgba(10,13,20,0.96);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid #1e2538;
+  }
+  .back-nav-link {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: #64748b; text-decoration: none;
+    transition: color 0.2s;
+  }
+  .back-nav-link:hover { color: #10b981; }
+  .back-nav-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: #f59e0b;
+    background: rgba(245,158,11,0.1);
+    border: 1px solid rgba(245,158,11,0.25);
+    padding: 3px 10px; border-radius: 20px;
+  }
+
+</style>
+</head>
+<body>
+<div class="back-nav">
+  <a href="index.html" class="back-nav-link">← Back to Portfolio</a>
+  <span class="back-nav-badge">Architecture Animation</span>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SECTION 1 — LIVE SUBMISSION PIPELINE
+     Runs for every code submission while the exam is active.
+     ═══════════════════════════════════════════════════════════════════════════ -->
+
+<div class="header">
+  <h1>Live Submission Pipeline</h1>
+  <p>21 steps · 6 phases · runs for every code submission during the exam</p>
+  <div class="sample-box">
+    <span class="kw">def</span> <span class="fn">add</span>(a, b): <span class="kw">return</span> a + b
+    &nbsp;&nbsp;→&nbsp;&nbsp;question_id=<span class="str">7</span>, language=<span class="str">"python"</span>, student_id=<span class="str">1</span>
+  </div>
+</div>
+
+<div class="phase-banner idle" id="sub-phase-header">
+  <div class="phase-pill" id="sub-phase-pill">—</div>
+  <div class="phase-name" id="sub-phase-name">Press Play or → to begin</div>
+  <div class="phase-sep"  id="sub-phase-sep"></div>
+  <div class="phase-tagline" id="sub-phase-tagline">Browser submits code → Django validates → queues execution → 201 response → SSE stream → Celery runs Docker sandbox → result pushed to browser.</div>
+</div>
+
+<div class="stage" id="sub-stage">
+  <svg class="connections" id="sub-svg-conn"></svg>
+  <div class="node n-browser"  id="sub-n-browser">  <div class="icon">🌐</div><div class="name">Browser</div> <div class="role">Student UI</div></div>
+  <div class="node n-django"   id="sub-n-django">   <div class="icon">⚙️</div><div class="name">Django</div>  <div class="role">API Server</div></div>
+  <div class="node n-redis"    id="sub-n-redis">    <div class="icon">⚡</div><div class="name">Redis</div>   <div class="role">Queue + Cache</div></div>
+  <div class="node n-celery"   id="sub-n-celery">   <div class="icon">🔧</div><div class="name">Celery</div>  <div class="role">Worker</div></div>
+  <div class="node n-docker"   id="sub-n-docker">   <div class="icon">🐳</div><div class="name">Docker</div>  <div class="role">Code Runner</div></div>
+  <div class="node n-postgres" id="sub-n-postgres"> <div class="icon">🗃️</div><div class="name">Postgres</div><div class="role">Permanent Store</div></div>
+  <div class="packet"    id="sub-packet"></div>
+  <div class="pkt-label" id="sub-pkt-label"></div>
+  <div class="celebration" id="sub-celebration"></div>
+</div>
+
+<div class="progress-wrap"><div class="progress-fill" id="sub-prog"></div></div>
+
+<div class="info-panel" id="sub-info-panel">
+  <div class="info-left">
+    <div class="step-counter">Step <span id="sub-s-num">—</span> of <span id="sub-s-total">—</span></div>
+    <div class="step-title"  id="sub-s-title">Press Play or → to begin</div>
+    <div class="step-desc"   id="sub-s-desc">Browser submits code → Django validates attempt limits → writes to Postgres → pushes execution job to Redis → returns 201 immediately → SSE stream delivers live status → Celery runs Docker sandbox → result saved and pushed to browser.</div>
+  </div>
+  <div class="info-right">
+    <div class="payload-label">Data / Command</div>
+    <div class="payload-box" id="sub-s-payload" style="color:#82aaff;border-left-color:#6366f1">—</div>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="btn" id="sub-btn-restart">↺ Restart</button>
+  <button class="btn" id="sub-btn-prev">← Prev</button>
+  <button class="btn play-btn" id="sub-btn-play">▶ Play</button>
+  <button class="btn" id="sub-btn-next">Next →</button>
+  <div class="speed-wrap">Speed: <input type="range" id="sub-speed" min="500" max="2800" value="1500"></div>
+</div>
+
+<div class="step-list" id="sub-step-dots"></div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     DIVIDER
+     ═══════════════════════════════════════════════════════════════════════════ -->
+
+<div class="flow-divider">
+  <div class="flow-divider-line"></div>
+  <div class="flow-divider-badge">POST-EXAM — runs once when exam closes</div>
+  <div class="flow-divider-line"></div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SECTION 2 — PLAGIARISM DETECTION FLOW
+     Triggered once when exam closes. Entirely in background.
+     ═══════════════════════════════════════════════════════════════════════════ -->
+
+<div class="header">
+  <h1>Plagiarism Detection Flow</h1>
+  <p>14 steps · 3 phases · triggered once at exam close, runs entirely in background</p>
+</div>
+
+<div class="phase-banner idle" id="plag-phase-header">
+  <div class="phase-pill" id="plag-phase-pill">—</div>
+  <div class="phase-name" id="plag-phase-name">Press Play or → to begin</div>
+  <div class="phase-sep"  id="plag-phase-sep"></div>
+  <div class="phase-tagline" id="plag-phase-tagline">Trainer closes exam → Django pre_save signal fires → Celery batch task orchestrates Phase 1 (behavioural, sync) then Phase 2 (similarity, async per question).</div>
+</div>
+
+<div class="stage" id="plag-stage">
+  <svg class="connections" id="plag-svg-conn"></svg>
+  <div class="node n-trainer"  id="plag-n-trainer">  <div class="icon">👤</div><div class="name">Trainer</div> <div class="role">ExamOpsView</div></div>
+  <div class="node n-django"   id="plag-n-django">   <div class="icon">⚙️</div><div class="name">Django</div>  <div class="role">API Server</div></div>
+  <div class="node n-redis"    id="plag-n-redis">    <div class="icon">⚡</div><div class="name">Redis</div>   <div class="role">Queue + Cache</div></div>
+  <div class="node n-celery"   id="plag-n-celery">   <div class="icon">🔧</div><div class="name">Celery</div>  <div class="role">Worker</div></div>
+  <div class="node n-postgres" id="plag-n-postgres"> <div class="icon">🗃️</div><div class="name">Postgres</div><div class="role">Permanent Store</div></div>
+  <div class="packet"    id="plag-packet"></div>
+  <div class="pkt-label" id="plag-pkt-label"></div>
+  <div class="celebration" id="plag-celebration"></div>
+</div>
+
+<div class="progress-wrap"><div class="progress-fill" id="plag-prog"></div></div>
+
+<div class="info-panel" id="plag-info-panel">
+  <div class="info-left">
+    <div class="step-counter">Step <span id="plag-s-num">—</span> of <span id="plag-s-total">—</span></div>
+    <div class="step-title"  id="plag-s-title">Press Play or → to begin</div>
+    <div class="step-desc"   id="plag-s-desc">Trainer closes exam → pre_save signal fires → Celery batch task orchestrates Phase 1 (behavioural scoring, synchronous) then Phase 2 (TF-IDF similarity, async per question with 30s stagger).</div>
+  </div>
+  <div class="info-right">
+    <div class="payload-label">Data / Command</div>
+    <div class="payload-box" id="plag-s-payload" style="color:#f97316;border-left-color:#f97316">—</div>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="btn" id="plag-btn-restart">↺ Restart</button>
+  <button class="btn" id="plag-btn-prev">← Prev</button>
+  <button class="btn play-btn" id="plag-btn-play" style="background:#f97316;border-color:#f97316">▶ Play</button>
+  <button class="btn" id="plag-btn-next">Next →</button>
+  <div class="speed-wrap">Speed: <input type="range" id="plag-speed" min="500" max="2800" value="1500"></div>
+</div>
+
+<div class="step-list" id="plag-step-dots"></div>
+
+
+<script>
+// ── Shared colour palette ──────────────────────────────────────────────────────
+const C = {
+  browser:  '#6366f1',
+  trainer:  '#f97316',
+  django:   '#10b981',
+  redis:    '#f59e0b',
+  celery:   '#e63946',
+  docker:   '#3b82f6',
+  postgres: '#8b5cf6',
+};
+
+// ── Keyboard routing ───────────────────────────────────────────────────────────
+let lastActive = null;
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PLAYER FACTORY
+// Creates a fully self-contained animation player scoped to `prefix`.
+// All DOM IDs used are `prefix + '-' + name`.
+// ══════════════════════════════════════════════════════════════════════════════
+function makeAnimator(prefix, PHASES, STEPS, TOP_NODES, BOTTOM_NODES, resetDesc) {
+  const $    = name => document.getElementById(prefix + '-' + name);
+  const $el  = id   => document.getElementById(id);
+  const NODE_W = 100, NODE_H = 100;
+
+  // ── Build step-dot navigator ──
+  $('s-total').textContent = STEPS.length;
+  const phaseGroups = PHASES.map(() => []);
+  STEPS.forEach((s, i) => phaseGroups[s.phase].push(i));
+
+  const dotContainer = $('step-dots');
+  phaseGroups.forEach((stepIndices, phaseIdx) => {
+    const group = document.createElement('div');
+    group.className = 'phase-group';
+    group.id = prefix + '-phase-group-' + phaseIdx;
+
+    const lbl = document.createElement('div');
+    lbl.className = 'phase-group-label';
+    lbl.textContent = PHASES[phaseIdx].name;
+    group.appendChild(lbl);
+
+    const dotsRow = document.createElement('div');
+    dotsRow.className = 'phase-dots';
+    stepIndices.forEach(stepIdx => {
+      const d = document.createElement('div');
+      d.className = 'step-dot';
+      d.id = prefix + '-dot-' + stepIdx;
+      d.title = 'Step ' + (stepIdx + 1);
+      d.addEventListener('click', () => { setMe(); stopPlay(); showStep(stepIdx); });
+      dotsRow.appendChild(d);
+    });
+    group.appendChild(dotsRow);
+    dotContainer.appendChild(group);
+  });
+
+  // ── Animation state ──
+  let current = -1, playing = false, timer = null;
+  function speed() { return parseInt($('speed').value); }
+
+  // ── Layout ──
+  function layoutNodes() {
+    const stage = $('stage');
+    const W = stage.clientWidth, H = stage.clientHeight;
+    const pad = 14;
+    const gap = TOP_NODES.length > 1
+      ? (W - pad*2 - NODE_W * TOP_NODES.length) / (TOP_NODES.length - 1)
+      : 0;
+
+    TOP_NODES.forEach((id, i) => {
+      const el = $el(prefix + '-n-' + id);
+      el.style.left = (pad + i * (NODE_W + gap)) + 'px';
+      el.style.top  = '28px';
+    });
+
+    BOTTOM_NODES.forEach((id, i) => {
+      const el = $el(prefix + '-n-' + id);
+      if (BOTTOM_NODES.length === 1) {
+        el.style.left = ((W - NODE_W) / 2) + 'px';
+      } else {
+        const bgap = (W - pad*2 - NODE_W * BOTTOM_NODES.length) / (BOTTOM_NODES.length - 1);
+        el.style.left = (pad + i * (NODE_W + bgap)) + 'px';
+      }
+      el.style.top = (H - NODE_H - 22) + 'px';
+    });
+
+    drawLines();
+  }
+
+  function centerOf(nodeId) {
+    const el  = $el(prefix + '-n-' + nodeId);
+    const sr  = $('stage').getBoundingClientRect();
+    const er  = el.getBoundingClientRect();
+    return { x: er.left - sr.left + er.width/2, y: er.top - sr.top + er.height/2 };
+  }
+
+  function drawLines() {
+    const svg = $('svg-conn');
+    svg.innerHTML = '';
+    const seen = new Set();
+    STEPS.forEach(s => {
+      if (s.from === s.to) return;
+      const key = [s.from, s.to].sort().join('|');
+      if (seen.has(key)) return;
+      seen.add(key);
+      const ca = centerOf(s.from), cb = centerOf(s.to);
+      const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('x1', ca.x); line.setAttribute('y1', ca.y);
+      line.setAttribute('x2', cb.x); line.setAttribute('y2', cb.y);
+      line.setAttribute('stroke', '#1e2538');
+      line.setAttribute('stroke-width', '1.5');
+      line.setAttribute('stroke-dasharray', '4 4');
+      svg.appendChild(line);
+    });
+  }
+
+  // ── Show a step ──
+  function showStep(idx) {
+    if (idx < 0 || idx >= STEPS.length) return;
+    current = idx;
+    const s     = STEPS[idx];
+    const color = C[s.actor];
+    const phase = PHASES[s.phase];
+
+    // phase banner
+    const header = $('phase-header');
+    header.classList.remove('idle');
+    header.style.background  = phase.color + '0a';
+    header.style.borderColor = phase.color + '30';
+    const pill = $('phase-pill');
+    pill.textContent       = `Phase ${s.phase + 1} of ${PHASES.length}`;
+    pill.style.color       = phase.color;
+    pill.style.background  = phase.color + '1a';
+    pill.style.borderColor = phase.color + '40';
+    $('phase-sep').style.background    = phase.color + '30';
+    $('phase-name').textContent        = phase.name;
+    $('phase-tagline').textContent     = phase.tagline;
+
+    // play button + progress color
+    $('btn-play').style.background  = phase.color;
+    $('btn-play').style.borderColor = phase.color;
+    $('prog').style.background      = phase.color;
+
+    // step info
+    $('s-num').textContent    = idx + 1;
+    $('s-title').textContent  = s.title;
+    $('s-desc').textContent   = s.desc;
+    const pb = $('s-payload');
+    pb.textContent       = s.payload;
+    pb.style.color       = color;
+    pb.style.borderLeftColor = color;
+
+    // info panel border
+    $('info-panel').style.borderColor = phase.color + '40';
+
+    // progress bar
+    $('prog').style.width = ((idx+1)/STEPS.length*100) + '%';
+
+    // dots
+    dotContainer.querySelectorAll('.step-dot').forEach((d, i) => {
+      d.classList.toggle('done',    i < idx);
+      d.classList.toggle('current', i === idx);
+      d.style.background = i === idx ? phase.color : (i < idx ? '#334155' : '');
+    });
+
+    // phase group highlights
+    phaseGroups.forEach((_, phaseIdx) => {
+      const g   = $el(prefix + '-phase-group-' + phaseIdx);
+      const lbl = g.querySelector('.phase-group-label');
+      g.classList.remove('phase-active', 'phase-done');
+      if (phaseIdx === s.phase) {
+        g.classList.add('phase-active');
+        lbl.style.color = phase.color;
+      } else if (phaseIdx < s.phase) {
+        g.classList.add('phase-done');
+        lbl.style.color = '';
+      } else {
+        lbl.style.color = '';
+      }
+    });
+
+    // node highlights
+    $('stage').querySelectorAll('.node').forEach(n => n.classList.remove('active'));
+    $el(prefix + '-n-' + s.from).classList.add('active');
+    if (s.to !== s.from) $el(prefix + '-n-' + s.to).classList.add('active');
+
+    // clear celebration
+    const cel = $('celebration');
+    cel.classList.remove('show');
+    cel.style.color = '';
+    cel.style.textShadow = '';
+
+    // packet animation
+    const from = centerOf(s.from);
+    const to   = s.from === s.to ? { x: from.x + 60, y: from.y - 20 } : centerOf(s.to);
+    const pkt  = $('packet');
+    const lbl  = $('pkt-label');
+    const sz   = 12;
+
+    pkt.style.transition = 'none';
+    pkt.style.opacity    = '1';
+    pkt.style.background = color;
+    pkt.style.boxShadow  = `0 0 14px ${color}, 0 0 4px ${color}`;
+    pkt.style.left = (from.x - sz/2) + 'px';
+    pkt.style.top  = (from.y - sz/2) + 'px';
+
+    lbl.textContent       = s.tag;
+    lbl.style.color       = color;
+    lbl.style.borderColor = color + '55';
+    lbl.style.left        = ((from.x + to.x)/2 - 80) + 'px';
+    lbl.style.top         = ((from.y + to.y)/2 - 24) + 'px';
+    lbl.style.opacity     = '0';
+
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      pkt.style.transition = 'left 0.65s cubic-bezier(.4,0,.2,1), top 0.65s cubic-bezier(.4,0,.2,1)';
+      pkt.style.left = (to.x - sz/2) + 'px';
+      pkt.style.top  = (to.y - sz/2) + 'px';
+      lbl.style.opacity = '1';
+    }));
+
+    setTimeout(() => {
+      pkt.style.transition = 'opacity 0.35s';
+      pkt.style.opacity = '0';
+      lbl.style.opacity = '0';
+      if (s.final) {
+        setTimeout(() => {
+          cel.textContent      = s.celebration || '✓ Complete';
+          cel.style.color      = phase.color;
+          cel.style.textShadow = `0 0 30px ${phase.color}80`;
+          cel.classList.add('show');
+        }, 200);
+      }
+    }, 700);
+  }
+
+  function next() {
+    if (current < STEPS.length - 1) showStep(current + 1); else stopPlay();
+  }
+  function prev() {
+    if (current > 0) showStep(current - 1);
+  }
+
+  function stopPlay() {
+    playing = false;
+    clearTimeout(timer);
+    $('btn-play').textContent = '▶ Play';
+  }
+
+  function startPlay() {
+    playing = true;
+    $('btn-play').textContent = '⏸ Pause';
+    function tick() {
+      if (!playing) return;
+      next();
+      if (current < STEPS.length - 1) timer = setTimeout(tick, speed());
+      else stopPlay();
+    }
+    tick();
+  }
+
+  function togglePlay() {
+    if (playing) stopPlay(); else startPlay();
+  }
+
+  function restart() {
+    stopPlay();
+    current = -1;
+    $('prog').style.width      = '0%';
+    $('prog').style.background = PHASES[0].color;
+    $('s-num').textContent     = '—';
+    $('s-title').textContent   = 'Press Play or → to begin';
+    $('s-desc').textContent    = resetDesc;
+    $('s-payload').textContent = '—';
+    $('s-payload').style.borderLeftColor = PHASES[0].color;
+
+    const header = $('phase-header');
+    header.classList.add('idle');
+    header.style.background  = '';
+    header.style.borderColor = '';
+    $('phase-pill').textContent      = '—';
+    $('phase-pill').style.color      = '';
+    $('phase-pill').style.background = '';
+    $('phase-pill').style.borderColor = '';
+    $('phase-sep').style.background  = '';
+    $('phase-name').textContent      = 'Press Play or → to begin';
+    $('phase-tagline').textContent   = resetDesc;
+    $('info-panel').style.borderColor = '';
+    $('btn-play').style.background   = PHASES[0].color;
+    $('btn-play').style.borderColor  = PHASES[0].color;
+
+    $('stage').querySelectorAll('.node').forEach(n => n.classList.remove('active'));
+    dotContainer.querySelectorAll('.step-dot').forEach(d => {
+      d.classList.remove('done','current');
+      d.style.background = '';
+    });
+    phaseGroups.forEach((_, phaseIdx) => {
+      const g = $el(prefix + '-phase-group-' + phaseIdx);
+      g.classList.remove('phase-active','phase-done');
+      g.querySelector('.phase-group-label').style.color = '';
+    });
+    $('celebration').classList.remove('show');
+    $('packet').style.opacity   = '0';
+    $('pkt-label').style.opacity = '0';
+  }
+
+  // ── Self-reference trick for keyboard routing ──
+  let self;
+  function setMe() { lastActive = self; }
+
+  // ── Wire buttons ──
+  $('btn-play').addEventListener('click',    () => { setMe(); togglePlay(); });
+  $('btn-next').addEventListener('click',    () => { setMe(); stopPlay(); next(); });
+  $('btn-prev').addEventListener('click',    () => { setMe(); stopPlay(); prev(); });
+  $('btn-restart').addEventListener('click', () => { setMe(); restart(); });
+
+  // ── Layout on load + resize ──
+  window.addEventListener('load',   layoutNodes);
+  window.addEventListener('resize', layoutNodes);
+
+  self = { next, prev, togglePlay, stopPlay };
+  return self;
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SUBMISSION DATA — 21 steps, 6 phases
+// ══════════════════════════════════════════════════════════════════════════════
+const SUB_PHASES = [
+  { name: 'Submit & Validate',  color: '#10b981', tagline: 'Browser POSTs code — Django checks attempt limits before doing anything else.' },
+  { name: 'Persist Submission', color: '#10b981', tagline: 'Submission row written to Postgres with status=pending. Permanent record from here on.' },
+  { name: 'Queue & Acknowledge',color: '#10b981', tagline: 'Execution job pushed to Redis. Django immediately returns 201 — no waiting for code to run.' },
+  { name: 'Open Result Stream', color: '#6366f1', tagline: 'Browser opens an SSE connection so the server can push results without polling.' },
+  { name: 'Code Execution',     color: '#e63946', tagline: 'Celery picks up the job, runs code in an isolated Docker sandbox, publishes live status to Redis.' },
+  { name: 'Finalize & Notify',  color: '#10b981', tagline: 'Results saved to Postgres. Terminal status flows Celery → Redis → Django SSE → Browser.' },
+];
+
+const SUB_STEPS = [
+  // ── Phase 0: Submit & Validate ──
+  {
+    phase:0, from:'browser', to:'django', actor:'browser',
+    tag: 'POST /api/submissions/',
+    title: '① Browser → Django: Submit code',
+    desc: 'Student hits Submit. Browser sends a POST with the code, question ID, language, and 4 behavioural signals captured by DOM listeners (paste events, tab switches, time elapsed). JWT auth header included.',
+    payload: 'POST /api/submissions/\nAuthorization: Bearer eyJ...\n\n{\n  "question": 7,\n  "code": "def add(a, b):\\n    return a + b",\n  "language": "python",\n  "had_paste_event": true,\n  "paste_char_count": 187,\n  "time_to_complete_seconds": 34,\n  "tab_switch_count": 6\n}',
+  },
+  {
+    phase:0, from:'django', to:'postgres', actor:'django',
+    tag: 'SELECT COUNT(*) attempts',
+    title: '② Django → Postgres: Count existing attempts',
+    desc: 'Django counts how many submissions this student already has for Q7. max_attempts is read from the PlagiarismPolicy singleton (configurable by trainer).',
+    payload: 'SELECT COUNT(*) FROM submissions\nWHERE student_id = 1\n  AND question_id = 7\n\n-- max_attempts from PlagiarismPolicy = 3',
+  },
+  {
+    phase:0, from:'postgres', to:'django', actor:'postgres',
+    tag: 'count=1 → attempt_number=2 ✓',
+    title: '③ Postgres → Django: Attempt allowed',
+    desc: 'Student has 1 previous attempt. attempt_number = 1 + 1 = 2. Max is 3. Allowed to proceed.',
+    payload: '→ count = 1\nattempt_number = count + 1 = 2\nmax_attempts    = 3\n\n2 ≤ 3  ✓  request continues',
+  },
+  // ── Phase 1: Persist Submission ──
+  {
+    phase:1, from:'django', to:'postgres', actor:'django',
+    tag: 'INSERT submission (status=pending)',
+    title: '④ Django → Postgres: Write submission row',
+    desc: 'Serializer validated. Django writes the submission to Postgres with status=pending. All 4 behavioural signal fields are stored in the same row as the code — they will be read by Phase 1 plagiarism scoring after the exam closes.',
+    payload: 'INSERT INTO submissions (\n  student_id=1, question_id=7, exam_id=2,\n  code="def add(a,b): return a+b",\n  language="python",\n  status="pending",\n  attempt_number=2,\n  paste_char_count=187,\n  time_to_complete_seconds=34,\n  tab_switch_count=6,\n  had_paste_event=true\n)',
+  },
+  {
+    phase:1, from:'postgres', to:'django', actor:'postgres',
+    tag: 'id=42 created',
+    title: '⑤ Postgres → Django: Row created, id=42',
+    desc: 'Postgres confirms the INSERT and returns the auto-generated primary key. Django now has submission.id = 42.',
+    payload: '→ submission.id = 42\n   status         = "pending"\n   attempt_number = 2',
+  },
+  // ── Phase 2: Queue & Acknowledge ──
+  {
+    phase:2, from:'django', to:'redis', actor:'django',
+    tag: 'LPUSH execute_submission(42)',
+    title: '⑥ Django → Redis: Push execution job',
+    desc: '.delay() serializes the task name + args to JSON and does LPUSH on the "celery" list. This does NOT run the function — it just queues it.',
+    payload: 'LPUSH celery \'{\n  "task": "execution.tasks.execute_submission",\n  "args": [42],\n  "id": "a1b2c3..."\n}\'',
+  },
+  {
+    phase:2, from:'django', to:'browser', actor:'django',
+    tag: '201 {id:42, status:"pending"}',
+    title: '⑦ Django → Browser: 201 Created',
+    desc: 'Django immediately returns 201 without waiting for execution. The browser now has the submission id and can open the SSE stream.',
+    payload: 'HTTP 201 Created\n\n{\n  "id": 42,\n  "status": "pending",\n  "language": "python",\n  "attempt_number": 2,\n  "submitted_at": "2026-05-19T10:23:01Z"\n}',
+  },
+  // ── Phase 3: Open Result Stream ──
+  {
+    phase:3, from:'browser', to:'django', actor:'browser',
+    tag: 'GET /submissions/42/stream (SSE)',
+    title: '⑧ Browser → Django: Open SSE stream',
+    desc: 'Browser immediately opens a Server-Sent Events connection. EventSource uses a token query param because SSE cannot set custom headers.',
+    payload: 'GET /api/submissions/42/stream?token=eyJ...\nAccept: text/event-stream\nCache-Control: no-cache\n\n← long-lived HTTP connection, not polling',
+  },
+  {
+    phase:3, from:'django', to:'redis', actor:'django',
+    tag: 'SUBSCRIBE submission:42',
+    title: '⑨ Django → Redis: Subscribe to result channel',
+    desc: 'The SSE endpoint subscribes to the Redis pub/sub channel "submission:42". It now blocks in pubsub.listen() — sleeping until Celery publishes.',
+    payload: 'SUBSCRIBE submission:42\n\n→ Django SSE goroutine is now\n  sleeping on pubsub.listen()\n  waiting for any PUBLISH on this channel',
+  },
+  {
+    phase:3, from:'django', to:'browser', actor:'django',
+    tag: 'data: {"status":"waiting"}',
+    title: '⑩ Django → Browser: First SSE event',
+    desc: 'SSE immediately sends "waiting" so the browser knows the connection is live. Browser shows "Waiting in queue..." spinner.',
+    payload: 'data: {"status": "waiting"}\n\n\n← browser EventSource.onmessage fires\n← UI shows: "Waiting in queue..."',
+  },
+  // ── Phase 4: Code Execution ──
+  {
+    phase:4, from:'redis', to:'celery', actor:'redis',
+    tag: 'BRPOP → execute_submission(42)',
+    title: '⑪ Redis → Celery: Worker wakes up',
+    desc: 'Celery worker was sleeping on BRPOP with timeout=0. The LPUSH from step 6 unblocked it. It deserializes the JSON and calls execute_submission(42). normalized_code is stored on the submission after execution for later plagiarism comparison.',
+    payload: 'BRPOP celery 0\n← was blocking at OS level (no CPU)\n→ got: {"task":"execute_submission","args":[42]}\n\ncalling: execute_submission(42)',
+  },
+  {
+    phase:4, from:'celery', to:'postgres', actor:'celery',
+    tag: 'UPDATE status=running',
+    title: '⑫ Celery → Postgres: Mark as running',
+    desc: 'Worker fetches the submission row and sets status to "running" so trainers and the student dashboard can show live progress.',
+    payload: 'UPDATE submissions\nSET status = "running"\nWHERE id = 42',
+  },
+  {
+    phase:4, from:'celery', to:'redis', actor:'celery',
+    tag: 'PUBLISH {"status":"running"}',
+    title: '⑬ Celery → Redis: Publish running status',
+    desc: 'Celery publishes to the submission:42 channel. Django SSE is subscribed — it will receive this instantly and forward it to the browser.',
+    payload: 'PUBLISH submission:42 \'{"status": "running"}\'\n\n→ Redis wakes all subscribers\n   on this channel immediately',
+  },
+  {
+    phase:4, from:'redis', to:'django', actor:'redis',
+    tag: 'message received — not terminal',
+    title: '⑭ Redis → Django: SSE unblocks on running',
+    desc: 'pubsub.listen() unblocks. Status is "running" — not in {passed, failed, error} — so the SSE loop forwards it and stays open.',
+    payload: '→ message type: "message"\n   payload: {"status": "running"}\n\n"running" not in terminal set\n→ forward and keep stream open',
+  },
+  {
+    phase:4, from:'django', to:'browser', actor:'django',
+    tag: 'data: {"status":"running"}',
+    title: '⑮ Django → Browser: SSE event — running',
+    desc: 'Django forwards the running status down the SSE stream. Browser updates UI to show "Running your code..." with an animated indicator.',
+    payload: 'data: {"status": "running"}\n\n\n← browser EventSource.onmessage fires\n← UI shows: "Running your code..."',
+  },
+  {
+    phase:4, from:'celery', to:'docker', actor:'celery',
+    tag: 'docker run python:3.11 + test input',
+    title: '⑯ Celery → Docker: Spin up sandbox container',
+    desc: 'For each test case, a Docker container is started with the student code + test input. No network, 128MB memory limit, auto-destroyed after.',
+    payload: 'docker run python:3.11-alpine \\\n  --network=disabled \\\n  --memory=128m \\\n  --rm \\\n  python3 -c "...add(1,2)..."\n\ninput: "1 2"  expected: "3"',
+  },
+  {
+    phase:4, from:'docker', to:'celery', actor:'docker',
+    tag: 'output="3", 187ms, all passed',
+    title: '⑰ Docker → Celery: Test results back',
+    desc: 'Container ran and printed "3". Celery compares against expected output. All 3 test cases pass. Container is destroyed automatically.',
+    payload: 'stdout: "3\\n"\nstderr: ""\nexec_time: 187ms\n\npassed: "3".strip() == "3" ✓\nall_passed = True  (3/3)',
+  },
+  // ── Phase 5: Finalize & Notify ──
+  {
+    phase:5, from:'celery', to:'postgres', actor:'celery',
+    tag: 'INSERT results + UPDATE status=passed',
+    title: '⑱ Celery → Postgres: Save results, mark passed',
+    desc: 'Celery writes one Result row per test case, then updates the submission status to "passed". normalized_code is also stored here — pre-computed for plagiarism cross-comparison at exam close.',
+    payload: 'INSERT INTO results (submission_id=42, test_case_id=21,\n  passed=true, actual_output="3", exec_time=187)\n-- (3 rows inserted)\n\nUPDATE submissions\nSET status="passed",\n    normalized_code="def VAR_0(VAR_1,VAR_2): return VAR_1+VAR_2"\nWHERE id=42',
+  },
+  {
+    phase:5, from:'celery', to:'redis', actor:'celery',
+    tag: 'PUBLISH {"status":"passed"}',
+    title: '⑲ Celery → Redis: Publish final result',
+    desc: 'Celery publishes the terminal status to submission:42. Django SSE is still subscribed and will receive this immediately.',
+    payload: 'PUBLISH submission:42 \'{"status": "passed"}\'\n\n→ Redis wakes Django SSE subscriber\n   this is the terminal publish',
+  },
+  {
+    phase:5, from:'redis', to:'django', actor:'redis',
+    tag: 'message → terminal status',
+    title: '⑳ Redis → Django: Terminal status received',
+    desc: '"passed" is in the terminal set {passed, failed, error}. The SSE loop will forward this message and then break — closing the stream.',
+    payload: '→ message type: "message"\n   payload: {"status": "passed"}\n\n"passed" in {passed, failed, error}\n→ forward then break',
+  },
+  {
+    phase:5, from:'django', to:'browser', actor:'django',
+    tag: 'data: {"status":"passed"} → stream closes',
+    title: '㉑ Django → Browser: Final SSE event ✓',
+    desc: 'Django forwards "passed" and the loop breaks. pubsub.unsubscribe() is called. The SSE stream closes. Browser fetches per-test-case results and shows the pass screen.',
+    payload: 'data: {"status": "passed"}\n\n\n← EventSource.close() called\n← pubsub.unsubscribe("submission:42")\n← UI shows: ✓ Passed — 3/3 test cases',
+    final: true,
+    celebration: '✓ Passed — 3 / 3 test cases',
+  },
+];
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PLAGIARISM DATA — 14 steps, 3 phases
+// ══════════════════════════════════════════════════════════════════════════════
+const PLAG_PHASES = [
+  {
+    name:    'Exam Close & Trigger',
+    color:   '#f97316',
+    tagline: 'Trainer (or Celery Beat auto-close) toggles is_active=False. pre_save signal fires — the single entry point for all plagiarism detection, regardless of how the exam was closed.',
+  },
+  {
+    name:    'Behavioural Analysis',
+    color:   '#6366f1',
+    tagline: 'Celery picks up the orchestrator task. get_policy() reads PlagiarismPolicy from Postgres (first call) then caches in Redis (60s TTL). Phase 1 runs synchronously — each submission scored on paste ratio, speed, tab switches, attempt discontinuity. LOW confidence = 3+ signals = most suspicious.',
+  },
+  {
+    name:    'Similarity Detection',
+    color:   '#e63946',
+    tagline: 'After Phase 1 loop completes, one run_question_plagiarism_check task queued per question with 30s stagger. get_policy() → Redis HIT this time. Load LOW-confidence suspects → full cohort → AST normalize → TF-IDF → cosine → flag pairs above threshold.',
+  },
+];
+
+const PLAG_STEPS = [
+  // ── Phase 0: Exam Close & Trigger ──
+  {
+    phase:0, from:'trainer', to:'django', actor:'trainer',
+    tag: 'PATCH /exams/1/ {is_active: false}',
+    title: '① Trainer → Django: Close exam',
+    desc: 'Trainer clicks "End Exam". PATCH with partial=True sends only is_active. Celery Beat auto_manage_exams (every 60s) takes the same code path — both manual and auto-close go through this same .save() call and trigger the same pre_save signal.',
+    payload: 'PATCH /api/exams/1/\nAuthorization: Bearer eyJ... (trainer token)\n\n{"is_active": false}\n\n→ serializer.save()  ← triggers pre_save signal\n→ same path: auto_manage_exams Celery Beat task',
+  },
+  {
+    phase:0, from:'django', to:'postgres', actor:'django',
+    tag: 'SELECT is_active WHERE pk=1 (pre_save)',
+    title: '② Django → Postgres: pre_save reads old exam state',
+    desc: 'The pre_save signal handler on Exam fetches the current DB row before the write to detect the transition. Comparing old.is_active (True) against instance.is_active (False) — transition confirmed, batch task queued.',
+    payload: '# exams/signals.py — pre_save handler\nprevious = Exam.objects.get(pk=instance.pk)\n\n→ previous.is_active = True\n   instance.is_active = False\n   True → False transition detected ✓\n\n→ run_exam_plagiarism_check.delay(1) will be queued',
+  },
+  {
+    phase:0, from:'django', to:'redis', actor:'django',
+    tag: 'LPUSH run_exam_plagiarism_check(1)',
+    title: '③ Django → Redis: Queue batch orchestrator task',
+    desc: 'run_exam_plagiarism_check.delay(exam_id) pushed to Redis queue. Exam saved as inactive in Postgres. Django returns 200 OK to the trainer. Both Phase 1 (behavioural, sync) and Phase 2 (similarity, async) run entirely in the background.',
+    payload: 'LPUSH celery \'{\n  "task": "plagiarism.tasks.run_exam_plagiarism_check",\n  "args": [1]\n}\'\n\n→ exam.is_active = False saved to Postgres\n← trainer gets 200 OK immediately\n← all detection runs in background',
+  },
+  {
+    phase:0, from:'django', to:'trainer', actor:'django',
+    tag: '200 OK — exam closed',
+    title: '④ Django → Trainer: 200 OK, exam is closed',
+    desc: 'Trainer dashboard updates immediately. Both plagiarism phases run in the background — trainer sees flags appear in the annotation queue as detection completes, without any blocking on their side.',
+    payload: 'HTTP 200 OK\n{"is_active": false}\n\n← trainer dashboard updates immediately\n← Phase 1 (sync) + Phase 2 (async) run in background\n   no blocking, no delay for trainer',
+  },
+  // ── Phase 1: Behavioural Analysis ──
+  {
+    phase:1, from:'redis', to:'celery', actor:'redis',
+    tag: 'BRPOP → run_exam_plagiarism_check starts',
+    title: '⑤ Redis → Celery: Batch orchestrator picked up',
+    desc: 'Celery picks up run_exam_plagiarism_check. This single task orchestrates BOTH phases: runs Phase 1 synchronously (direct call, not .delay()) for every submission, then queues Phase 2 tasks. Phase 1 must complete first — Phase 2 queries BehaviouralFlags.',
+    payload: 'BRPOP celery 0\n→ {"task":"run_exam_plagiarism_check","args":[1]}\n\nsubmissions = Submission.objects.filter(exam=exam)\n# 200 submissions for this exam\n\n# Phase 1 starts — synchronous loop',
+  },
+  {
+    phase:1, from:'celery', to:'postgres', actor:'celery',
+    tag: 'get_policy() → cache MISS → DB read',
+    title: '⑥ Celery → Postgres: get_policy() — cache miss on first call',
+    desc: 'get_policy() checks Redis first. Cache is empty — first call after exam close, or after a trainer saved a policy change (PolicyView.put() calls cache.delete() immediately). Falls back to Postgres to read the PlagiarismPolicy singleton (pk=1). All weights, thresholds, and baselines in one row.',
+    payload: 'p = cache.get("plagiarism_policy")  # → None (miss)\n# Redis has no entry — first call after exam close\n# or after cache.delete() from PolicyView.put()\n\nSELECT * FROM plagiarism_policy WHERE id = 1\n\n→ paste_weight=0.40, time_weight=0.30\n   tab_weight=0.15,  submission_weight=0.15\n   min_risk_score=0.20\n   similarity_threshold=0.80\n   easy_baseline_s=90, medium=240, hard=480',
+  },
+  {
+    phase:1, from:'celery', to:'redis', actor:'celery',
+    tag: 'SET plagiarism_policy (TTL 60s)',
+    title: '⑦ Celery → Redis: Policy cached for 60 seconds',
+    desc: 'Policy dict cached with 60s TTL. All subsequent run_behavioural_check calls in this batch hit Redis — no DB round-trip per submission. TTL is a safety net; the real invalidation mechanism is cache.delete() called immediately in PolicyView.put() when a trainer saves a change.',
+    payload: 'cache.set("plagiarism_policy", {\n  "paste_weight":         0.40,\n  "time_weight":          0.30,\n  "tab_weight":           0.15,\n  "submission_weight":    0.15,\n  "min_risk_score":       0.20,\n  "similarity_threshold": 0.80,\n  "easy_baseline_s":      90,\n  "medium_baseline_s":    240,\n  "hard_baseline_s":      480,\n}, timeout=60)\n\n→ subsequent calls in batch: Redis HIT, no DB\n→ policy change by trainer: cache.delete() fires\n   immediately — next call is a miss again',
+  },
+  {
+    phase:1, from:'celery', to:'postgres', actor:'celery',
+    tag: 'Phase 1 loop — 4 signals scored per submission',
+    title: '⑧ Celery: Phase 1 — score each submission synchronously',
+    desc: 'For each submission: paste_signal() (paste_char_count / code length), time_signal() (elapsed vs policy baseline for difficulty), tab_switch_signal() (visibilitychange count), submission_surprise_signal() (code similarity to previous attempt). Policy weights already cached in Redis.',
+    payload: '# run_behavioural_check(sub.id) — direct call per submission\npaste_score = 187 / 210        # ratio 0.89  → 1.0\ntime_score  = 34 / 240         # ratio 0.14  → 1.0  (medium baseline)\ntab_score   = 6 tab switches   # count ≥ 5  → 1.0\nsub_score   = first attempt    # no previous → 0.0\n\nrisk = 0.40×1.0 + 0.30×1.0 + 0.15×1.0 + 0.15×0.0 = 0.85\nsignals_fired = 3\nconfidence = "low"  # 3+ signals → LOW integrity confidence\n                    # LOW = most suspicious (least confident they wrote it)',
+  },
+  {
+    phase:1, from:'celery', to:'postgres', actor:'celery',
+    tag: 'BehaviouralFlag.update_or_create()',
+    title: '⑨ Celery → Postgres: Write BehaviouralFlag if risk > threshold',
+    desc: 'risk_score 0.85 > policy.min_risk_score 0.20 → row written. update_or_create makes re-runs idempotent. Marks behavioural_check_done=True on the Submission. Phase 1 loop continues for all remaining submissions before Phase 2 is queued.',
+    payload: 'BehaviouralFlag.update_or_create(\n  submission=sub,\n  defaults={\n    "risk_score":  0.85,\n    "confidence":  "low",   # 3+ signals → LOW (most suspicious)\n    "paste_score": 1.0,\n    "time_score":  1.0,\n    "snapshot_score": 1.0,  # tab (field reused)\n    "submission_score": 0.0,\n    "signals_triggered": [\n      "Pasted 89% of code (187 chars)",\n      "Solved medium in 34s (baseline 4m)",\n      "Left exam tab 6 times",\n    ]\n  }\n)\n# risk 0.85 > min_risk_score 0.20 → written',
+  },
+  // ── Phase 2: Similarity Detection ──
+  {
+    phase:2, from:'celery', to:'redis', actor:'celery',
+    tag: 'apply_async(countdown=i×30) per question',
+    title: '⑩ Celery → Redis: Queue per-question tasks (staggered)',
+    desc: 'Phase 1 loop complete — all BehaviouralFlags committed to Postgres. run_exam_plagiarism_check now queues one run_question_plagiarism_check per question with 30s stagger. Tasks stored in Redis sorted set by execution timestamp.',
+    payload: '# Phase 1 loop done — BehaviouralFlags exist for all submissions\nfor i, question in enumerate(exam.questions.all()):\n    run_question_plagiarism_check.apply_async(\n        args=[question.id],\n        countdown=i * 30,\n    )\n\n# Redis sorted set (by exec timestamp):\n# T+0s:  run_question_plagiarism_check(Q1_id)\n# T+30s: run_question_plagiarism_check(Q2_id)\n# T+60s: run_question_plagiarism_check(Q3_id)',
+  },
+  {
+    phase:2, from:'redis', to:'celery', actor:'redis',
+    tag: 'BRPOP → run_question_plagiarism_check(Q1)',
+    title: '⑪ Redis → Celery: Per-question task starts',
+    desc: 'Celery picks up Q1 task. get_policy() called — Redis HIT this time (within 60s TTL, no DB). Immediately queries BehaviouralFlags for LOW-confidence suspects. If none found, task exits immediately saving all TF-IDF compute.',
+    payload: 'BRPOP celery 0\n→ {"task":"run_question_plagiarism_check","args":[Q1_id]}\n\npolicy = get_policy()  # → Redis HIT (no DB trip)\n\nhigh_risk_ids = BehaviouralFlag\n    .filter(question=Q1, confidence="low")\n    .values_list("submission__student_id")\n# K = 10 suspects out of 200 students\n\nif not high_risk_ids:\n    return  # skip — no suspects, save all TF-IDF',
+  },
+  {
+    phase:2, from:'celery', to:'postgres', actor:'celery',
+    tag: 'SELECT suspects + full cohort (N=200)',
+    title: '⑫ Celery → Postgres: Load suspects and full cohort',
+    desc: 'ALL N students loaded, not just K suspects. Suspects may have copied from a student with clean behavioural signals — that source is invisible if we only compare suspects vs suspects. normalized_code pre-stored in execute_submission — no re-normalization needed here.',
+    payload: '# Suspects: K=10 (from BehaviouralFlag query above)\n\n# Full cohort: best submission per student\nfor student_id in all_student_ids:\n    sub = Submission.objects\n        .filter(question=Q1, student_id=student_id, status="passed")\n        .order_by("attempt_number").first()\n    or latest_attempt  # fallback if no pass\n\n# all_subs = [sub_1...sub_200]\n# normalized_code already stored — no re-compute',
+  },
+  {
+    phase:2, from:'celery', to:'celery', actor:'celery',
+    tag: 'normalize → TF-IDF fit_transform → cosine_similarity',
+    title: '⑬ Celery: AST normalize → TF-IDF → 200×200 similarity matrix',
+    desc: 'Pure compute — no network calls. Strip variable names, comments, docstrings → TfidfVectorizer.fit_transform() → cosine_similarity(). Upper triangle loop checks only pairs where at least one side is a LOW-confidence suspect: O(K×N) = 2,000 checks vs O(N²) = 19,900.',
+    payload: '# 3 compute stages:\nnormalized = [normalize_code(s.code) for s in all_subs]\n# strip comments, strip docstrings via AST\n# rename all user vars → VAR_0, VAR_1...\n\nmatrix = TfidfVectorizer().fit_transform(normalized)\n# shape: (200, V)  weights up rare tokens\n\nsim = cosine_similarity(matrix)\n# shape: (200, 200)  all pairs in one numpy call\n\n# Upper triangle O(K×N) filter:\n# if neither side is LOW-confidence suspect → skip\n# K=10, N=200 → 2,000 checks vs 19,900 naive',
+  },
+  {
+    phase:2, from:'celery', to:'postgres', actor:'celery',
+    tag: 'PlagiarismFlag.get_or_create() sim=0.94',
+    title: '⑭ Celery → Postgres: Similarity pair flagged — detection complete',
+    desc: 'Pair exceeds threshold: 0.94 ≥ policy.similarity_threshold (0.80). get_or_create prevents duplicates on re-runs. All 200 checked submissions marked similarity_check_done=True. Trainer notified. Flags appear in the annotation queue.',
+    payload: 'PlagiarismFlag.get_or_create(\n    submission_1=sub_a,\n    submission_2=sub_b,\n    defaults={\n        "similarity_score":  0.94,\n        "detection_method":  "behavioural_filtered_tfidf",\n    }\n)\nnotify_plagiarism_flagged(pf)  # trainer alerted\n\nSubmission.filter(pk__in=checked_ids)\n    .update(similarity_check_done=True)',
+    final: true,
+    celebration: '🔍 Detection complete — flags in annotation queue',
+  },
+];
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// INIT BOTH PLAYERS
+// ══════════════════════════════════════════════════════════════════════════════
+const subPlayer = makeAnimator(
+  'sub', SUB_PHASES, SUB_STEPS,
+  ['browser','django','redis','celery','docker'], ['postgres'],
+  'Browser submits code → Django validates attempt limits → writes to Postgres → pushes execution job to Redis → returns 201 immediately → SSE stream delivers live status → Celery runs Docker sandbox → result saved and pushed to browser.'
+);
+
+const plagPlayer = makeAnimator(
+  'plag', PLAG_PHASES, PLAG_STEPS,
+  ['trainer','django','redis','celery'], ['postgres'],
+  'Trainer closes exam → pre_save signal fires → Celery batch task orchestrates Phase 1 (behavioural scoring, synchronous) then Phase 2 (TF-IDF similarity, async per question with 30s stagger).'
+);
+
+// default keyboard target is submission player
+lastActive = subPlayer;
+
+document.addEventListener('keydown', e => {
+  if (!lastActive) return;
+  if (e.key === 'ArrowRight') { lastActive.stopPlay(); lastActive.next(); }
+  if (e.key === 'ArrowLeft')  { lastActive.stopPlay(); lastActive.prev(); }
+  if (e.key === ' ')          { e.preventDefault(); lastActive.togglePlay(); }
+});
+</script>
+</body>
+</html>

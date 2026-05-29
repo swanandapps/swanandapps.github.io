@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>0.1% DEV — RAG Pipeline</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0f1117;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 60px 40px 60px;
+  }
+
+  .header { text-align: center; margin-bottom: 14px; }
+  .header h1 { font-size: 22px; font-weight: 800; color: #f8fafc; letter-spacing: -0.3px; }
+  .header p  { font-size: 12px; color: #64748b; margin-top: 4px; }
+  .sample-box {
+    display: inline-block;
+    margin-top: 10px;
+    background: #0a0d14;
+    border: 1px solid #1e2538;
+    border-left: 3px solid #f59e0b;
+    border-radius: 6px;
+    padding: 7px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #94a3b8;
+  }
+  .sample-box .kw  { color: #c792ea; }
+  .sample-box .fn  { color: #82aaff; }
+  .sample-box .str { color: #c3e88d; }
+
+  .stage {
+    position: relative;
+    width: 100%;
+    height: 320px;
+    background: #0a0d14;
+    border: 1px solid #1e2538;
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+
+  .node {
+    position: absolute;
+    width: 104px;
+    border-radius: 10px;
+    padding: 12px 8px 10px;
+    text-align: center;
+    border: 1.5px solid;
+    transition: box-shadow 0.25s, transform 0.25s;
+    user-select: none;
+  }
+  .node .icon { font-size: 22px; line-height: 1; margin-bottom: 5px; }
+  .node .name { font-size: 12px; font-weight: 700; }
+  .node .role { font-size: 10px; opacity: 0.65; margin-top: 2px; line-height: 1.3; }
+
+  .n-frontend    { border-color:#6366f1; background:rgba(99,102,241,.08);  color:#6366f1; }
+  .n-fastapi     { border-color:#10b981; background:rgba(16,185,129,.08);  color:#10b981; }
+  .n-chunker     { border-color:#f59e0b; background:rgba(245,158,11,.08);  color:#f59e0b; }
+  .n-vectorstore { border-color:#e63946; background:rgba(230,57,70,.08);   color:#e63946; }
+  .n-openai      { border-color:#3b82f6; background:rgba(59,130,246,.08);  color:#3b82f6; }
+  .n-generator   { border-color:#8b5cf6; background:rgba(139,92,246,.08);  color:#8b5cf6; }
+
+  .n-frontend.active    { box-shadow:0 0 22px rgba(99,102,241,.55);  transform:scale(1.05); }
+  .n-fastapi.active     { box-shadow:0 0 22px rgba(16,185,129,.55);  transform:scale(1.05); }
+  .n-chunker.active     { box-shadow:0 0 22px rgba(245,158,11,.55);  transform:scale(1.05); }
+  .n-vectorstore.active { box-shadow:0 0 22px rgba(230,57,70,.55);   transform:scale(1.05); }
+  .n-openai.active      { box-shadow:0 0 22px rgba(59,130,246,.55);  transform:scale(1.05); }
+  .n-generator.active   { box-shadow:0 0 22px rgba(139,92,246,.55);  transform:scale(1.05); }
+
+  .connections { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
+
+  .packet {
+    position: absolute;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 20;
+    opacity: 0;
+  }
+  .pkt-label {
+    position: absolute;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 21;
+    background: #0a0d14;
+    border: 1px solid;
+    border-radius: 4px;
+    padding: 3px 8px;
+    opacity: 0;
+  }
+
+  .progress-wrap { height: 3px; background: #1e2538; border-radius: 2px; margin-bottom: 14px; }
+  .progress-fill { height: 100%; background: #f59e0b; border-radius: 2px; transition: width 0.4s ease; width: 0%; }
+
+  .phase-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(245,158,11,.06);
+    border: 1px solid rgba(245,158,11,.18);
+    border-radius: 10px;
+    padding: 10px 18px;
+    margin-bottom: 14px;
+    transition: border-color 0.4s, background 0.4s;
+  }
+  .phase-banner.idle {
+    background: rgba(100,116,139,.04);
+    border-color: rgba(100,116,139,.18);
+  }
+  .phase-pill {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #f59e0b;
+    background: rgba(245,158,11,.14);
+    border: 1px solid rgba(245,158,11,.28);
+    border-radius: 20px;
+    padding: 3px 11px;
+    white-space: nowrap;
+    transition: color 0.3s, background 0.3s, border-color 0.3s;
+    flex-shrink: 0;
+  }
+  .phase-banner.idle .phase-pill { color:#64748b; background:rgba(100,116,139,.1); border-color:rgba(100,116,139,.2); }
+  .phase-name {
+    font-size: 15px; font-weight: 700; color: #f1f5f9; flex-shrink: 0; transition: color 0.3s;
+  }
+  .phase-banner.idle .phase-name { color: #64748b; }
+  .phase-sep {
+    width: 1px; height: 16px; background: rgba(245,158,11,.25); flex-shrink: 0; transition: background 0.4s;
+  }
+  .phase-banner.idle .phase-sep { background: rgba(100,116,139,.2); }
+  .phase-tagline { font-size: 12px; color: #64748b; line-height: 1.4; }
+
+  .info-panel {
+    background: #1a1f2e;
+    border: 1px solid #2a3045;
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin-bottom: 16px;
+    min-height: 130px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .step-counter { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .step-title   { font-size: 16px; font-weight: 700; color: #f1f5f9; margin-bottom: 6px; line-height: 1.3; }
+  .step-desc    { font-size: 12px; color: #94a3b8; line-height: 1.6; }
+  .payload-label { font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .payload-box {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: #0a0d14;
+    border: 1px solid #1e2538;
+    border-left: 3px solid;
+    border-radius: 6px;
+    padding: 10px 12px;
+    white-space: pre;
+    line-height: 1.6;
+    min-height: 80px;
+    overflow-x: auto;
+  }
+
+  .controls {
+    display: flex; align-items: center; gap: 10px; justify-content: center; flex-wrap: wrap;
+  }
+  .btn {
+    background: #1a1f2e; border: 1px solid #2a3045; color: #e2e8f0;
+    padding: 9px 22px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background 0.15s; font-family: 'Inter', sans-serif;
+  }
+  .btn:hover { background: #242a3d; }
+  .btn.play-btn {
+    background: #f59e0b; border-color: #f59e0b; color: #0f1117;
+    padding: 9px 32px;
+  }
+  .btn.play-btn:hover { opacity: 0.85; }
+  .speed-wrap { display:flex; align-items:center; gap:8px; font-size:12px; color:#64748b; margin-left:8px; }
+  input[type=range] { width:90px; accent-color:#f59e0b; }
+
+  .step-list {
+    display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+    margin-top: 16px; align-items: flex-end;
+  }
+  .phase-group { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .phase-group-label {
+    font-size: 9px; color: #2a3045; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.6px; transition: color 0.25s; white-space: nowrap;
+  }
+  .phase-group.phase-active .phase-group-label { color: #f59e0b; }
+  .phase-group.phase-done   .phase-group-label { color: #334155; }
+  .phase-dots { display: flex; gap: 5px; }
+  .step-dot {
+    width: 24px; height: 6px; border-radius: 3px; background: #1e2538;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .step-dot.done    { background: #334155; }
+  .step-dot.current { background: #f59e0b; }
+
+  .celebration {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    pointer-events: none; opacity: 0; transition: opacity 0.5s;
+    font-size: 20px; font-weight: 800; letter-spacing: -0.5px;
+    color: #f59e0b; text-shadow: 0 0 30px rgba(245,158,11,.5);
+  }
+  .celebration.show { opacity: 1; }
+
+  /* ── Back nav ── */
+  .back-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+    height: 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px;
+    background: rgba(10,13,20,0.96);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid #1e2538;
+  }
+  .back-nav-link {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: #64748b; text-decoration: none;
+    transition: color 0.2s;
+  }
+  .back-nav-link:hover { color: #10b981; }
+  .back-nav-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: #f59e0b;
+    background: rgba(245,158,11,0.1);
+    border: 1px solid rgba(245,158,11,0.25);
+    padding: 3px 10px; border-radius: 20px;
+  }
+
+</style>
+</head>
+<body>
+<div class="back-nav">
+  <a href="index.html" class="back-nav-link">← Back to Portfolio</a>
+  <span class="back-nav-badge">RAG Pipeline</span>
+</div>
+
+
+<div class="header">
+  <h1>0.1% DEV — RAG Pipeline</h1>
+  <p>21 steps · 4 phases · Startup Indexing → Query → Re-ranking → Answer Generation</p>
+  <div class="sample-box">
+    <span class="kw">embed</span>(<span class="str">"Why does npm link matter?"</span>)
+    &nbsp;→&nbsp; <span class="fn">cosine search</span> → <span class="str">lexical re-rank</span> → <span class="fn">GPT-4.1-mini</span>
+  </div>
+</div>
+
+<div class="phase-banner idle" id="phase-header">
+  <div class="phase-pill" id="phase-pill">—</div>
+  <div class="phase-name" id="phase-name">Press Play or → to begin</div>
+  <div class="phase-sep"></div>
+  <div class="phase-tagline" id="phase-tagline">Transcripts chunked → embedded → indexed at startup. Queries embedded in same space → cosine similarity → lexical re-rank → GPT-4.1-mini generates grounded answers with source citations.</div>
+</div>
+
+<div class="stage" id="stage">
+  <svg class="connections" id="svg-conn"></svg>
+
+  <div class="node n-frontend"    id="n-frontend">    <div class="icon">⚛️</div>  <div class="name">React SPA</div><div class="role">Frontend</div></div>
+  <div class="node n-fastapi"     id="n-fastapi">     <div class="icon">⚙️</div>  <div class="name">RagService</div><div class="role">FastAPI</div></div>
+  <div class="node n-chunker"     id="n-chunker">     <div class="icon">✂️</div>  <div class="name">Chunker</div><div class="role">180w / 35w overlap</div></div>
+  <div class="node n-vectorstore" id="n-vectorstore"> <div class="icon">🗄️</div>  <div class="name">VectorStore</div><div class="role">In-memory cosine</div></div>
+  <div class="node n-openai"      id="n-openai">      <div class="icon">🤖</div>  <div class="name">OpenAI</div><div class="role">text-emb-3-small</div></div>
+  <div class="node n-generator"   id="n-generator">   <div class="icon">✨</div>  <div class="name">Generator</div><div class="role">gpt-4.1-mini</div></div>
+
+  <div class="packet"    id="packet"></div>
+  <div class="pkt-label" id="pkt-label"></div>
+  <div class="celebration" id="celebration">✨ Grounded answer delivered with lecture citations</div>
+</div>
+
+<div class="progress-wrap"><div class="progress-fill" id="prog"></div></div>
+
+<div class="info-panel">
+  <div class="info-left">
+    <div class="step-counter">Step <span id="s-num">—</span> of <span id="s-total">21</span></div>
+    <div class="step-title" id="s-title">Press Play or → to begin</div>
+    <div class="step-desc"  id="s-desc">Transcripts chunked at startup → embeddings indexed → query embedded in same space → cosine search → lexical re-rank → threshold gate → GPT-4.1-mini generates answer — sources cite exact lecture and timestamp.</div>
+  </div>
+  <div class="info-right">
+    <div class="payload-label">Data / Command</div>
+    <div class="payload-box" id="s-payload" style="color:#82aaff;border-left-color:#f59e0b">—</div>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="btn" id="btn-restart">↺ Restart</button>
+  <button class="btn" id="btn-prev">← Prev</button>
+  <button class="btn play-btn" id="btn-play">▶ Play</button>
+  <button class="btn" id="btn-next">Next →</button>
+  <div class="speed-wrap">
+    <span>Speed</span>
+    <input type="range" id="speed-slider" min="0.5" max="3" step="0.5" value="1.5"/>
+    <span id="speed-label">1.5×</span>
+  </div>
+</div>
+
+<div class="step-list" id="step-list"></div>
+
+<script>
+const PHASES = [
+  { name: "Startup Indexing",       tagline: "Server starts → transcripts loaded → 180-word chunks with 35-word overlap → batch-embedded with text-embedding-3-small → vectors indexed in memory." },
+  { name: "Query Processing",       tagline: "Student question embedded with the same model → 1536-dim query vector → cosine similarity scanned across all indexed chunks → top 8 returned." },
+  { name: "Re-ranking & Filtering", tagline: "Semantic score + lexical overlap merged per chunk → sorted → top 5 retained → threshold gate at 0.15 — below means insufficient context, returned immediately." },
+  { name: "Answer Generation",      tagline: "Context blocks formatted → GPT-4.1-mini called with system prompt — answer only from course content, cite lecture and timestamp — sources mapped and delivered." },
+];
+
+const STEPS = [
+  // Phase 1 — Startup Indexing (6 steps)
+  { from:"n-fastapi", to:"n-fastapi",     label:"server start",         phase:1,
+    title:"FastAPI startup — bootstrap()",
+    desc:"FastAPI @app.on_event('startup') fires. RagService.bootstrap() called. This runs once when the server starts — not per request. All indexing happens here so queries are sub-millisecond after boot.",
+    payload:`# app/main.py
+@app.on_event("startup")
+def startup() -> None:
+    rag_service.bootstrap()
+    # runs once — blocks until index is ready
+    # rag_service.ready → True when done`,
+    payloadColor:"#10b981" },
+
+  { from:"n-fastapi", to:"n-chunker",     label:"load_courses()",        phase:1,
+    title:"Transcripts loaded from JSON",
+    desc:"CourseRepository.load() reads seed_transcripts.json. Deserializes into Course → Lecture → Segment objects. Each Segment has: text, start_time, end_time. A single lecture has dozens of segments.",
+    payload:`# seed_transcripts.json structure:
+{
+  "id": "build-a-library",
+  "title": "Build a Custom Library",
+  "lectures": [{
+    "id": "lec-07",
+    "title": "npm link and local dev",
+    "segments": [{
+      "text": "When you run npm link...",
+      "start_time": 134, "end_time": 148
+    }]
+  }]
+}`,
+    payloadColor:"#f59e0b" },
+
+  { from:"n-chunker", to:"n-chunker",     label:"chunk_courses()",       phase:1,
+    title:"Sliding-window chunking",
+    desc:"chunk_courses() iterates every lecture, flattens all segment words into (word, start_time, end_time) triples, then slides a 180-word window stepping 145 words (35-word overlap). This overlap prevents relevant sentences from being split across two chunks.",
+    payload:`target_words  = 180
+overlap_words = 35
+step          = max(180 - 35, 1)  # = 145
+
+# Each window:
+# - text: 180-word string
+# - start_time: time of first word in window
+# - end_time:   time of last word in window
+# - chunk_id:   "{lecture_id}-{chunk_index}"`,
+    payloadColor:"#f59e0b" },
+
+  { from:"n-chunker", to:"n-vectorstore", label:"chunks ready",           phase:1,
+    title:"TranscriptChunks assembled",
+    desc:"Each TranscriptChunk carries: chunk_id, course_id, course_title, lecture_id, lecture_title, text (180 words), start_time, end_time. The embedding field is empty at this stage — populated in the next step.",
+    payload:`TranscriptChunk(
+  chunk_id      = "lec-07-3",
+  course_id     = "build-a-library",
+  course_title  = "Build a Custom Library",
+  lecture_id    = "lec-07",
+  lecture_title = "npm link and local dev",
+  text          = "When you run npm link in your...",
+  start_time    = 134,
+  end_time      = 268,
+  embedding     = None  # ← not yet
+)
+# total chunks: ~320 across all courses`,
+    payloadColor:"#e63946" },
+
+  { from:"n-vectorstore", to:"n-openai",  label:"embed_many(texts)",      phase:1,
+    title:"Batch embedding — text-embedding-3-small",
+    desc:"EmbeddingService.embed_many() sends all 320 chunk texts to OpenAI in a single batch request. text-embedding-3-small produces 1536-dimensional dense vectors. Batch reduces API latency vs. one call per chunk.",
+    payload:`openai.embeddings.create(
+  model = "text-embedding-3-small",
+  input = [chunk.text for chunk in chunks]
+  # single batch → ~320 texts
+)
+# Returns: [{ embedding: [float x 1536] }]
+# Fallback: local SHA-256 hash projection
+#           (dev mode, no API key required)`,
+    payloadColor:"#3b82f6" },
+
+  { from:"n-openai", to:"n-vectorstore",  label:"vectors[]",              phase:1,
+    title:"Vectors stored — index ready",
+    desc:"Each chunk.embedding = vector from the batch response. VectorStore.index(chunks) stores the complete list. rag_service.ready = True. GET /health returns {rag_ready: true}. All queries after this are served from memory.",
+    payload:`for chunk, embedding in zip(chunks, embeddings):
+    chunk.embedding = embedding
+
+self.vector_store.index(chunks)
+self.ready = True
+
+# /health endpoint:
+{ "status": "ok", "rag_ready": true }
+
+# InMemoryVectorStore:
+# self.chunks = [TranscriptChunk x 320]
+# each with .embedding: list[float x 1536]`,
+    payloadColor:"#e63946" },
+
+  // Phase 2 — Query Processing (6 steps)
+  { from:"n-frontend", to:"n-fastapi",    label:"POST /api/ai/ask",       phase:2,
+    title:"Question received by FastAPI",
+    desc:"React ChatWorkspace fires POST /api/ai/ask with {question}. FastAPI deserializes into AskRequest. RagService.ask(question) orchestrates the full pipeline. The frontend shows a Loader2 spinner while waiting.",
+    payload:`POST /api/ai/ask
+Content-Type: application/json
+{
+  "question": "Why does npm link matter
+               while building a library?"
+}
+# FastAPI → AskRequest(question=...)
+# RagService.ask(question) called`,
+    payloadColor:"#10b981" },
+
+  { from:"n-fastapi", to:"n-openai",      label:"embed(question)",        phase:2,
+    title:"Query vectorized — same model",
+    desc:"EmbeddingService.embed(question) calls OpenAI text-embedding-3-small. Critically: the same model that embedded the chunks. This ensures the question vector and chunk vectors occupy the same semantic space — cosine similarity is only meaningful within the same embedding space.",
+    payload:`query_embedding = self.embedding_service.embed(
+    question
+)
+# openai.embeddings.create(
+#   model = "text-embedding-3-small",
+#   input = "Why does npm link matter..."
+# )
+# → list[float] of length 1536
+# same model = same vector space ✓`,
+    payloadColor:"#3b82f6" },
+
+  { from:"n-openai", to:"n-fastapi",      label:"query vector",           phase:2,
+    title:"1536-dim query vector returned",
+    desc:"OpenAI returns the query's 1536-dimensional embedding. This dense vector encodes the semantic meaning of the question. It will be compared against every chunk vector via cosine similarity.",
+    payload:`# Returned by OpenAI:
+query_vector = [0.0213, -0.1402, 0.0871, ...]
+#               ↑ 1536 floats total
+
+# Semantic meaning encoded:
+# "npm link" ≈ "symbolic link"
+# "building a library" ≈ "package development"
+# Cosine similarity captures these relationships`,
+    payloadColor:"#3b82f6" },
+
+  { from:"n-fastapi", to:"n-vectorstore", label:"search(query_vec, 8)",   phase:2,
+    title:"Cosine similarity — O(N) scan",
+    desc:"VectorStore.search() computes cosine_similarity(query_vec, chunk.embedding) for every indexed chunk. Pure Python, no NumPy. O(N × D) where N≈320 and D=1536. Runs in a few milliseconds. Results sorted descending, top 8 returned.",
+    payload:`def cosine_similarity(left, right):
+    dot   = sum(a*b for a,b in zip(left, right))
+    l_mag = math.sqrt(sum(a*a for a in left))
+    r_mag = math.sqrt(sum(b*b for b in right))
+    return dot / (l_mag * r_mag)
+
+# Runs for all 320 chunks
+# O(N × D) = O(320 × 1536) ≈ 490k ops
+# → sorted descending → top_k=8 returned`,
+    payloadColor:"#e63946" },
+
+  { from:"n-vectorstore", to:"n-fastapi", label:"top 8 matches",          phase:2,
+    title:"Top-8 semantic matches returned",
+    desc:"The 8 chunks with highest cosine similarity to the query vector are returned as (chunk, score) pairs. These are candidates — not final. The re-ranking phase refines them with a second lexical signal.",
+    payload:`# top 8 by cosine similarity:
+[
+  (chunk "lec-07-3", score=0.82),  # best match
+  (chunk "lec-07-4", score=0.71),
+  (chunk "lec-12-1", score=0.65),
+  (chunk "lec-07-2", score=0.61),
+  (chunk "lec-03-5", score=0.58),
+  ...
+]
+# → passed to _rank_matches()`,
+    payloadColor:"#e63946" },
+
+  { from:"n-fastapi", to:"n-fastapi",     label:"_rank_matches()",        phase:2,
+    title:"Combined scoring begins",
+    desc:"_rank_matches() merges two independent signals: (1) semantic vector score, (2) lexical keyword overlap. Each chunk gets the max of both signals. This ensures strong keyword matches aren't discarded if their vector score was moderate.",
+    payload:`def _rank_matches(question, vector_matches):
+    scores = {}
+    vector_weight = 1.0  # (0.25 in fallback mode)
+
+    # Start with semantic scores
+    for chunk, vec_score in vector_matches:
+        scores[chunk_id] = vec_score * vector_weight
+
+    # Add lexical signal (next step)
+    ...
+
+    return sorted(scores.values(), ...)[:5]`,
+    payloadColor:"#10b981" },
+
+  // Phase 3 — Re-ranking & Filtering (5 steps)
+  { from:"n-fastapi", to:"n-fastapi",     label:"lexical_overlap()",      phase:3,
+    title:"Lexical overlap — keyword scoring",
+    desc:"_lexical_overlap() tokenizes both the question and each chunk's text. Stop-words filtered out ({a, an, the, is, how, why, ...}). Jaccard-like overlap: |question_terms ∩ chunk_terms| / |question_terms|. Catches exact technical terms that embeddings may under-score.",
+    payload:`STOP_WORDS = {"a","an","the","is","how","why",...}
+
+def _terms(text):
+    return {
+        term for term in
+        re.findall(r"[a-zA-Z0-9_+#.-]+", text.lower())
+        if len(term) > 2 and term not in STOP_WORDS
+    }
+
+# question terms: {npm, link, matter, building, library}
+# chunk text terms: {npm, link, symlink, node_modules,...}
+# overlap: {npm, link, library} → 3/5 = 0.60`,
+    payloadColor:"#10b981" },
+
+  { from:"n-fastapi", to:"n-fastapi",     label:"score = max(sem, lex)",  phase:3,
+    title:"Score merge — max of both signals",
+    desc:"For every chunk in the full vector store (not just top 8), if it has a nonzero lexical score it's added to the candidates pool with max(semantic_score, lexical_score). This means a chunk can surface via keyword match even if its vector score was low.",
+    payload:`for chunk in self.vector_store.chunks:
+    lexical = _lexical_overlap(question,
+        f"{course_title} {lecture_title} {text}")
+    if lexical <= 0:
+        continue
+    current = scores.get(chunk_id, (chunk, 0.0))[1]
+    scores[chunk_id] = (chunk,
+        max(current, lexical))
+
+# Ensures: keyword-strong chunks aren't missed
+# by moderate vector scores`,
+    payloadColor:"#10b981" },
+
+  { from:"n-fastapi", to:"n-fastapi",     label:"sort → top 5",          phase:3,
+    title:"Final ranking — top 5",
+    desc:"All scored chunks sorted descending by combined score. Top 5 retained. This is the candidate set passed to the threshold gate. Combining vector and lexical signals gives better precision than either alone.",
+    payload:`ranked = sorted(
+    scores.values(),
+    key=lambda item: item[1],
+    reverse=True
+)
+return ranked[:5]
+
+# Example final ranking:
+# (lec-07-3, 0.82) ← semantic + lexical winner
+# (lec-07-4, 0.71)
+# (lec-12-1, 0.65)
+# (lec-07-2, 0.61)
+# (lec-03-5, 0.58)`,
+    payloadColor:"#10b981" },
+
+  { from:"n-fastapi", to:"n-fastapi",     label:"score ≥ 0.15?",         phase:3,
+    title:"Threshold gate — 0.15 minimum",
+    desc:"selected = [m for m in ranked if m[1] >= 0.15]. If no chunks pass the threshold, insufficient_context=True. The assistant returns a specific message: 'The platform content does not contain enough information' — never hallucinating an answer.",
+    payload:`selected = [
+    m for m in ranked_matches if m[1] >= 0.15
+] or ranked_matches[:3]  # fallback: top 3 anyway
+
+insufficient_context = (
+    not selected or selected[0][1] < 0.15
+)
+
+# if insufficient_context:
+#   return canned "not enough context" message
+#   → no LLM call made (saves cost + prevents hallucination)`,
+    payloadColor:"#10b981" },
+
+  { from:"n-fastapi", to:"n-generator",   label:"build context",         phase:3,
+    title:"Context blocks formatted",
+    desc:"Each selected chunk is formatted as a context block: [Course Title | Lecture Title | start-end timestamp]\\nchunk_text. These blocks are injected into the GPT prompt as the sole allowed source of truth.",
+    payload:`context_blocks = [
+    f"[{chunk.course_title} | "
+    f"{chunk.lecture_title} | "
+    f"{format_timestamp(chunk.start_time)}-"
+    f"{format_timestamp(chunk.end_time)}]\\n"
+    f"{chunk.text}"
+    for chunk in chunks
+]
+# e.g.:
+# "[Build a Library | npm link | 02:14-04:28]
+#  When you run npm link in your library dir..."`,
+    payloadColor:"#8b5cf6" },
+
+  // Phase 4 — Answer Generation (5 steps)
+  { from:"n-generator", to:"n-openai",    label:"generate(q, chunks)",    phase:4,
+    title:"AnswerGenerator — GPT-4.1-mini",
+    desc:"AnswerGenerator.generate() calls openai.responses.create() with SYSTEM_PROMPT + context prompt. Model: gpt-4.1-mini. The system prompt instructs: answer only from provided context, cite lecture names and timestamps, say 'I don't know' if context is insufficient.",
+    payload:`response = openai_client.responses.create(
+    model        = "gpt-4.1-mini",
+    instructions = SYSTEM_PROMPT,
+    input        = build_context_prompt(
+                     question, context_blocks)
+)
+# SYSTEM_PROMPT:
+# "Answer ONLY from the provided course context.
+#  Cite the lecture name and timestamp.
+#  If the context doesn't answer, say so."`,
+    payloadColor:"#3b82f6" },
+
+  { from:"n-openai", to:"n-generator",    label:"answer text",            phase:4,
+    title:"GPT-4.1-mini returns grounded answer",
+    desc:"GPT-4.1-mini returns the answer text, grounded strictly in the provided context blocks. No hallucination — the model only has the chunk content to draw from. The answer cites lecture names and timestamps per the system prompt.",
+    payload:`# Returned by gpt-4.1-mini:
+"npm link creates a symbolic link in your global
+ node_modules directory that points to your local
+ library folder (covered in npm link and local dev
+ workflow at 02:14). This lets you test changes to
+ your library in a real project without publishing
+ a new npm version each time..."
+# Grounded — every claim is in the chunks ✓`,
+    payloadColor:"#3b82f6" },
+
+  { from:"n-generator", to:"n-fastapi",   label:"_to_source(chunk, score)",phase:4,
+    title:"Sources mapped from chunks",
+    desc:"_to_source() maps each selected TranscriptChunk to a Source object: course_id, course_title, lecture_id, lecture_title, timestamp (formatted MM:SS), start_time (seconds), end_time, snippet (220-char trim), score.",
+    payload:`def _to_source(chunk, score) -> Source:
+    return Source(
+        course_id     = chunk.course_id,
+        course_title  = chunk.course_title,
+        lecture_id    = chunk.lecture_id,
+        lecture_title = chunk.lecture_title,
+        timestamp     = format_timestamp(chunk.start_time),
+        start_time    = chunk.start_time,   # seconds
+        end_time      = chunk.end_time,
+        snippet       = _trim_snippet(chunk.text, 220),
+        score         = round(score, 4)
+    )`,
+    payloadColor:"#8b5cf6" },
+
+  { from:"n-fastapi", to:"n-frontend",    label:"AskResponse",            phase:4,
+    title:"Response delivered to React frontend",
+    desc:"AskResponse {answer, sources[], insufficient_context, model} returned as JSON. React appends {role:'assistant', content, sources} to messages. Each source renders as a SourceCard.",
+    payload:`{
+  "answer": "npm link creates a symbolic link...",
+  "sources": [
+    {
+      "lecture_title": "npm link and local dev",
+      "timestamp": "02:14",
+      "start_time": 134,
+      "snippet": "When you run npm link...",
+      "score": 0.8241
+    }
+  ],
+  "insufficient_context": false,
+  "model": "text-embedding-3-small + gpt-4.1-mini"
+}`,
+    payloadColor:"#10b981" },
+
+  { from:"n-frontend", to:"n-frontend",   label:"SourceCard + deep-link", phase:4,
+    title:"SourceCard — deep-link to exact timestamp",
+    desc:"React renders a SourceCard per source. Each card shows: course title, lecture name, timestamp badge, relevance score, 220-char snippet. The card links to /course/:id?lecture=name&t=134 — clicking it opens the video player seeked to the exact second the answer came from.",
+    payload:`// SourceCard.tsx renders:
+<a href={\`/course/\${source.course_id}
+          ?lecture=\${source.lecture_title}
+          &t=\${source.start_time}\`}>
+  <span>{source.lecture_title}</span>
+  <span>{source.timestamp}</span>   // "02:14"
+  <span>{source.score}</span>       // 0.8241
+  <p>{source.snippet}</p>
+</a>
+// → /course/build-a-library?lecture=npm+link&t=134`,
+    payloadColor:"#6366f1" },
+];
+
+// ── Node positions ──────────────────────────────────────────────────────────
+const POS = {
+  "n-frontend":    { left:"2%",  top:"38%" },
+  "n-fastapi":     { left:"22%", top:"38%" },
+  "n-chunker":     { left:"42%", top:"15%" },
+  "n-vectorstore": { left:"42%", top:"60%" },
+  "n-openai":      { left:"64%", top:"15%" },
+  "n-generator":   { left:"64%", top:"60%" },
+};
+for (const [id, p] of Object.entries(POS)) {
+  const el = document.getElementById(id);
+  el.style.left = p.left; el.style.top = p.top;
+}
+
+// ── Build step dots ─────────────────────────────────────────────────────────
+const stepListEl = document.getElementById("step-list");
+const PHASE_COUNT = 4;
+for (let ph = 1; ph <= PHASE_COUNT; ph++) {
+  const group = document.createElement("div");
+  group.className = "phase-group";
+  group.id = `phase-group-${ph}`;
+
+  const lbl = document.createElement("div");
+  lbl.className = "phase-group-label";
+  lbl.textContent = PHASES[ph-1].name.split(" ").slice(0,2).join(" ");
+  group.appendChild(lbl);
+
+  const dotsRow = document.createElement("div");
+  dotsRow.className = "phase-dots";
+  STEPS.forEach((s, i) => {
+    if (s.phase !== ph) return;
+    const dot = document.createElement("div");
+    dot.className = "step-dot";
+    dot.dataset.step = i;
+    dot.title = s.title;
+    dot.addEventListener("click", () => { stopPlay(); goTo(i); });
+    dotsRow.appendChild(dot);
+  });
+  group.appendChild(dotsRow);
+  stepListEl.appendChild(group);
+}
+
+// ── SVG lines ───────────────────────────────────────────────────────────────
+const SVG_NS = "http://www.w3.org/2000/svg";
+function nodeCenter(id) {
+  const stage = document.getElementById("stage");
+  const node  = document.getElementById(id);
+  const sr = stage.getBoundingClientRect();
+  const nr = node.getBoundingClientRect();
+  return { x: nr.left-sr.left+nr.width/2, y: nr.top-sr.top+nr.height/2 };
+}
+function drawLines() {
+  const svg = document.getElementById("svg-conn");
+  svg.innerHTML = "";
+  const edges = [
+    ["n-frontend","n-fastapi"],
+    ["n-fastapi","n-chunker"],
+    ["n-chunker","n-vectorstore"],
+    ["n-vectorstore","n-openai"],
+    ["n-openai","n-vectorstore"],
+    ["n-fastapi","n-vectorstore"],
+    ["n-vectorstore","n-fastapi"],
+    ["n-fastapi","n-openai"],
+    ["n-openai","n-fastapi"],
+    ["n-fastapi","n-generator"],
+    ["n-generator","n-openai"],
+    ["n-openai","n-generator"],
+    ["n-generator","n-fastapi"],
+    ["n-fastapi","n-frontend"],
+  ];
+  const seen = new Set();
+  for (const [a,b] of edges) {
+    const key = [a,b].sort().join("|");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const ca=nodeCenter(a), cb=nodeCenter(b);
+    const line=document.createElementNS(SVG_NS,"line");
+    line.setAttribute("x1",ca.x); line.setAttribute("y1",ca.y);
+    line.setAttribute("x2",cb.x); line.setAttribute("y2",cb.y);
+    line.setAttribute("stroke","#2a3045");
+    line.setAttribute("stroke-width","1.5");
+    line.setAttribute("stroke-dasharray","5 4");
+    svg.appendChild(line);
+  }
+}
+window.addEventListener("resize", drawLines);
+setTimeout(drawLines, 50);
+
+// ── Packet animation ─────────────────────────────────────────────────────────
+const NODE_COLOR = {
+  "n-frontend":"#6366f1","n-fastapi":"#10b981","n-chunker":"#f59e0b",
+  "n-vectorstore":"#e63946","n-openai":"#3b82f6","n-generator":"#8b5cf6",
+};
+let packetAnim = null;
+function animatePacket(fromId, toId, color, label, cb) {
+  if (packetAnim) { clearInterval(packetAnim); packetAnim = null; }
+  const pkt = document.getElementById("packet");
+  const lbl = document.getElementById("pkt-label");
+  const ca  = nodeCenter(fromId);
+  const cb2 = nodeCenter(toId);
+  pkt.style.background  = color;
+  pkt.style.boxShadow   = `0 0 12px ${color}`;
+  lbl.style.color       = color;
+  lbl.style.borderColor = color;
+  lbl.textContent       = label;
+
+  if (fromId === toId) {
+    pkt.style.left=`${ca.x-6}px`; pkt.style.top=`${ca.y-6}px`;
+    lbl.style.left=`${ca.x+10}px`; lbl.style.top=`${ca.y-10}px`;
+    pkt.style.opacity="1"; lbl.style.opacity="1";
+    setTimeout(()=>{ pkt.style.opacity="0"; lbl.style.opacity="0"; if(cb)cb(); }, 600);
+    return;
+  }
+
+  const FRAMES=40; let frame=0;
+  pkt.style.opacity="1"; lbl.style.opacity="1";
+  packetAnim = setInterval(()=>{
+    const t=frame/FRAMES;
+    pkt.style.left=`${ca.x+(cb2.x-ca.x)*t-6}px`;
+    pkt.style.top =`${ca.y+(cb2.y-ca.y)*t-6}px`;
+    lbl.style.left=`${ca.x+(cb2.x-ca.x)*t+10}px`;
+    lbl.style.top =`${ca.y+(cb2.y-ca.y)*t-18}px`;
+    frame++;
+    if (frame>FRAMES){
+      clearInterval(packetAnim); packetAnim=null;
+      pkt.style.opacity="0"; lbl.style.opacity="0";
+      if(cb)cb();
+    }
+  }, 16);
+}
+
+// ── State & render ───────────────────────────────────────────────────────────
+let currentStep=-1, playing=false, playTimer=null, speed=1.5;
+function getDelay() { return Math.round(2400/speed); }
+
+function render(idx) {
+  const step  = STEPS[idx];
+  const phase = PHASES[step.phase-1];
+  document.getElementById("prog").style.width=`${((idx+1)/STEPS.length)*100}%`;
+
+  const banner=document.getElementById("phase-header");
+  banner.classList.remove("idle");
+  document.getElementById("phase-pill").textContent    = `Phase ${step.phase} of 4 — ${phase.name}`;
+  document.getElementById("phase-name").textContent    = phase.name;
+  document.getElementById("phase-tagline").textContent = phase.tagline;
+
+  document.getElementById("s-num").textContent   = idx+1;
+  document.getElementById("s-title").textContent = step.title;
+  document.getElementById("s-desc").textContent  = step.desc;
+  const pb=document.getElementById("s-payload");
+  pb.textContent=step.payload;
+  pb.style.color=step.payloadColor;
+  pb.style.borderLeftColor=step.payloadColor;
+
+  document.querySelectorAll(".node").forEach(n=>n.classList.remove("active"));
+  document.getElementById(step.from).classList.add("active");
+  if (step.to!==step.from) document.getElementById(step.to).classList.add("active");
+
+  document.getElementById("celebration").classList.toggle("show", idx===STEPS.length-1);
+  updateDots(idx);
+}
+
+function updateDots(idx) {
+  const ph=STEPS[idx].phase;
+  for(let p=1;p<=PHASE_COUNT;p++){
+    const g=document.getElementById(`phase-group-${p}`);
+    if(!g)continue;
+    g.classList.remove("phase-active","phase-done");
+    if(p===ph) g.classList.add("phase-active");
+    else if(p<ph) g.classList.add("phase-done");
+  }
+  document.querySelectorAll(".step-dot").forEach(d=>{
+    const si=parseInt(d.dataset.step);
+    d.classList.remove("done","current");
+    if(si<idx) d.classList.add("done");
+    else if(si===idx) d.classList.add("current");
+  });
+}
+
+function goTo(idx){
+  if(idx<0||idx>=STEPS.length)return;
+  currentStep=idx;
+  const step=STEPS[idx];
+  animatePacket(step.from,step.to,NODE_COLOR[step.from],step.label,()=>{
+    render(idx);
+    if(playing)scheduleNext();
+  });
+}
+function goNext(){if(currentStep>=STEPS.length-1){stopPlay();return;}goTo(currentStep+1);}
+function goPrev(){if(currentStep<=0)return;goTo(currentStep-1);}
+
+function scheduleNext(){clearTimeout(playTimer);playTimer=setTimeout(goNext,getDelay());}
+function startPlay(){
+  if(playing)return;
+  playing=true;
+  document.getElementById("btn-play").textContent="⏸ Pause";
+  if(currentStep===-1)goTo(0);else scheduleNext();
+}
+function stopPlay(){
+  playing=false;clearTimeout(playTimer);
+  document.getElementById("btn-play").textContent="▶ Play";
+}
+function restart(){
+  stopPlay();currentStep=-1;
+  document.getElementById("prog").style.width="0%";
+  document.getElementById("phase-header").classList.add("idle");
+  document.getElementById("phase-pill").textContent="—";
+  document.getElementById("phase-name").textContent="Press Play or → to begin";
+  document.getElementById("s-num").textContent="—";
+  document.getElementById("s-title").textContent="Press Play or → to begin";
+  document.getElementById("s-desc").textContent="Transcripts chunked at startup → embeddings indexed → query embedded in same space → cosine search → lexical re-rank → threshold gate → GPT-4.1-mini generates answer — sources cite exact lecture and timestamp.";
+  document.getElementById("s-payload").textContent="—";
+  document.getElementById("celebration").classList.remove("show");
+  document.querySelectorAll(".node").forEach(n=>n.classList.remove("active"));
+  document.querySelectorAll(".step-dot").forEach(d=>d.classList.remove("done","current"));
+  for(let p=1;p<=PHASE_COUNT;p++){const g=document.getElementById(`phase-group-${p}`);if(g)g.classList.remove("phase-active","phase-done");}
+}
+
+document.getElementById("btn-play").addEventListener("click",()=>{if(playing)stopPlay();else startPlay();});
+document.getElementById("btn-next").addEventListener("click",()=>{stopPlay();goNext();});
+document.getElementById("btn-prev").addEventListener("click",()=>{stopPlay();goPrev();});
+document.getElementById("btn-restart").addEventListener("click",restart);
+document.addEventListener("keydown",e=>{
+  if(e.key==="ArrowRight"){stopPlay();goNext();}
+  if(e.key==="ArrowLeft"){stopPlay();goPrev();}
+  if(e.key===" "){e.preventDefault();if(playing)stopPlay();else startPlay();}
+});
+const slider=document.getElementById("speed-slider");
+slider.addEventListener("input",()=>{
+  speed=parseFloat(slider.value);
+  document.getElementById("speed-label").textContent=`${speed}×`;
+});
+</script>
+</body>
+</html>

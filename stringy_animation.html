@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/jpeg" href="E09EB739-7DA5-43EE-AA6D-868C79A0F082_1_105_c.jpeg">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>stringy-core — Use Case Showcase</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #0f1117;
+  --surface: #1a1f2e;
+  --border: #2a3045;
+  --green: #10b981;
+  --text: #f1f5f9;
+  --muted: #64748b;
+  --amber: #f59e0b;
+  --indigo: #6366f1;
+  --red: #e63946;
+  --blue: #3b82f6;
+  --purple: #8b5cf6;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  padding-bottom: 48px;
+}
+
+/* ── HEADER ── */
+.header {
+  text-align: center;
+  padding: 56px 24px 24px;
+}
+.header-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.header h1 { font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 800; margin-bottom: 8px; }
+.header h1 span { color: var(--amber); }
+.header p { font-size: 0.88rem; color: var(--muted); max-width: 480px; margin: 0 auto; }
+
+/* ── PHASE BANNER ── */
+.phase-banner {
+  max-width: 920px;
+  margin: 28px auto 0;
+  padding: 16px 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.phase-pill {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  padding: 4px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+  background: rgba(245,158,11,0.1);
+  border: 1px solid rgba(245,158,11,0.3);
+  color: var(--amber);
+  transition: all 0.3s;
+}
+.phase-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  transition: all 0.3s;
+}
+.phase-sep { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; }
+.phase-tagline { font-size: 0.8rem; color: var(--muted); transition: all 0.3s; }
+
+/* ── STEP DOTS ── */
+.dots-container {
+  max-width: 920px;
+  margin: 18px auto 0;
+  padding: 0 20px;
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.dot-group { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.dot-group-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.dot-row { display: flex; gap: 6px; }
+.dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: all 0.3s;
+  cursor: pointer;
+}
+.dot.active { background: var(--amber); transform: scale(1.4); }
+.dot.done { background: var(--green); }
+
+/* ── STAGE ── */
+.stage {
+  max-width: 920px;
+  margin: 20px auto 0;
+  padding: 0 20px;
+}
+
+/* ── USE CASE CARD ── */
+.usecase-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.usecase-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.usecase-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+.usecase-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.usecase-context {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.usecase-body {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0;
+}
+
+/* Input side */
+.input-side {
+  padding: 20px 24px;
+  border-right: 1px solid var(--border);
+}
+.side-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.raw-data {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  background: rgba(15,17,23,0.6);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-all;
+  min-height: 80px;
+}
+
+/* Arrow middle */
+.arrow-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  gap: 8px;
+}
+.fn-tags {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: center;
+}
+.fn-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+  opacity: 0.4;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  transition: all 0.4s;
+}
+.fn-tag.lit {
+  opacity: 1;
+  background: rgba(245,158,11,0.1);
+  border-color: rgba(245,158,11,0.4);
+  color: var(--amber);
+}
+.arrow-sym {
+  font-size: 1.2rem;
+  color: var(--muted);
+}
+
+/* Output side */
+.output-side {
+  padding: 20px 24px;
+}
+.result-data {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  color: var(--green);
+  background: rgba(16,185,129,0.05);
+  border: 1px solid rgba(16,185,129,0.2);
+  border-radius: 8px;
+  padding: 12px 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-all;
+  min-height: 80px;
+  transition: all 0.4s;
+}
+.result-data.empty {
+  color: var(--muted);
+  border-color: var(--border);
+  background: rgba(15,17,23,0.4);
+}
+
+/* ── STEP INFO ── */
+.step-info {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.step-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--amber);
+  background: rgba(245,158,11,0.08);
+  border: 1px solid rgba(245,158,11,0.2);
+  border-radius: 6px;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+.step-desc {
+  font-size: 0.86rem;
+  color: #cbd5e1;
+  line-height: 1.6;
+}
+.step-desc strong { color: var(--amber); }
+.step-desc code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  background: rgba(245,158,11,0.08);
+  border: 1px solid rgba(245,158,11,0.15);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: #fcd34d;
+}
+
+/* ── CONTROLS ── */
+.controls {
+  max-width: 920px;
+  margin: 18px auto 0;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  padding: 9px 20px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn:hover { border-color: var(--amber); color: var(--amber); }
+.btn.primary { background: var(--amber); border-color: var(--amber); color: #000; font-weight: 600; }
+.btn.primary:hover { background: #d97706; }
+.step-counter { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--muted); padding: 9px 14px; }
+
+/* ── TECH BADGES ── */
+.tech-row {
+  max-width: 920px;
+  margin: 20px auto 0;
+  padding: 0 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: var(--surface);
+}
+
+@media (max-width: 640px) {
+  .usecase-body { grid-template-columns: 1fr; }
+  .input-side { border-right: none; border-bottom: 1px solid var(--border); }
+  .arrow-col { flex-direction: row; padding: 10px 20px; }
+  .fn-tags { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+}
+
+  /* ── Back nav ── */
+  .back-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+    height: 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px;
+    background: rgba(10,13,20,0.96);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid #1e2538;
+  }
+  .back-nav-link {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: #64748b; text-decoration: none;
+    transition: color 0.2s;
+  }
+  .back-nav-link:hover { color: #10b981; }
+  .back-nav-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: #f59e0b;
+    background: rgba(245,158,11,0.1);
+    border: 1px solid rgba(245,158,11,0.25);
+    padding: 3px 10px; border-radius: 20px;
+  }
+
+</style>
+</head>
+<body>
+<div class="back-nav">
+  <a href="index.html" class="back-nav-link">← Back to Portfolio</a>
+  <span class="back-nav-badge">Architecture Flow</span>
+</div>
+
+
+<div class="header">
+  <div class="header-tag">Use Case Showcase · npm Package</div>
+  <h1><span>stringy-core</span></h1>
+  <p>50+ string utilities — see what they solve in the real world</p>
+</div>
+
+<!-- PHASE BANNER -->
+<div class="phase-banner">
+  <div class="phase-pill" id="phasePill">Scenario 1 of 5</div>
+  <div class="phase-name" id="phaseName">User Accounts & Privacy</div>
+  <div class="phase-sep"></div>
+  <div class="phase-tagline" id="phaseTagline">Mask PII before displaying user data in dashboards or logs</div>
+</div>
+
+<!-- STEP DOTS -->
+<div class="dots-container" id="dotsContainer"></div>
+
+<!-- STAGE -->
+<div class="stage">
+
+  <div class="usecase-card">
+    <div class="usecase-header">
+      <div class="usecase-icon" id="ucIcon">🔐</div>
+      <div>
+        <div class="usecase-title" id="ucTitle">User Accounts & Privacy</div>
+        <div class="usecase-context" id="ucContext">Admin dashboard showing user records — mask PII before rendering</div>
+      </div>
+    </div>
+    <div class="usecase-body">
+      <div class="input-side">
+        <div class="side-label">Raw Input</div>
+        <div class="raw-data" id="rawData">user@example.com
+1234567890
+1234567890123456</div>
+      </div>
+      <div class="arrow-col">
+        <div class="fn-tags" id="fnTags"></div>
+        <div class="arrow-sym">→</div>
+      </div>
+      <div class="output-side">
+        <div class="side-label">Output</div>
+        <div class="result-data empty" id="resultData">awaiting…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP INFO -->
+  <div class="step-info">
+    <div class="step-num" id="stepNum">Step 01 / 20</div>
+    <div class="step-desc" id="stepDesc">A user record arrives: email, phone, credit card. Before displaying in the admin UI or writing to logs, we need to mask all PII.</div>
+  </div>
+
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <button class="btn" id="btnPrev">← Prev</button>
+  <button class="btn primary" id="btnPlay">▶ Play</button>
+  <button class="btn" id="btnNext">Next →</button>
+  <span class="step-counter" id="stepCounter">1 / 20</span>
+</div>
+
+<!-- TECH BADGES -->
+<div class="tech-row">
+  <span class="badge">maskEmail</span>
+  <span class="badge">maskPhone</span>
+  <span class="badge">maskCreditCard</span>
+  <span class="badge">extractHashtags</span>
+  <span class="badge">moderate</span>
+  <span class="badge">extractEmails</span>
+  <span class="badge">camelCase</span>
+  <span class="badge">levenshteinDistance</span>
+  <span class="badge">formatNumber</span>
+  <span class="badge">shorten</span>
+</div>
+
+<script>
+const PHASES = [
+  { name: "User Accounts & Privacy",       tagline: "Mask PII before displaying user data in dashboards or logs",                    steps: [1,2,3,4] },
+  { name: "Social Media Post Processing",  tagline: "Parse user-generated content — extract signals, flag bad words",                 steps: [5,6,7,8] },
+  { name: "E-commerce Product Pages",      tagline: "Clean and format product data for display and SEO",                              steps: [9,10,11,12] },
+  { name: "Log & Data Extraction",         tagline: "Pull structured data out of raw unstructured log lines",                         steps: [13,14,15,16] },
+  { name: "Developer Tooling",             tagline: "Code generation utilities — naming conventions, IDs, fuzzy matching",            steps: [17,18,19,20] },
+];
+
+const STEPS = [
+  // ── Scenario 1: User Accounts & Privacy ──
+  {
+    phase: 0,
+    icon: "🔐", title: "User Accounts & Privacy",
+    context: "Admin dashboard showing user records — mask PII before rendering",
+    raw: "user@example.com\n1234567890\n1234567890123456",
+    fns: ["maskEmail", "maskPhone", "maskCreditCard"],
+    activeFns: [],
+    result: "", empty: true,
+    desc: "A user record arrives: email, phone, credit card. Before displaying in the admin UI or writing to logs, we need to mask all PII.",
+  },
+  {
+    phase: 0,
+    icon: "🔐", title: "User Accounts & Privacy",
+    context: "Admin dashboard showing user records — mask PII before rendering",
+    raw: "user@example.com\n1234567890\n1234567890123456",
+    fns: ["maskEmail", "maskPhone", "maskCreditCard"],
+    activeFns: ["maskEmail"],
+    result: "u***@e******.com",
+    empty: false,
+    desc: "<strong>maskEmail('user@example.com')</strong> — keeps the first character of each part visible, masks the rest. Configurable mask symbol. <code>u***@e******.com</code>",
+  },
+  {
+    phase: 0,
+    icon: "🔐", title: "User Accounts & Privacy",
+    context: "Admin dashboard showing user records — mask PII before rendering",
+    raw: "user@example.com\n1234567890\n1234567890123456",
+    fns: ["maskEmail", "maskPhone", "maskCreditCard"],
+    activeFns: ["maskEmail", "maskPhone"],
+    result: "u***@e******.com\n******7890",
+    empty: false,
+    desc: "<strong>maskPhone('1234567890', 4)</strong> — hides all but the last 4 digits. Throws on invalid input (non-10-digit number). <code>******7890</code>",
+  },
+  {
+    phase: 0,
+    icon: "🔐", title: "User Accounts & Privacy",
+    context: "Admin dashboard showing user records — mask PII before rendering",
+    raw: "user@example.com\n1234567890\n1234567890123456",
+    fns: ["maskEmail", "maskPhone", "maskCreditCard"],
+    activeFns: ["maskEmail", "maskPhone", "maskCreditCard"],
+    result: "u***@e******.com\n******7890\n************3456",
+    empty: false,
+    desc: "<strong>maskCreditCard('1234567890123456')</strong> — masks all but last 4 digits of a 16-digit card number. <code>************3456</code>. All 3 masking functions are configurable: pass any character as the mask symbol.",
+  },
+
+  // ── Scenario 2: Social Media ──
+  {
+    phase: 1,
+    icon: "📱", title: "Social Media Post Processing",
+    context: "Incoming post before storage — extract signals and moderate content",
+    raw: "Loving the new drop by @nike! Check https://nike.com/drop #sneakers #streetwear — totally fire but some words need moderation.",
+    fns: ["extractHashtags", "extractMentions", "extractURLs", "moderate"],
+    activeFns: [],
+    result: "", empty: true,
+    desc: "A raw social media post arrives. We need to extract hashtags for indexing, mentions for notifications, URLs for link preview, and moderate flagged words.",
+  },
+  {
+    phase: 1,
+    icon: "📱", title: "Social Media Post Processing",
+    context: "Incoming post before storage — extract signals and moderate content",
+    raw: "Loving the new drop by @nike! Check https://nike.com/drop #sneakers #streetwear — totally fire…",
+    fns: ["extractHashtags", "extractMentions", "extractURLs", "moderate"],
+    activeFns: ["extractHashtags"],
+    result: '["#sneakers", "#streetwear"]',
+    empty: false,
+    desc: "<strong>extractHashtags(post)</strong> — regex scans for <code>#word</code> patterns. Returns an array ready to index in the database. <code>[\"#sneakers\", \"#streetwear\"]</code>",
+  },
+  {
+    phase: 1,
+    icon: "📱", title: "Social Media Post Processing",
+    context: "Incoming post before storage — extract signals and moderate content",
+    raw: "Loving the new drop by @nike! Check https://nike.com/drop #sneakers #streetwear — totally fire…",
+    fns: ["extractHashtags", "extractMentions", "extractURLs", "moderate"],
+    activeFns: ["extractHashtags", "extractMentions", "extractURLs"],
+    result: 'hashtags:  ["#sneakers", "#streetwear"]\nmentions:  ["@nike"]\nurls:      ["https://nike.com/drop"]',
+    empty: false,
+    desc: "<strong>extractMentions</strong> and <strong>extractURLs</strong> run on the same string. Three extraction functions, one pass each — all return arrays. The results feed the notifications queue, link preview service, and search index.",
+  },
+  {
+    phase: 1,
+    icon: "📱", title: "Social Media Post Processing",
+    context: "Incoming post before storage — extract signals and moderate content",
+    raw: "Loving the new drop by @nike! Check https://nike.com/drop #sneakers #streetwear — totally fire…",
+    fns: ["extractHashtags", "extractMentions", "extractURLs", "moderate"],
+    activeFns: ["extractHashtags", "extractMentions", "extractURLs", "moderate"],
+    result: 'moderated: "Loving the new drop by @nike!\nCheck https://nike.com/drop\n#sneakers #streetwear\n— totally f***"',
+    empty: false,
+    desc: "<strong>moderate(post, bannedWords, '*')</strong> — replaces whole-word matches using regex word boundaries. The original post is untouched (pure function); the moderated version is stored separately for display.",
+  },
+
+  // ── Scenario 3: E-commerce ──
+  {
+    phase: 2,
+    icon: "🛒", title: "E-commerce Product Pages",
+    context: "Raw product data from a supplier feed — clean and format for display",
+    raw: "description: The ULTIMATE running shoe for all-terrain performance and maximum comfort in every stride you will ever take on any surface anywhere.\nprice: 12999.5\nstock: 4200",
+    fns: ["shorten", "formatCurrency", "formatNumber", "toTitleCase"],
+    activeFns: [],
+    result: "", empty: true,
+    desc: "Supplier feeds often contain raw, inconsistently formatted product data. We need to truncate long descriptions, format prices and inventory for display.",
+  },
+  {
+    phase: 2,
+    icon: "🛒", title: "E-commerce Product Pages",
+    context: "Raw product data from a supplier feed — clean and format for display",
+    raw: "The ULTIMATE running shoe for all-terrain performance and maximum comfort…",
+    fns: ["shorten", "formatCurrency", "formatNumber", "toTitleCase"],
+    activeFns: ["shorten"],
+    result: '"The ULTIMATE running shoe for all-terrain performance…Read More"',
+    empty: false,
+    desc: "<strong>shorten(description, 60, 'Read More')</strong> — truncates at the character limit and appends a custom ending. The full text is preserved in the database; only the display string is shortened.",
+  },
+  {
+    phase: 2,
+    icon: "🛒", title: "E-commerce Product Pages",
+    context: "Raw product data from a supplier feed — clean and format for display",
+    raw: "price: 12999.5\nstock: 4200",
+    fns: ["shorten", "formatCurrency", "formatNumber", "toTitleCase"],
+    activeFns: ["shorten", "formatCurrency"],
+    result: '"The ULTIMATE running shoe…Read More"\nprice: $12,999.50',
+    empty: false,
+    desc: "<strong>formatCurrency('12999.5', 'en-US', 'USD')</strong> — wraps the native <code>Intl.NumberFormat</code>. Locale and currency code are configurable. <code>12999.5</code> → <code>$12,999.50</code>. Supports any locale: en-IN, de-DE, ja-JP…",
+  },
+  {
+    phase: 2,
+    icon: "🛒", title: "E-commerce Product Pages",
+    context: "Raw product data from a supplier feed — clean and format for display",
+    raw: "price: 12999.5 | stock: 4200",
+    fns: ["shorten", "formatCurrency", "formatNumber", "toTitleCase"],
+    activeFns: ["shorten", "formatCurrency", "formatNumber", "toTitleCase"],
+    result: '"The ULTIMATE Running Shoe…Read More"\nprice:  $12,999.50\nstock:  4,200 units',
+    empty: false,
+    desc: "<strong>toTitleCase</strong> normalizes the supplier's inconsistent casing. <strong>formatNumber</strong> adds comma separators to inventory counts. All four functions are pure — compose them freely without side effects.",
+  },
+
+  // ── Scenario 4: Log Analysis ──
+  {
+    phase: 3,
+    icon: "🔍", title: "Log & Data Extraction",
+    context: "Raw server log line — pull out every structured piece of data",
+    raw: '[2024-01-15] ERROR 192.168.1.42 — user admin@company.com failed login from +1 (987) 654-3210. Ref: https://app.internal/login',
+    fns: ["extractDates", "extractIPv4Addresses", "extractEmails", "extractPhoneNumbers", "extractURLs"],
+    activeFns: [],
+    result: "", empty: true,
+    desc: "A raw server log line. We need to extract every structured piece of data for alerting, analytics, and incident response — without writing custom regex for each field.",
+  },
+  {
+    phase: 3,
+    icon: "🔍", title: "Log & Data Extraction",
+    context: "Raw server log line — extract structured fields for alerting pipeline",
+    raw: '[2024-01-15] ERROR 192.168.1.42 — admin@company.com failed login…',
+    fns: ["extractDates", "extractIPv4Addresses", "extractEmails", "extractPhoneNumbers", "extractURLs"],
+    activeFns: ["extractDates", "extractIPv4Addresses"],
+    result: 'dates: ["2024-01-15"]\nips:   ["192.168.1.42"]',
+    empty: false,
+    desc: "<strong>extractDates</strong> finds date patterns (MM/DD/YYYY, MM-DD-YYYY). <strong>extractIPv4Addresses</strong> finds valid IPv4 addresses. Both return arrays — no manual regex needed.",
+  },
+  {
+    phase: 3,
+    icon: "🔍", title: "Log & Data Extraction",
+    context: "Raw server log line — extract structured fields for alerting pipeline",
+    raw: '…admin@company.com failed login from +1 (987) 654-3210. Ref: https://app.internal/login',
+    fns: ["extractDates", "extractIPv4Addresses", "extractEmails", "extractPhoneNumbers", "extractURLs"],
+    activeFns: ["extractDates", "extractIPv4Addresses", "extractEmails", "extractPhoneNumbers", "extractURLs"],
+    result: 'dates:  ["2024-01-15"]\nips:    ["192.168.1.42"]\nemails: ["admin@company.com"]\nphones: ["987-654-3210"]\nurls:   ["https://app.internal/login"]',
+    empty: false,
+    desc: "Five extraction functions run on the same log line. Each targets a different pattern. The result is a structured object ready to feed an alerting pipeline, analytics dashboard, or incident ticket — from one raw string.",
+  },
+  {
+    phase: 3,
+    icon: "🔍", title: "Log & Data Extraction",
+    context: "Bonus: same approach works for scraping emails from a webpage source",
+    raw: 'From page HTML:\n<a href="mailto:sales@co.com">sales@co.com</a>\n<a href="mailto:support@co.com">Contact</a>',
+    fns: ["extractDates", "extractIPv4Addresses", "extractEmails", "extractPhoneNumbers", "extractURLs"],
+    activeFns: ["extractEmails"],
+    result: '["sales@co.com", "support@co.com"]',
+    empty: false,
+    desc: "The same <strong>extractEmails</strong> function works on any string — log lines, HTML source, CSV rows, API responses. No DOM parsing needed. This is the composability advantage of pure string functions.",
+  },
+
+  // ── Scenario 5: Developer Tooling ──
+  {
+    phase: 4,
+    icon: "⚙️", title: "Developer Tooling",
+    context: "Code generation, naming conventions, fuzzy search — internal dev tools",
+    raw: 'field label: "user profile settings"\nuser search: "recieve"\ncorrect word: "receive"\nunique token: needed',
+    fns: ["camelCase", "snakeCase", "levenshteinDistance", "generateRandomString"],
+    activeFns: [],
+    result: "", empty: true,
+    desc: "Internal developer tools — code scaffolding, API field naming, fuzzy search for typo correction, and unique ID generation. All common problems with simple string solutions.",
+  },
+  {
+    phase: 4,
+    icon: "⚙️", title: "Developer Tooling",
+    context: "Code generation — convert human labels to valid identifier formats",
+    raw: '"user profile settings"',
+    fns: ["camelCase", "snakeCase", "levenshteinDistance", "generateRandomString"],
+    activeFns: ["camelCase", "snakeCase"],
+    result: 'camelCase:  "userProfileSettings"\nsnakeCase:  "user_profile_settings"',
+    empty: false,
+    desc: "<strong>camelCase</strong> and <strong>snakeCase</strong> convert a human-readable label into valid identifier formats. A code scaffolding tool can use these to auto-generate JS variable names, Python keys, database column names, and API field names from the same source label.",
+  },
+  {
+    phase: 4,
+    icon: "⚙️", title: "Developer Tooling",
+    context: "Fuzzy search — did you mean 'receive'?",
+    raw: 'user typed: "recieve"\ndictionary: ["receive", "relieve", "retrieve"]',
+    fns: ["camelCase", "snakeCase", "levenshteinDistance", "generateRandomString"],
+    activeFns: ["levenshteinDistance"],
+    result: 'levenshtein("recieve", "receive")  → 1 edit\nlevenshtein("recieve", "relieve")  → 2 edits\nlevenshtein("recieve", "retrieve") → 3 edits\n\n→ best match: "receive"',
+    empty: false,
+    desc: "<strong>levenshteinDistance(a, b)</strong> — full dynamic programming matrix, O(m×n). Finds the minimum edits (insert, delete, substitute) between two strings. Used for spell-check suggestions, search autocorrect, and fuzzy matching. The closest word wins.",
+  },
+  {
+    phase: 4,
+    icon: "⚙️", title: "Developer Tooling",
+    context: "Unique token generation — session IDs, invite codes, test fixtures",
+    raw: 'needed: session ID, invite code, test user email',
+    fns: ["camelCase", "snakeCase", "levenshteinDistance", "generateRandomString"],
+    activeFns: ["camelCase", "snakeCase", "levenshteinDistance", "generateRandomString"],
+    result: 'sessionId:   "aB3xQ7mZ2p"\ninviteCode:  "XKCD42"\ntest email:  "test_aB3x@example.com"',
+    empty: false,
+    desc: "<strong>generateRandomString(length, chars)</strong> — pass a custom character set to control the alphabet. Alphanumeric by default. Combine with camelCase and snakeCase for complete code generation pipelines — all from the same library, zero dependencies.",
+  },
+];
+
+let current = 0;
+let playing = false;
+let timer = null;
+
+function buildDots() {
+  const container = document.getElementById('dotsContainer');
+  container.innerHTML = '';
+  PHASES.forEach((ph, pi) => {
+    const grp = document.createElement('div');
+    grp.className = 'dot-group';
+    const lbl = document.createElement('div');
+    lbl.className = 'dot-group-label';
+    lbl.textContent = `S${pi+1}`;
+    const row = document.createElement('div');
+    row.className = 'dot-row';
+    ph.steps.forEach(s => {
+      const d = document.createElement('div');
+      d.className = 'dot';
+      d.dataset.step = s - 1;
+      d.addEventListener('click', () => goTo(s - 1));
+      row.appendChild(d);
+    });
+    grp.appendChild(lbl);
+    grp.appendChild(row);
+    container.appendChild(grp);
+  });
+}
+
+function applyStep(idx) {
+  const s = STEPS[idx];
+
+  // phase banner
+  const ph = PHASES[s.phase];
+  document.getElementById('phasePill').textContent = `Scenario ${s.phase + 1} of 5`;
+  document.getElementById('phaseName').textContent = ph.name;
+  document.getElementById('phaseTagline').textContent = ph.tagline;
+
+  // card header
+  document.getElementById('ucIcon').textContent = s.icon;
+  document.getElementById('ucTitle').textContent = s.title;
+  document.getElementById('ucContext').textContent = s.context;
+
+  // raw data
+  document.getElementById('rawData').textContent = s.raw;
+
+  // fn tags
+  const fnTagsEl = document.getElementById('fnTags');
+  fnTagsEl.innerHTML = '';
+  s.fns.forEach(fn => {
+    const tag = document.createElement('div');
+    tag.className = 'fn-tag' + (s.activeFns.includes(fn) ? ' lit' : '');
+    tag.textContent = fn + '()';
+    fnTagsEl.appendChild(tag);
+  });
+
+  // result
+  const resultEl = document.getElementById('resultData');
+  if (s.empty) {
+    resultEl.textContent = 'awaiting…';
+    resultEl.classList.add('empty');
+  } else {
+    resultEl.textContent = s.result;
+    resultEl.classList.remove('empty');
+  }
+
+  // step info
+  document.getElementById('stepDesc').innerHTML = s.desc;
+  document.getElementById('stepNum').textContent = `Step ${String(idx + 1).padStart(2, '0')} / 20`;
+  document.getElementById('stepCounter').textContent = `${idx + 1} / 20`;
+
+  // dots
+  document.querySelectorAll('.dot').forEach(d => {
+    const si = parseInt(d.dataset.step);
+    d.className = 'dot';
+    if (si === idx) d.classList.add('active');
+    else if (si < idx) d.classList.add('done');
+  });
+}
+
+function goTo(idx) {
+  current = Math.max(0, Math.min(STEPS.length - 1, idx));
+  applyStep(current);
+}
+
+function next() {
+  if (current < STEPS.length - 1) goTo(current + 1);
+  else stopPlay();
+}
+
+function stopPlay() {
+  playing = false;
+  clearInterval(timer);
+  document.getElementById('btnPlay').textContent = '▶ Play';
+  document.getElementById('btnPlay').classList.add('primary');
+}
+
+function startPlay() {
+  playing = true;
+  document.getElementById('btnPlay').textContent = '⏸ Pause';
+  timer = setInterval(() => {
+    if (current >= STEPS.length - 1) { stopPlay(); return; }
+    next();
+  }, 2400);
+}
+
+document.getElementById('btnNext').addEventListener('click', () => { stopPlay(); next(); });
+document.getElementById('btnPrev').addEventListener('click', () => { stopPlay(); goTo(current - 1); });
+document.getElementById('btnPlay').addEventListener('click', () => {
+  if (playing) stopPlay();
+  else { if (current >= STEPS.length - 1) goTo(0); startPlay(); }
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') { stopPlay(); next(); }
+  if (e.key === 'ArrowLeft')  { stopPlay(); goTo(current - 1); }
+  if (e.key === ' ') { e.preventDefault(); playing ? stopPlay() : startPlay(); }
+});
+
+buildDots();
+goTo(0);
+</script>
+</body>
+</html>

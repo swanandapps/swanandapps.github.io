@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>CodeMas — Plagiarism Flow</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --browser:  #6366f1;
+    --trainer:  #f97316;
+    --django:   #10b981;
+    --redis:    #f59e0b;
+    --celery:   #e63946;
+    --postgres: #8b5cf6;
+    --bg:       #0d1017;
+    --surface:  #141921;
+    --surface2: #1a2130;
+    --border:   #232d3f;
+    --text:     #e2e8f0;
+    --dim:      #64748b;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 60px 24px 48px;
+  }
+
+  /* ── HEADER ── */
+  .header { text-align: center; margin-bottom: 14px; }
+  .header h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: #f8fafc; }
+  .header p  { font-size: 13px; color: var(--dim); margin-top: 5px; }
+
+  /* ── PHASE BANNER ── */
+  .phase-banner {
+    width: 100%;
+    max-width: 1060px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(100,116,139,.04);
+    border: 1px solid rgba(100,116,139,.18);
+    border-radius: 10px;
+    padding: 10px 18px;
+    margin-bottom: 14px;
+    transition: border-color 0.35s, background 0.35s;
+  }
+  .phase-banner .phase-pill {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    border-radius: 20px;
+    padding: 3px 11px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    border: 1px solid;
+    transition: color 0.35s, background 0.35s, border-color 0.35s;
+    color: var(--dim);
+    background: rgba(100,116,139,.1);
+    border-color: rgba(100,116,139,.2);
+  }
+  .phase-banner .phase-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #f1f5f9;
+    flex-shrink: 0;
+    transition: color 0.35s;
+  }
+  .phase-banner.idle .phase-name { color: var(--dim); }
+  .phase-banner .phase-sep {
+    width: 1px;
+    height: 16px;
+    background: rgba(100,116,139,.25);
+    flex-shrink: 0;
+    transition: background 0.35s;
+  }
+  .phase-banner .phase-tagline {
+    font-size: 12px;
+    color: var(--dim);
+    line-height: 1.4;
+  }
+
+  /* ── DIAGRAM WRAPPER ── */
+  .diagram-wrap {
+    width: 100%;
+    max-width: 1060px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  /* ── ACTOR ROW ── */
+  .actor-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    border-bottom: 1px solid var(--border);
+  }
+  .actor-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 18px 8px 0;
+    position: relative;
+  }
+  .actor-box {
+    border: 1.5px solid;
+    border-radius: 10px;
+    padding: 10px 14px;
+    text-align: center;
+    width: 100%;
+    max-width: 140px;
+    transition: box-shadow 0.3s ease, background 0.3s ease;
+  }
+  .actor-name { font-size: 13px; font-weight: 700; }
+  .actor-role { font-size: 10px; opacity: 0.65; margin-top: 2px; line-height: 1.3; }
+
+  /* lane line below each actor box */
+  .actor-lane {
+    width: 2px;
+    height: 32px;
+    margin-top: 8px;
+    opacity: 0.25;
+    border-radius: 1px;
+  }
+
+  .actor-col.active .actor-box {
+    box-shadow: 0 0 0 3px currentColor, 0 0 20px rgba(255,255,255,0.08);
+  }
+
+  /* actor colour variants */
+  .ac-browser  { color: var(--browser);  border-color: var(--browser);  background: rgba(99,102,241,0.07);  }
+  .ac-trainer  { color: var(--trainer);  border-color: var(--trainer);  background: rgba(249,115,22,0.07);  }
+  .ac-django   { color: var(--django);   border-color: var(--django);   background: rgba(16,185,129,0.07);  }
+  .ac-redis    { color: var(--redis);    border-color: var(--redis);    background: rgba(245,158,11,0.07);  }
+  .ac-celery   { color: var(--celery);   border-color: var(--celery);   background: rgba(230,57,70,0.07);   }
+  .ac-postgres { color: var(--postgres); border-color: var(--postgres); background: rgba(139,92,246,0.07);  }
+
+  /* ── ARROW STAGE ── */
+  .arrow-stage {
+    position: relative;
+    height: 130px;
+    border-bottom: 1px solid var(--border);
+    overflow: visible;
+  }
+
+  /* vertical lane lines */
+  .lane-line {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 2px;
+    opacity: 0.12;
+    transform: translateX(-50%);
+    border-radius: 1px;
+  }
+
+  /* arrow drawn by JS */
+  .arrow-line {
+    position: absolute;
+    top: 50%;
+    height: 2px;
+    transform-origin: left center;
+    border-radius: 1px;
+  }
+  .arrow-line.rtl { transform-origin: right center; }
+
+  /* arrowhead */
+  .arrowhead {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    font-weight: 900;
+    opacity: 0;
+    animation: fade-in 0.15s ease 0.45s both;
+  }
+
+  /* arrow label */
+  .arrow-label {
+    position: absolute;
+    top: calc(50% - 22px);
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    transform: translateX(-50%);
+    opacity: 0;
+    animation: fade-up 0.3s ease 0.4s both;
+  }
+
+  /* self-step loop */
+  .self-loop {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 52px; height: 44px;
+    border: 2px solid;
+    border-radius: 0 12px 12px 0;
+    border-left: none;
+    opacity: 0;
+    animation: fade-in 0.3s ease both;
+  }
+  .self-label {
+    position: absolute;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    opacity: 0;
+    animation: fade-up 0.3s ease 0.25s both;
+  }
+
+  /* ── STEP INFO PANEL ── */
+  .info-panel {
+    width: 100%;
+    max-width: 1060px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 28px;
+    margin-bottom: 20px;
+    min-height: 220px;
+    transition: border-color 0.3s ease;
+  }
+  .info-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .phase-badge {
+    font-size: 10px; font-weight: 700; padding: 3px 10px;
+    border-radius: 20px; text-transform: uppercase; letter-spacing: 0.8px;
+  }
+  .phase-1 { background: rgba(99,102,241,0.15); color: #818cf8; }
+  .phase-2 { background: rgba(230,57,70,0.15);  color: #f87171; }
+  .step-counter { font-size: 11px; color: var(--dim); font-weight: 600; margin-left: auto; }
+  .info-title { font-size: 16px; font-weight: 700; color: #f1f5f9; margin-bottom: 8px; }
+  .info-desc  { font-size: 13px; color: #94a3b8; line-height: 1.65; margin-bottom: 14px; }
+  .info-code {
+    background: #0a0d14;
+    border: 1px solid #1e2538;
+    border-left: 3px solid var(--dim);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    line-height: 1.7;
+    color: #94a3b8;
+    white-space: pre;
+    overflow-x: auto;
+    transition: border-left-color 0.3s ease;
+  }
+  .info-code .kw  { color: #c792ea; }
+  .info-code .fn  { color: #82aaff; }
+  .info-code .str { color: #c3e88d; }
+  .info-code .num { color: #f78c6c; }
+  .info-code .cm  { color: #546e7a; font-style: italic; }
+
+  /* ── CONTROLS ── */
+  .controls {
+    width: 100%;
+    max-width: 1060px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .ctrl-btn {
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    transition: background 0.15s, color 0.15s;
+    user-select: none;
+  }
+  .ctrl-btn:hover { background: #232d3f; }
+  .ctrl-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .ctrl-play {
+    background: var(--django);
+    border-color: var(--django);
+    color: #fff;
+    min-width: 90px;
+  }
+  .ctrl-play:hover { opacity: 0.85; }
+  .ctrl-play.paused { background: var(--redis); border-color: var(--redis); }
+
+  .speed-wrap { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dim); font-weight: 600; }
+  .speed-btn {
+    padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;
+    cursor: pointer; border: 1px solid var(--border); background: var(--surface2);
+    color: var(--dim); transition: all 0.15s;
+  }
+  .speed-btn.active { background: var(--surface); color: var(--text); border-color: var(--text); }
+
+  /* step dots */
+  .dots-wrap { display: flex; gap: 4px; flex-wrap: wrap; margin-left: auto; }
+  .step-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--border); cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+  }
+  .step-dot.done    { background: var(--dim); }
+  .step-dot.current { transform: scale(1.5); }
+  .step-dot.p1 { background: var(--browser); }
+  .step-dot.p2 { background: var(--celery); }
+
+  /* phase divider in dots */
+  .dot-divider { width: 1px; height: 8px; background: var(--border); border-radius: 1px; margin: 0 2px; }
+
+  /* ── KEYFRAMES ── */
+  @keyframes draw-ltr {
+    from { transform: scaleX(0) translateY(-50%); opacity: 0; }
+    to   { transform: scaleX(1) translateY(-50%); opacity: 1; }
+  }
+  @keyframes draw-rtl {
+    from { transform: scaleX(0) translateY(-50%); opacity: 0; }
+    to   { transform: scaleX(1) translateY(-50%); opacity: 1; }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes fade-up {
+    from { opacity: 0; transform: translate(-50%, 6px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
+  }
+  @keyframes pulse-actor {
+    0%, 100% { box-shadow: 0 0 0 3px currentColor, 0 0 20px rgba(255,255,255,0.05); }
+    50%       { box-shadow: 0 0 0 3px currentColor, 0 0 28px rgba(255,255,255,0.12); }
+  }
+  .actor-col.active .actor-box { animation: pulse-actor 1.5s ease-in-out infinite; }
+
+  @keyframes packet-move {
+    0%   { transform: translateX(0); opacity: 1; }
+    100% { transform: translateX(var(--travel)); opacity: 0.6; }
+  }
+
+  /* info panel fade */
+  .info-panel.updating { opacity: 0.4; transition: opacity 0.1s; }
+  .info-panel { transition: opacity 0.2s; }
+
+  /* ── Back nav ── */
+  .back-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+    height: 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px;
+    background: rgba(10,13,20,0.96);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid #1e2538;
+  }
+  .back-nav-link {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: #64748b; text-decoration: none;
+    transition: color 0.2s;
+  }
+  .back-nav-link:hover { color: #10b981; }
+  .back-nav-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: #f59e0b;
+    background: rgba(245,158,11,0.1);
+    border: 1px solid rgba(245,158,11,0.25);
+    padding: 3px 10px; border-radius: 20px;
+  }
+
+</style>
+</head>
+<body>
+<div class="back-nav">
+  <a href="index.html" class="back-nav-link">← Back to Portfolio</a>
+  <span class="back-nav-badge">Plagiarism Flow</span>
+</div>
+
+
+<div class="header">
+  <h1>CodeMas — Plagiarism Detection Flow</h1>
+  <p>Animated sequence diagram — exam open → exam close → Phase 1 behavioral batch (synchronous) → Phase 2 similarity batch</p>
+</div>
+
+<!-- PHASE BANNER -->
+<div class="phase-banner idle" id="phase-banner">
+  <div class="phase-pill" id="phase-pill">—</div>
+  <div class="phase-name" id="phase-name">Press Play or → to begin</div>
+  <div class="phase-sep"></div>
+  <div class="phase-tagline" id="phase-tagline">Two-phase post-exam batch — behavioral signals scored synchronously, then TF-IDF cross-comparison queued per question.</div>
+</div>
+
+<!-- DIAGRAM -->
+<div class="diagram-wrap">
+  <!-- actor row -->
+  <div class="actor-row" id="actor-row">
+    <div class="actor-col" id="ac-0">
+      <div class="actor-box ac-browser"><div class="actor-name">Browser</div><div class="actor-role">Student UI</div></div>
+      <div class="actor-lane" style="background:var(--browser)"></div>
+    </div>
+    <div class="actor-col" id="ac-1">
+      <div class="actor-box ac-trainer"><div class="actor-name">Trainer</div><div class="actor-role">ExamOpsView</div></div>
+      <div class="actor-lane" style="background:var(--trainer)"></div>
+    </div>
+    <div class="actor-col" id="ac-2">
+      <div class="actor-box ac-django"><div class="actor-name">Django</div><div class="actor-role">REST API</div></div>
+      <div class="actor-lane" style="background:var(--django)"></div>
+    </div>
+    <div class="actor-col" id="ac-3">
+      <div class="actor-box ac-redis"><div class="actor-name">Redis</div><div class="actor-role">Queue</div></div>
+      <div class="actor-lane" style="background:var(--redis)"></div>
+    </div>
+    <div class="actor-col" id="ac-4">
+      <div class="actor-box ac-celery"><div class="actor-name">Celery</div><div class="actor-role">Worker</div></div>
+      <div class="actor-lane" style="background:var(--celery)"></div>
+    </div>
+    <div class="actor-col" id="ac-5">
+      <div class="actor-box ac-postgres"><div class="actor-name">Postgres</div><div class="actor-role">Database</div></div>
+      <div class="actor-lane" style="background:var(--postgres)"></div>
+    </div>
+  </div>
+
+  <!-- arrow stage -->
+  <div class="arrow-stage" id="arrow-stage">
+    <!-- lane lines injected by JS -->
+  </div>
+</div>
+
+<!-- INFO PANEL -->
+<div class="info-panel" id="info-panel">
+  <div class="info-top">
+    <span class="phase-badge phase-1" id="info-phase">Phase 1</span>
+    <span class="step-counter" id="info-counter">Step 1 of 21</span>
+  </div>
+  <div class="info-title" id="info-title">—</div>
+  <div class="info-desc"  id="info-desc">—</div>
+  <div class="info-code"  id="info-code"></div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <button class="ctrl-btn" id="btn-prev">◄ Prev</button>
+  <button class="ctrl-btn ctrl-play" id="btn-play">▶ Play</button>
+  <button class="ctrl-btn" id="btn-next">Next ►</button>
+
+  <div class="speed-wrap">
+    Speed:
+    <button class="speed-btn" data-speed="2000">0.5×</button>
+    <button class="speed-btn active" data-speed="1100">1×</button>
+    <button class="speed-btn" data-speed="550">2×</button>
+    <button class="speed-btn" data-speed="220">4×</button>
+  </div>
+
+  <div class="dots-wrap" id="dots-wrap"></div>
+</div>
+
+<script>
+// ── ACTOR COLOURS ──────────────────────────────────────────────────────────────
+const COLORS = ['#6366f1','#f97316','#10b981','#f59e0b','#e63946','#8b5cf6'];
+const NAMES  = ['Browser','Trainer','Django','Redis','Celery','Postgres'];
+
+// ── STEP DATA ─────────────────────────────────────────────────────────────────
+const STEPS = [
+  // Phase 1 ─ Behavioural Check (runs at exam close, inside run_exam_plagiarism_check)
+  { phase:1, from:0, to:2, label:'POST /submissions/',
+    title:'Student submits — 4 browser signals bundled into request',
+    desc:'Browser collects had_paste_event, paste_char_count, time_to_complete_seconds, and tab_switch_count from DOM listeners attached when the exam loaded. All four are sent alongside the code in the POST body.',
+    code:`api.<span class="fn">post</span>(<span class="str">'/submissions/'</span>, {
+  code, language,
+  had_paste_event:          <span class="kw">true</span>,
+  paste_char_count:         <span class="num">187</span>,   <span class="cm">// total chars pasted</span>
+  time_to_complete_seconds: <span class="num">34</span>,    <span class="cm">// elapsed at submit</span>
+  tab_switch_count:         <span class="num">6</span>,     <span class="cm">// times tab was hidden</span>
+})`},
+
+  { phase:1, from:2, to:5, label:'INSERT Submission (pending)',
+    title:'Postgres row written — signal fields stored alongside code',
+    desc:'Django validates, enforces attempt limit from PlagiarismPolicy.get() (the singleton), computes attempt_number from a COUNT query, then writes the row. All 4 signal fields land in the same row as the code string.',
+    code:`<span class="cm"># Submission row after write:</span>
+{
+  status:                   <span class="str">'pending'</span>,
+  paste_char_count:         <span class="num">187</span>,
+  time_to_complete_seconds: <span class="num">34</span>,
+  tab_switch_count:         <span class="num">6</span>,
+  behavioural_check_done:   <span class="kw">False</span>,
+}`},
+
+  { phase:1, from:4, to:4, label:'run_behavioural_check(sub.id)  # synchronous call',
+    title:'Phase 1 starts: behavioral check called synchronously for each submission',
+    desc:'Inside run_exam_plagiarism_check, behavioral check is called directly (not via .delay()) for each submission in the exam. This ensures all BehaviouralFlag records exist before Phase 2 queries them. Running synchronously in the same worker means Phase 2 cannot start until Phase 1 is complete.',
+    code:`<span class="kw">for</span> sub <span class="kw">in</span> submissions:
+    <span class="fn">run_behavioural_check</span>(sub.id)  <span class="cm"># direct call, not .delay()</span>
+    <span class="cm"># runs synchronously in the exam-close Celery worker</span>`},
+
+  { phase:1, from:3, to:4, label:'BRPOP → worker wakes',
+    title:'Celery BRPOP unblocks — Phase 2 per-question tasks picked up',
+    desc:'After all Phase 1 behavioral checks complete synchronously, run_exam_plagiarism_check queues one run_question_plagiarism_check task per question via .delay(). Celery workers BRPOP these Phase 2 tasks from Redis. (Behavioral check ran synchronously in the exam-close worker — it did not go through this queue.)',
+    code:`<span class="cm"># inside Celery worker loop (simplified)</span>
+message = redis.<span class="fn">BRPOP</span>(<span class="str">'celery'</span>, timeout=<span class="num">0</span>)
+fn = task_registry[message[<span class="str">'task'</span>]]
+fn(*message[<span class="str">'args'</span>])  <span class="cm"># run_question_plagiarism_check(question_id)</span>`},
+
+  { phase:1, from:4, to:4, label:'paste_signal() → 1.0  (weight 0.40)',
+    title:'Signal 1: paste ratio = 187 ÷ 210 = 0.89 → score 1.0',
+    desc:'Measures what fraction of the final code arrived via paste. Ratio ≥ 0.70 → score 1.0. Using ratio (not raw count) normalizes for problem size — 200 chars pasted in a 200-char solution is more suspicious than 200 chars in a 2000-char solution.',
+    code:`paste_ratio = <span class="num">187</span> / <span class="fn">len</span>(code)  <span class="cm"># = 187/210 = 0.89</span>
+
+<span class="kw">if</span> paste_ratio >= <span class="num">0.7</span>:  <span class="kw">return</span> <span class="num">1.0</span>  <span class="cm"># ← fires here</span>
+<span class="kw">if</span> paste_ratio >= <span class="num">0.5</span>:  <span class="kw">return</span> <span class="num">0.7</span>
+<span class="kw">if</span> paste_ratio >= <span class="num">0.3</span>:  <span class="kw">return</span> <span class="num">0.3</span>
+                        <span class="kw">return</span> <span class="num">0.0</span>`},
+
+  { phase:1, from:4, to:4, label:'time_signal() → 1.0  (weight 0.30)',
+    title:'Signal 2: elapsed 34s ÷ baseline 240s = ratio 0.14 → score 1.0',
+    desc:'Compares elapsed time against minimum expected time per difficulty. Medium baseline = 240s. ratio ≤ 0.20 → max score. We only flag suspiciously fast submissions — never slow ones.',
+    code:`baseline = DIFFICULTY_BASELINE_SECONDS[<span class="str">'medium'</span>]  <span class="cm"># 240s</span>
+ratio = <span class="num">34</span> / <span class="num">240</span>  <span class="cm"># = 0.14</span>
+
+<span class="kw">if</span> ratio <= <span class="num">0.2</span>:  <span class="kw">return</span> <span class="num">1.0</span>  <span class="cm"># ← fires here</span>
+<span class="kw">if</span> ratio <= <span class="num">0.4</span>:  <span class="kw">return</span> <span class="num">0.7</span>
+<span class="kw">if</span> ratio <= <span class="num">0.6</span>:  <span class="kw">return</span> <span class="num">0.3</span>`},
+
+  { phase:1, from:4, to:4, label:'tab_switch_signal() → 1.0  (weight 0.15)',
+    title:'Signal 3: 6 tab switches → count ≥ 5 → score 1.0',
+    desc:'Counts visibilitychange=hidden events recorded by the browser listener. 6 switches exceeds the ≥5 threshold. Thresholds are intentionally lenient — this signal is used as corroborating evidence alongside paste or time, not standalone proof.',
+    code:`count = <span class="num">6</span>  <span class="cm"># tab_switch_count from Submission row</span>
+
+<span class="kw">if</span> count >= <span class="num">5</span>:  <span class="kw">return</span> <span class="num">1.0</span>  <span class="cm"># ← fires here</span>
+<span class="kw">if</span> count >= <span class="num">3</span>:  <span class="kw">return</span> <span class="num">0.5</span>
+<span class="kw">if</span> count >= <span class="num">1</span>:  <span class="kw">return</span> <span class="num">0.2</span>`},
+
+  { phase:1, from:4, to:4, label:'compute_behavioural_risk() → 0.85, HIGH',
+    title:'Combined: 0.40×1.0 + 0.30×1.0 + 0.15×1.0 + 0.15×0.0 = 0.85',
+    desc:'4th signal (submission_surprise) scores 0.0 — this is attempt 1, no prior submission to compare against. 3 signals fired → confidence = "high". Score 0.85 exceeds the 0.2 threshold so a BehaviouralFlag will be written.',
+    code:`risk_score = (
+    <span class="num">0.40</span> * <span class="num">1.0</span> +   <span class="cm"># paste</span>
+    <span class="num">0.30</span> * <span class="num">1.0</span> +   <span class="cm"># time</span>
+    <span class="num">0.15</span> * <span class="num">1.0</span> +   <span class="cm"># tab_switch</span>
+    <span class="num">0.15</span> * <span class="num">0.0</span>    <span class="cm"># surprise — first attempt, no prior</span>
+)  <span class="cm"># = 0.85</span>
+confidence = <span class="str">'high'</span>  <span class="cm"># 3 signals fired</span>`},
+
+  { phase:1, from:4, to:5, label:'BehaviouralFlag.update_or_create()',
+    title:'Flag written — risk_score 0.85 > threshold 0.2',
+    desc:'update_or_create means re-running the task is safe — scores are refreshed, not duplicated. Stores all 4 individual scores, confidence level, and the list of human-readable signal messages. Marks behavioural_check_done=True on the Submission.',
+    code:`<span class="cls">BehaviouralFlag</span>.objects.<span class="fn">update_or_create</span>(
+  submission=submission,
+  defaults={
+    <span class="str">'risk_score'</span>:        <span class="num">0.85</span>,
+    <span class="str">'confidence'</span>:        <span class="str">'high'</span>,
+    <span class="str">'signals_triggered'</span>: [
+      <span class="str">"Pasted 89% of final code (187 chars)"</span>,
+      <span class="str">"Solved medium in 0m 34s (baseline: 4m 0s)"</span>,
+      <span class="str">"Left exam tab 6 times"</span>,
+    ],
+  }
+)`},
+
+  // Phase 2 ─ Batch Similarity (runs once when exam closes)
+  { phase:2, from:1, to:2, label:'PATCH /exams/1/ {is_active: false}',
+    title:'Trainer clicks End Exam — the single trigger for Phase 2',
+    desc:'PATCH with partial=True on the serializer so only is_active needs to be sent. PUT would require all 4 fields. This .save() call triggers the pre_save signal before anything is written to the database.',
+    code:`<span class="cm">// ExamOpsView.vue</span>
+<span class="kw">await</span> api.<span class="fn">patch</span>(<span class="str">\`/exams/\${id}/\`</span>, { is_active: <span class="kw">false</span> })
+
+<span class="cm"># Django ExamDetailView.patch() — partial=True key</span>
+serializer = <span class="cls">ExamCreateSerializer</span>(exam, data, partial=<span class="kw">True</span>)
+serializer.<span class="fn">save</span>()  <span class="cm"># ← triggers pre_save signal</span>`},
+
+  { phase:2, from:2, to:2, label:'pre_save signal — True → False detected',
+    title:'Django detects is_active transition before the write',
+    desc:'pre_save fires before the DB write. The handler fetches the current DB value (old state) and compares against the instance being saved (new state). Fires regardless of how the exam is closed — API, admin panel, or management command.',
+    code:`<span class="cm"># exams/signals.py</span>
+previous = <span class="cls">Exam</span>.objects.<span class="fn">get</span>(pk=instance.pk)  <span class="cm"># current DB row</span>
+
+<span class="kw">if</span> previous.is_active <span class="kw">and not</span> instance.is_active:
+    <span class="fn">run_exam_plagiarism_check</span>.<span class="fn">delay</span>(instance.pk)
+    <span class="cm"># ↑ queued before the write completes</span>`},
+
+  { phase:2, from:2, to:3, label:'LPUSH run_exam_plagiarism_check(1)',
+    title:'Batch plagiarism task pushed to Redis',
+    desc:'The exam is now saved as inactive. The batch task is in the Redis queue. Django returns 200 to the trainer — all of Phase 2 runs entirely in the background from this point.',
+    code:`<span class="fn">run_exam_plagiarism_check</span>.<span class="fn">delay</span>(instance.pk)
+<span class="cm"># LPUSH celery '{"task":"run_exam_plagiarism_check","args":[1]}'</span>
+
+<span class="cm"># Trainer sees 200 OK immediately</span>
+<span class="cm"># Phase 2 runs asynchronously from here</span>`},
+
+  { phase:2, from:3, to:4, label:'BRPOP → dispatcher task starts',
+    title:'Celery picks up the exam-level dispatcher task',
+    desc:'This task does not run the analysis itself. It loops over all questions in the exam and schedules one per-question task each with a 30-second stagger to avoid a CPU spike when all questions vectorize simultaneously.',
+    code:`<span class="kw">for</span> i, question <span class="kw">in</span> <span class="fn">enumerate</span>(exam.questions.<span class="fn">all</span>()):
+    <span class="fn">run_question_plagiarism_check</span>.<span class="fn">apply_async</span>(
+        args=[question.id],
+        countdown=i * <span class="num">30</span>,
+    )
+<span class="cm"># Q1: T+0s,  Q2: T+30s,  Q3: T+60s ...</span>`},
+
+  { phase:2, from:4, to:3, label:'apply_async(countdown=i×30) × N questions',
+    title:'Per-question tasks queued with staggered countdowns',
+    desc:'Each question gets its own task with a delay. The Redis sorted set stores tasks with their scheduled execution timestamp. This ensures the worker CPU is not saturated by all questions vectorizing at the same instant.',
+    code:`<span class="cm"># Redis after dispatcher — tasks scheduled:</span>
+<span class="cm"># T+0s:  run_question_plagiarism_check(Q1_id)</span>
+<span class="cm"># T+30s: run_question_plagiarism_check(Q2_id)</span>
+<span class="cm"># T+60s: run_question_plagiarism_check(Q3_id)</span>
+<span class="cm"># T+90s: run_question_plagiarism_check(Q4_id)</span>`},
+
+  { phase:2, from:4, to:5, label:'SELECT HIGH BehaviouralFlags → K=10',
+    title:'Load HIGH-confidence suspects — the cost gate',
+    desc:'First query of the per-question task. Only HIGH confidence flags are returned. If this set is empty, the entire question is skipped — no TF-IDF, no cosine similarity, nothing. This is why Phase 1 is critical: it gates Phase 2.',
+    code:`high_risk_student_ids = <span class="fn">set</span>(
+  <span class="cls">BehaviouralFlag</span>.objects
+  .<span class="fn">filter</span>(submission__question=question, confidence=<span class="str">'high'</span>)
+  .<span class="fn">values_list</span>(<span class="str">'submission__student_id'</span>, flat=<span class="kw">True</span>)
+)  <span class="cm"># K = 10 out of 200 students</span>
+
+<span class="kw">if not</span> high_risk_student_ids:
+    <span class="kw">return</span>  <span class="cm"># skip — no HIGH suspects</span>`},
+
+  { phase:2, from:4, to:5, label:'SELECT best submission per student → N=200',
+    title:'Load full cohort — suspects compare against everyone',
+    desc:'ALL N students are loaded, not just the K suspects. Suspects may have copied from a student who had clean behaviour signals. That source would be invisible if we only compared suspects against each other.',
+    code:`<span class="kw">for</span> student_id <span class="kw">in</span> all_student_ids:
+    sub = (
+        <span class="cls">Submission</span>.objects
+        .<span class="fn">filter</span>(question=q, student_id=student_id, status=<span class="str">'passed'</span>)
+        .<span class="fn">order_by</span>(<span class="str">'attempt_number'</span>).<span class="fn">first</span>()
+    ) <span class="kw">or</span> latest_attempt
+<span class="cm"># all_subs = [sub_1...sub_200]  — one per student</span>`},
+
+  { phase:2, from:4, to:4, label:'normalize_code() × 200',
+    title:'AST normalization strips cosmetic differences from all 200 submissions',
+    desc:'Strip inline comments → strip docstrings via AST → rename all user-defined names to VAR_0, VAR_1, etc. A cheater who just renamed variables or removed their comments now looks structurally identical to the source. Python builtins are kept as-is.',
+    code:`<span class="cm"># Python: 4 stages</span>
+code = re.<span class="fn">sub</span>(<span class="str">r'#.*'</span>, <span class="str">''</span>, code)               <span class="cm"># 1. strip comments</span>
+tree = ast.<span class="fn">parse</span>(code)                          <span class="cm"># 2. parse to AST</span>
+<span class="cm"># 3. strip docstrings from function/class nodes</span>
+normalizer = <span class="cls">VariableNormalizer</span>()               <span class="cm"># 4. rename → VAR_N</span>
+<span class="kw">return</span> ast.<span class="fn">unparse</span>(normalizer.<span class="fn">visit</span>(tree))
+
+<span class="cm"># "find_max(arr)" becomes "VAR_0(VAR_1)"</span>`},
+
+  { phase:2, from:4, to:4, label:'TfidfVectorizer.fit_transform() → 200×V',
+    title:'TF-IDF: all 200 code strings → sparse numeric matrix in one call',
+    desc:'TF-IDF weights down common tokens (if, for, return — appear in every submission) and weights up rare structural tokens — those are the ones that reveal copying. Result is a 200×V sparse matrix, each row L2-normalized.',
+    code:`vectorizer = <span class="cls">TfidfVectorizer</span>()
+matrix = vectorizer.<span class="fn">fit_transform</span>(normalized)
+<span class="cm"># matrix.shape = (200, V)</span>
+
+<span class="cm"># TF-IDF weight = TF(t,d) × IDF(t)</span>
+<span class="cm"># "for" in 198/200 docs   → very low IDF → near-zero weight</span>
+<span class="cm"># "VAR_1[VAR_2:]" in 2/200 → high IDF    → high weight</span>`},
+
+  { phase:2, from:4, to:4, label:'cosine_similarity() → 200×200 matrix',
+    title:'Pairwise similarity: dot(a,b) / (||a|| × ||b||) for all pairs at once',
+    desc:'Cosine similarity compares the direction of two TF-IDF vectors, ignoring document length. Result is a 200×200 matrix. After this single call, reading any pair\'s similarity is an O(1) array lookup.',
+    code:`sim_matrix = <span class="fn">cosine_similarity</span>(matrix)
+<span class="cm"># sim_matrix.shape = (200, 200)</span>
+<span class="cm"># sim_matrix[i][j] = similarity between student i and j</span>
+<span class="cm"># 1.0 = structurally identical   0.0 = nothing in common</span>
+
+<span class="cm"># All 19,900 pair similarities computed in one numpy call</span>`},
+
+  { phase:2, from:4, to:4, label:'Upper triangle loop — skip non-suspect pairs',
+    title:'O(K×N) = 2,000 checks instead of O(N²) = 19,900',
+    desc:'Loop only the upper triangle (i < j) so each pair is checked once. The critical filter: if neither student is in the HIGH suspect set, skip. This reduces from 19,900 all-pairs to 2,000 — K×N where K=10, N=200.',
+    code:`<span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="fn">len</span>(all_subs)):
+  <span class="kw">for</span> j <span class="kw">in</span> <span class="fn">range</span>(i + <span class="num">1</span>, <span class="fn">len</span>(all_subs)):
+    <span class="kw">if not</span> a_is_suspect <span class="kw">and not</span> b_is_suspect:
+        <span class="kw">continue</span>                    <span class="cm"># ← skip innocent pair</span>
+    similarity = <span class="fn">float</span>(sim_matrix[i][j])   <span class="cm"># O(1)</span>
+    <span class="kw">if</span> similarity >= <span class="num">0.80</span>:
+        <span class="fn">create_plagiarism_flag</span>(...)`},
+
+  { phase:2, from:4, to:5, label:'PlagiarismFlag.get_or_create() sim=0.94',
+    title:'Pair flagged — similarity 0.94 ≥ 0.80 threshold',
+    desc:'get_or_create makes re-running the analysis safe — no duplicate rows. Similarity score is updated if the flag already exists. Trainer is notified. All N=200 checked submissions marked similarity_check_done=True.',
+    code:`<span class="cls">PlagiarismFlag</span>.objects.<span class="fn">get_or_create</span>(
+  submission_1=sub_a,
+  submission_2=sub_b,
+  defaults={
+    <span class="str">'similarity_score'</span>:  <span class="num">0.94</span>,
+    <span class="str">'detection_method'</span>:  <span class="str">'behavioural_filtered_tfidf'</span>,
+  }
+)
+<span class="fn">notify_plagiarism_flagged</span>(pf)  <span class="cm"># trainer alerted</span>`},
+];
+
+// ── PHASE METADATA ────────────────────────────────────────────────────────────
+const PHASE_META = {
+  1: {
+    name:    'Behavioural Analysis',
+    tagline: 'Browser signals collected at submit. At exam close, each submission is scored synchronously — paste ratio, speed, tab switches, attempt discontinuity — and a BehaviouralFlag written if risk > 0.2.',
+    color:   '#6366f1',
+  },
+  2: {
+    name:    'Similarity Cross-Comparison',
+    tagline: 'Exam closes → pre_save queues the batch → TF-IDF vectorizes all submissions → suspect pairs above 0.80 cosine similarity flagged in Postgres.',
+    color:   '#e63946',
+  },
+};
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let current   = 0;
+let playing   = false;
+let playTimer = null;
+let stepDuration = 1100;  // ms per step
+
+// ── COLUMN CENTRES ────────────────────────────────────────────────────────────
+function getColCenters() {
+  const stage = document.getElementById('arrow-stage');
+  const rect  = stage.getBoundingClientRect();
+  const centers = [];
+  for (let i = 0; i < 6; i++) {
+    const ac = document.getElementById(`ac-${i}`);
+    const ar = ac.getBoundingClientRect();
+    centers.push(ar.left + ar.width / 2 - rect.left);
+  }
+  return centers;
+}
+
+// ── INJECT LANE LINES ────────────────────────────────────────────────────────
+function injectLanes() {
+  const stage = document.getElementById('arrow-stage');
+  const centers = getColCenters();
+  stage.innerHTML = '';
+  centers.forEach((cx, i) => {
+    const line = document.createElement('div');
+    line.className = 'lane-line';
+    line.style.left = cx + 'px';
+    line.style.background = COLORS[i];
+    stage.appendChild(line);
+  });
+}
+
+// ── DRAW ARROW ───────────────────────────────────────────────────────────────
+function drawArrow(step) {
+  const stage   = document.getElementById('arrow-stage');
+  const centers = getColCenters();
+  const color   = COLORS[step.from];
+  const stageH  = stage.offsetHeight;
+  const midY    = stageH / 2;
+
+  // clear previous arrows (keep lane lines)
+  stage.querySelectorAll('.arrow-line,.arrowhead,.arrow-label,.self-loop,.self-label').forEach(el => el.remove());
+
+  if (step.from === step.to) {
+    // ── self-loop ──
+    const cx = centers[step.from];
+    const loop = document.createElement('div');
+    loop.className = 'self-loop';
+    loop.style.cssText = `left:${cx}px; top:${midY - 22}px; color:${color}; border-color:${color};`;
+    stage.appendChild(loop);
+
+    const lbl = document.createElement('div');
+    lbl.className = 'self-label';
+    lbl.innerHTML = step.label;
+    lbl.style.cssText = `left:${cx + 60}px; top:${midY - 28}px; color:${color};`;
+    stage.appendChild(lbl);
+    return;
+  }
+
+  const fromX = centers[step.from];
+  const toX   = centers[step.to];
+  const ltr   = toX > fromX;
+  const left  = Math.min(fromX, toX);
+  const width = Math.abs(toX - fromX);
+
+  // arrow line
+  const line = document.createElement('div');
+  line.className = 'arrow-line' + (ltr ? '' : ' rtl');
+  line.style.cssText = `
+    left:${left}px; top:${midY}px;
+    width:${width}px; background:${color};
+    animation: ${ltr ? 'draw-ltr' : 'draw-rtl'} 0.45s ease forwards;
+  `;
+  stage.appendChild(line);
+
+  // arrowhead
+  const head = document.createElement('div');
+  head.className = 'arrowhead';
+  head.innerHTML = ltr ? '▶' : '◄';
+  head.style.cssText = `
+    left:${ltr ? toX - 10 : toX - 4}px; top:${midY}px;
+    color:${color};
+  `;
+  stage.appendChild(head);
+
+  // label
+  const lbl = document.createElement('div');
+  lbl.className = 'arrow-label';
+  lbl.textContent = step.label;
+  lbl.style.cssText = `
+    left:${(fromX + toX) / 2}px;
+    top:${midY - 22}px;
+    color:${color};
+    border-color:${color}44;
+  `;
+  stage.appendChild(lbl);
+}
+
+// ── UPDATE ACTOR HIGHLIGHTS ───────────────────────────────────────────────────
+function updateActors(step) {
+  for (let i = 0; i < 6; i++) {
+    document.getElementById(`ac-${i}`).classList.remove('active');
+  }
+  document.getElementById(`ac-${step.from}`).classList.add('active');
+  if (step.to !== step.from) {
+    document.getElementById(`ac-${step.to}`).classList.add('active');
+  }
+}
+
+// ── UPDATE INFO PANEL ─────────────────────────────────────────────────────────
+function updateInfo(step, index) {
+  const panel = document.getElementById('info-panel');
+  panel.classList.add('updating');
+
+  setTimeout(() => {
+    document.getElementById('info-phase').textContent  = `Phase ${step.phase}`;
+    document.getElementById('info-phase').className    = `phase-badge phase-${step.phase}`;
+    document.getElementById('info-counter').textContent = `Step ${index + 1} of ${STEPS.length}`;
+    document.getElementById('info-title').textContent   = step.title;
+    document.getElementById('info-desc').textContent    = step.desc;
+    document.getElementById('info-code').innerHTML      = step.code;
+
+    // match code block accent to actor colour
+    const codeEl = document.getElementById('info-code');
+    codeEl.style.borderLeftColor = COLORS[step.from];
+
+    // match info panel border to phase
+    panel.style.borderColor = step.phase === 1 ? '#6366f1' : '#e63946';
+    panel.classList.remove('updating');
+  }, 100);
+}
+
+// ── UPDATE DOTS ───────────────────────────────────────────────────────────────
+function updateDots(index) {
+  document.querySelectorAll('.step-dot').forEach((dot, i) => {
+    dot.classList.remove('current', 'done', 'p1', 'p2');
+    if (i === index) {
+      dot.classList.add('current');
+      dot.classList.add(STEPS[i].phase === 1 ? 'p1' : 'p2');
+    } else if (i < index) {
+      dot.classList.add('done');
+    }
+  });
+}
+
+// ── UPDATE PHASE BANNER ───────────────────────────────────────────────────────
+function updatePhaseBanner(step) {
+  const meta   = PHASE_META[step.phase];
+  const banner = document.getElementById('phase-banner');
+  const pill   = document.getElementById('phase-pill');
+  const c      = meta.color;
+
+  banner.classList.remove('idle');
+  banner.style.borderColor = c + '33';
+  banner.style.background  = c + '0a';
+
+  pill.textContent        = `Phase ${step.phase} of 2 — ${meta.name}`;
+  pill.style.color        = c;
+  pill.style.background   = c + '1a';
+  pill.style.borderColor  = c + '40';
+
+  document.getElementById('phase-name').textContent    = meta.name;
+  document.getElementById('phase-tagline').textContent = meta.tagline;
+}
+
+// ── GO TO STEP ────────────────────────────────────────────────────────────────
+function goTo(index) {
+  if (index < 0 || index >= STEPS.length) return;
+  current = index;
+  const step = STEPS[index];
+
+  drawArrow(step);
+  updateActors(step);
+  updateInfo(step, index);
+  updateDots(index);
+  updatePhaseBanner(step);
+
+  document.getElementById('btn-prev').disabled = index === 0;
+  document.getElementById('btn-next').disabled = index === STEPS.length - 1;
+}
+
+// ── PLAY / PAUSE ──────────────────────────────────────────────────────────────
+function startPlay() {
+  playing = true;
+  document.getElementById('btn-play').textContent = '⏸ Pause';
+  document.getElementById('btn-play').classList.add('paused');
+
+  function advance() {
+    if (!playing) return;
+    if (current < STEPS.length - 1) {
+      goTo(current + 1);
+      playTimer = setTimeout(advance, stepDuration);
+    } else {
+      stopPlay();
+    }
+  }
+  playTimer = setTimeout(advance, stepDuration);
+}
+
+function stopPlay() {
+  playing = false;
+  clearTimeout(playTimer);
+  document.getElementById('btn-play').textContent = '▶ Play';
+  document.getElementById('btn-play').classList.remove('paused');
+}
+
+// ── CONTROLS ──────────────────────────────────────────────────────────────────
+document.getElementById('btn-prev').addEventListener('click', () => {
+  stopPlay(); goTo(current - 1);
+});
+document.getElementById('btn-next').addEventListener('click', () => {
+  stopPlay(); goTo(current + 1);
+});
+document.getElementById('btn-play').addEventListener('click', () => {
+  if (playing) { stopPlay(); return; }
+  if (current === STEPS.length - 1) goTo(0);
+  startPlay();
+});
+
+// speed buttons
+document.querySelectorAll('.speed-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    stepDuration = parseInt(btn.dataset.speed);
+  });
+});
+
+// dot navigation
+const dotsWrap = document.getElementById('dots-wrap');
+STEPS.forEach((step, i) => {
+  if (i > 0 && step.phase !== STEPS[i-1].phase) {
+    const div = document.createElement('div');
+    div.className = 'dot-divider';
+    dotsWrap.appendChild(div);
+  }
+  const dot = document.createElement('div');
+  dot.className = 'step-dot';
+  dot.title = `Step ${i+1}: ${step.label}`;
+  dot.addEventListener('click', () => { stopPlay(); goTo(i); });
+  dotsWrap.appendChild(dot);
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  injectLanes();
+  goTo(0);
+});
+window.addEventListener('resize', () => {
+  injectLanes();
+  drawArrow(STEPS[current]);
+});
+
+// keyboard shortcuts
+window.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { stopPlay(); goTo(current + 1); }
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   { stopPlay(); goTo(current - 1); }
+  if (e.key === ' ') { e.preventDefault(); document.getElementById('btn-play').click(); }
+});
+</script>
+</body>
+</html>

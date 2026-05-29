@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>0.1% DEV — Platform Flow</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0f1117;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 60px 40px 60px;
+  }
+
+  /* ── Header ── */
+  .header { text-align: center; margin-bottom: 14px; }
+  .header h1 { font-size: 22px; font-weight: 800; color: #f8fafc; letter-spacing: -0.3px; }
+  .header p  { font-size: 12px; color: #64748b; margin-top: 4px; }
+  .sample-box {
+    display: inline-block;
+    margin-top: 10px;
+    background: #0a0d14;
+    border: 1px solid #1e2538;
+    border-left: 3px solid #6366f1;
+    border-radius: 6px;
+    padding: 7px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #94a3b8;
+  }
+  .sample-box .kw  { color: #c792ea; }
+  .sample-box .fn  { color: #82aaff; }
+  .sample-box .str { color: #c3e88d; }
+
+  /* ── Stage ── */
+  .stage {
+    position: relative;
+    width: 100%;
+    height: 320px;
+    background: #0a0d14;
+    border: 1px solid #1e2538;
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+
+  /* ── Nodes ── */
+  .node {
+    position: absolute;
+    width: 100px;
+    border-radius: 10px;
+    padding: 12px 8px 10px;
+    text-align: center;
+    border: 1.5px solid;
+    transition: box-shadow 0.25s, transform 0.25s;
+    user-select: none;
+  }
+  .node .icon { font-size: 22px; line-height: 1; margin-bottom: 5px; }
+  .node .name { font-size: 12px; font-weight: 700; }
+  .node .role { font-size: 10px; opacity: 0.65; margin-top: 2px; line-height: 1.3; }
+
+  .n-student  { border-color:#6366f1; background:rgba(99,102,241,.08);  color:#6366f1; }
+  .n-react    { border-color:#10b981; background:rgba(16,185,129,.08);  color:#10b981; }
+  .n-fastapi  { border-color:#e63946; background:rgba(230,57,70,.08);   color:#e63946; }
+  .n-openai   { border-color:#f59e0b; background:rgba(245,158,11,.08);  color:#f59e0b; }
+  .n-razorpay { border-color:#8b5cf6; background:rgba(139,92,246,.08);  color:#8b5cf6; }
+  .n-firebase { border-color:#3b82f6; background:rgba(59,130,246,.08);  color:#3b82f6; }
+
+  .n-student.active  { box-shadow:0 0 22px rgba(99,102,241,.55);  transform:scale(1.05); }
+  .n-react.active    { box-shadow:0 0 22px rgba(16,185,129,.55);  transform:scale(1.05); }
+  .n-fastapi.active  { box-shadow:0 0 22px rgba(230,57,70,.55);   transform:scale(1.05); }
+  .n-openai.active   { box-shadow:0 0 22px rgba(245,158,11,.55);  transform:scale(1.05); }
+  .n-razorpay.active { box-shadow:0 0 22px rgba(139,92,246,.55);  transform:scale(1.05); }
+  .n-firebase.active { box-shadow:0 0 22px rgba(59,130,246,.55);  transform:scale(1.05); }
+
+  /* ── SVG connection lines ── */
+  .connections { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
+
+  /* ── Packet ── */
+  .packet {
+    position: absolute;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 20;
+    opacity: 0;
+  }
+  .pkt-label {
+    position: absolute;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 21;
+    background: #0a0d14;
+    border: 1px solid;
+    border-radius: 4px;
+    padding: 3px 8px;
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+
+  /* ── Progress ── */
+  .progress-wrap { height: 3px; background: #1e2538; border-radius: 2px; margin-bottom: 14px; }
+  .progress-fill { height: 100%; background: #10b981; border-radius: 2px; transition: width 0.4s ease; width: 0%; }
+
+  /* ── Phase banner ── */
+  .phase-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(16,185,129,.06);
+    border: 1px solid rgba(16,185,129,.18);
+    border-radius: 10px;
+    padding: 10px 18px;
+    margin-bottom: 14px;
+    transition: border-color 0.4s, background 0.4s;
+  }
+  .phase-banner.idle {
+    background: rgba(100,116,139,.04);
+    border-color: rgba(100,116,139,.18);
+  }
+  .phase-pill {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #10b981;
+    background: rgba(16,185,129,.14);
+    border: 1px solid rgba(16,185,129,.28);
+    border-radius: 20px;
+    padding: 3px 11px;
+    white-space: nowrap;
+    transition: color 0.3s, background 0.3s, border-color 0.3s;
+    flex-shrink: 0;
+  }
+  .phase-banner.idle .phase-pill { color:#64748b; background:rgba(100,116,139,.1); border-color:rgba(100,116,139,.2); }
+  .phase-name {
+    font-size: 15px; font-weight: 700; color: #f1f5f9; flex-shrink: 0; transition: color 0.3s;
+  }
+  .phase-banner.idle .phase-name { color: #64748b; }
+  .phase-sep {
+    width: 1px; height: 16px; background: rgba(16,185,129,.25); flex-shrink: 0; transition: background 0.4s;
+  }
+  .phase-banner.idle .phase-sep { background: rgba(100,116,139,.2); }
+  .phase-tagline { font-size: 12px; color: #64748b; line-height: 1.4; }
+
+  /* ── Info panel ── */
+  .info-panel {
+    background: #1a1f2e;
+    border: 1px solid #2a3045;
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin-bottom: 16px;
+    min-height: 130px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    transition: border-color 0.4s;
+  }
+  .step-counter { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .step-title   { font-size: 16px; font-weight: 700; color: #f1f5f9; margin-bottom: 6px; line-height: 1.3; }
+  .step-desc    { font-size: 12px; color: #94a3b8; line-height: 1.6; }
+  .payload-label { font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .payload-box {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: #0a0d14;
+    border: 1px solid #1e2538;
+    border-left: 3px solid;
+    border-radius: 6px;
+    padding: 10px 12px;
+    white-space: pre;
+    line-height: 1.6;
+    min-height: 80px;
+    overflow-x: auto;
+  }
+
+  /* ── Controls ── */
+  .controls {
+    display: flex; align-items: center; gap: 10px; justify-content: center; flex-wrap: wrap;
+  }
+  .btn {
+    background: #1a1f2e; border: 1px solid #2a3045; color: #e2e8f0;
+    padding: 9px 22px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background 0.15s; font-family: 'Inter', sans-serif;
+  }
+  .btn:hover { background: #242a3d; }
+  .btn.play-btn {
+    background: #10b981; border-color: #10b981; color: #fff;
+    padding: 9px 32px;
+  }
+  .btn.play-btn:hover { opacity: 0.85; }
+  .speed-wrap { display:flex; align-items:center; gap:8px; font-size:12px; color:#64748b; margin-left:8px; }
+  input[type=range] { width:90px; accent-color:#10b981; }
+
+  /* ── Step dots ── */
+  .step-list {
+    display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+    margin-top: 16px; align-items: flex-end;
+  }
+  .phase-group { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .phase-group-label {
+    font-size: 9px; color: #2a3045; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.6px; transition: color 0.25s; white-space: nowrap;
+  }
+  .phase-group.phase-active .phase-group-label { color: #10b981; }
+  .phase-group.phase-done   .phase-group-label { color: #334155; }
+  .phase-dots { display: flex; gap: 5px; }
+  .step-dot {
+    width: 24px; height: 6px; border-radius: 3px; background: #1e2538;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .step-dot.done    { background: #334155; }
+  .step-dot.current { background: #10b981; }
+
+  /* ── Celebration ── */
+  .celebration {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    pointer-events: none; opacity: 0; transition: opacity 0.5s;
+    font-size: 20px; font-weight: 800; letter-spacing: -0.5px;
+    color: #10b981; text-shadow: 0 0 30px rgba(16,185,129,.5);
+  }
+  .celebration.show { opacity: 1; }
+
+  /* ── Back nav ── */
+  .back-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+    height: 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px;
+    background: rgba(10,13,20,0.96);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid #1e2538;
+  }
+  .back-nav-link {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: #64748b; text-decoration: none;
+    transition: color 0.2s;
+  }
+  .back-nav-link:hover { color: #10b981; }
+  .back-nav-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: #f59e0b;
+    background: rgba(245,158,11,0.1);
+    border: 1px solid rgba(245,158,11,0.25);
+    padding: 3px 10px; border-radius: 20px;
+  }
+
+</style>
+</head>
+<body>
+<div class="back-nav">
+  <a href="index.html" class="back-nav-link">← Back to Portfolio</a>
+  <span class="back-nav-badge">Platform Flow</span>
+</div>
+
+
+<div class="header">
+  <h1>0.1% DEV — Platform Flow</h1>
+  <p>21 steps · 5 phases · React 18 + FastAPI + OpenAI RAG</p>
+  <div class="sample-box">
+    <span class="kw">ask</span>(<span class="str">"Why does npm link matter?"</span>)
+    &nbsp;→&nbsp; <span class="fn">grounded answer</span> + <span class="str">source citations → timestamp</span>
+  </div>
+</div>
+
+<div class="phase-banner idle" id="phase-header">
+  <div class="phase-pill" id="phase-pill">—</div>
+  <div class="phase-name" id="phase-name">Press Play or → to begin</div>
+  <div class="phase-sep"></div>
+  <div class="phase-tagline" id="phase-tagline">Student browses courses → authenticates → pays → watches videos → asks AI → gets grounded answers with source citations back to exact timestamps.</div>
+</div>
+
+<div class="stage" id="stage">
+  <svg class="connections" id="svg-conn"></svg>
+  <div class="node n-student"  id="n-student">  <div class="icon">🧑‍💻</div><div class="name">Student</div><div class="role">Browser</div></div>
+  <div class="node n-react"    id="n-react">    <div class="icon">⚛️</div>  <div class="name">React SPA</div><div class="role">Vite Build</div></div>
+  <div class="node n-fastapi"  id="n-fastapi">  <div class="icon">⚙️</div>  <div class="name">FastAPI</div><div class="role">Backend</div></div>
+  <div class="node n-openai"   id="n-openai">   <div class="icon">🤖</div>  <div class="name">OpenAI</div><div class="role">Emb + LLM</div></div>
+  <div class="node n-razorpay" id="n-razorpay"> <div class="icon">💳</div>  <div class="name">Razorpay</div><div class="role">Payments</div></div>
+  <div class="node n-firebase" id="n-firebase"> <div class="icon">🔥</div>  <div class="name">Firebase</div><div class="role">Video Storage</div></div>
+  <div class="packet"    id="packet"></div>
+  <div class="pkt-label" id="pkt-label"></div>
+  <div class="celebration" id="celebration">⚡ Grounded answer + source citations delivered</div>
+</div>
+
+<div class="progress-wrap"><div class="progress-fill" id="prog"></div></div>
+
+<div class="info-panel" id="info-panel">
+  <div class="info-left">
+    <div class="step-counter">Step <span id="s-num">—</span> of <span id="s-total">21</span></div>
+    <div class="step-title" id="s-title">Press Play or → to begin</div>
+    <div class="step-desc"  id="s-desc">Student browses → authenticates → pays via Razorpay → watches gated video content → asks the AI assistant → gets grounded answers with lecture source citations.</div>
+  </div>
+  <div class="info-right">
+    <div class="payload-label">Data / Command</div>
+    <div class="payload-box" id="s-payload" style="color:#82aaff;border-left-color:#6366f1">—</div>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="btn" id="btn-restart">↺ Restart</button>
+  <button class="btn" id="btn-prev">← Prev</button>
+  <button class="btn play-btn" id="btn-play">▶ Play</button>
+  <button class="btn" id="btn-next">Next →</button>
+  <div class="speed-wrap">
+    <span>Speed</span>
+    <input type="range" id="speed-slider" min="0.5" max="3" step="0.5" value="1.5"/>
+    <span id="speed-label">1.5×</span>
+  </div>
+</div>
+
+<div class="step-list" id="step-list"></div>
+
+<script>
+const PHASES = [
+  { name: "Course Discovery",  tagline: "React SPA loads static course data — browse, filter and inspect courses without a single API call." },
+  { name: "Authentication",    tagline: "Auth guard fires on purchase intent — demo sign-in stores session in localStorage, preserving the destination route." },
+  { name: "Payment",           tagline: "Razorpay order created server-side — secret stays backend-only, checkout modal opened client-side, course unlocked on success." },
+  { name: "Video Learning",    tagline: "HTML5 video streams from Firebase Storage — chapters 0–2 free, 3+ gated by hasCourse() — AI deep-links into exact timestamps." },
+  { name: "AI Assistant",      tagline: "RAG pipeline: question embedded → cosine search → lexical re-rank → GPT-4.1-mini generates grounded answer — SourceCards cite exact lectures." },
+];
+
+const STEPS = [
+  // Phase 1: Discovery
+  { from:"n-student", to:"n-react",   label:"visit /",               phase:1,
+    title:"React SPA mounts",
+    desc:"Student opens the.01dev. Vite-built React SPA loads instantly. AppShell renders nav. useUserSession reads localStorage — sets isSignedIn and boughtCourseIds from persisted data.",
+    payload:`// data/platform.ts
+import legacyTracks from "../data/tracks.js";
+export const courses = legacyTracks as PlatformCourse[];
+// 8 courses — zero API call on load`,
+    payloadColor:"#6366f1" },
+
+  { from:"n-react", to:"n-react",     label:"filter courses",         phase:1,
+    title:"HomePage renders live courses",
+    desc:"courses.filter(c => c.launched !== false).slice(0, 4) selects 4 live courses for the hero grid. Capability cards and banner videos below. No network request — all static data.",
+    payload:`const liveCourses = courses
+  .filter(c => c.launched !== false)
+  .slice(0, 4);
+// → 4 live courses for hero grid
+// TracksPage shows all 8`,
+    payloadColor:"#10b981" },
+
+  { from:"n-student", to:"n-react",   label:"→ /tracks",             phase:1,
+    title:"TracksPage — full catalogue",
+    desc:"React Router navigates client-side to /tracks. All 8 courses rendered as a 3-column CourseCard grid. Each card links to /coursedetails/:id. Static build — instant render.",
+    payload:`<TracksPage />
+courses.map(c => (
+  <Link to={\`/coursedetails/\${c.id}\`}>
+    <CourseCard course={c} />
+  </Link>
+))
+// grid: md:grid-cols-2 lg:grid-cols-3`,
+    payloadColor:"#6366f1" },
+
+  { from:"n-student", to:"n-react",   label:"→ /coursedetails/:id",  phase:1,
+    title:"Course Details — modules & content",
+    desc:"getCourseById(courseId) looks up the course from static data. Renders: title, description, 3 stat pills (stack, duration, level), horizontal-scroll module cards, learnings grid, chapter/lesson aside.",
+    payload:`getCourseById("1")
+// → {
+//   title: "Build a Programming Language",
+//   courseContent: [{ name, subchapters[] }],
+//   modules: [...], learnings: [...],
+//   priceINR: "179900"  // in paise
+// }`,
+    payloadColor:"#6366f1" },
+
+  // Phase 2: Auth
+  { from:"n-student", to:"n-react",   label:"Buy Track ↓",           phase:2,
+    title:"Auth guard triggered",
+    desc:"handleBuy() checks session.isSignedIn from useUserSession. If false, navigate('/signin?next=/coursedetails/:id'). The ?next param preserves where the student was going after login.",
+    payload:`function handleBuy() {
+  if (!session.isSignedIn) {
+    navigate(
+      \`/signin?next=/coursedetails/\${id}\`
+    );
+    return;
+  }
+  paymentMutation.mutate();
+}`,
+    payloadColor:"#6366f1" },
+
+  { from:"n-react", to:"n-student",   label:"→ /signin",             phase:2,
+    title:"Sign-in page rendered",
+    desc:"SignInPage renders a lightweight demo form. Pre-filled name + email for convenience. next param read from searchParams. In production: Firebase signInWithPopup (Google OAuth).",
+    payload:`// SignInPage.tsx
+const nextRoute =
+  searchParams.get("next") ?? "/tracks";
+// Pre-filled demo credentials
+// next route preserved for post-login redirect`,
+    payloadColor:"#6366f1" },
+
+  { from:"n-student", to:"n-react",   label:"submit form",           phase:2,
+    title:"Session created — localStorage",
+    desc:"session.signIn({name, email}) writes user JSON to localStorage['01dev:user']. setBoughtCourseIds from localStorage['01dev:bought_courses'] — default includes course 2 as demo. Navigate to next route.",
+    payload:`localStorage.setItem("01dev:user",
+  JSON.stringify({ name, email }));
+// boughtCourseIds default = [2]
+// (course 2 pre-unlocked as demo)
+navigate(nextRoute);
+// → /coursedetails/1`,
+    payloadColor:"#10b981" },
+
+  // Phase 3: Payment
+  { from:"n-react", to:"n-fastapi",   label:"POST razorpay-order",   phase:3,
+    title:"Payment order requested",
+    desc:"paymentMutation.mutate() fires. TanStack useMutation calls createPaymentOrder(). POST /api/payments/razorpay-order. Amount from static course data — server validates and creates the order.",
+    payload:`POST /api/payments/razorpay-order
+{
+  "course_id": "1",
+  "amount": 179900,    // paise = ₹1799
+  "currency": "INR"
+}`,
+    payloadColor:"#e63946" },
+
+  { from:"n-fastapi", to:"n-razorpay",label:"createOrder",           phase:3,
+    title:"Razorpay order — server-side",
+    desc:"FastAPI reads RAZORPAY_KEY_ID from env. Secret never leaves the backend. Returns PaymentOrderResponse with order_id and public key_id. Without a live key, falls back to a mock order for dev.",
+    payload:`PaymentOrderResponse(
+  provider = "razorpay",
+  order_id = "order_demo_1_179900",
+  amount   = 179900,
+  currency = "INR",
+  key_id   = env.RAZORPAY_KEY_ID,
+  course_id= "1"
+)`,
+    payloadColor:"#8b5cf6" },
+
+  { from:"n-razorpay", to:"n-react",  label:"order + key_id",        phase:3,
+    title:"Razorpay checkout modal",
+    desc:"checkout.js dynamically injected into <head>. new window.Razorpay({key, amount, order_id, handler}) called. Modal renders with course title and price. Razorpay processes the payment on their servers.",
+    payload:`const checkout = new window.Razorpay({
+  key:      order.key_id,
+  amount:   179900,
+  currency: "INR",
+  name:     "0.1% DEV",
+  order_id: order.order_id,
+  handler:  () => { session.addCourse(course); }
+});
+checkout.open();`,
+    payloadColor:"#8b5cf6" },
+
+  { from:"n-react", to:"n-react",     label:"payment success",       phase:3,
+    title:"Course unlocked — session updated",
+    desc:"Razorpay handler fires on success. session.addCourse(course) → setBoughtCourseIds with Set dedup. localStorage persisted atomically. navigate('/course/:id') — video player loads immediately.",
+    payload:`// useUserSession.ts addCourse()
+const next = [...new Set([...current, course.id])];
+localStorage.setItem(
+  "01dev:bought_courses",
+  JSON.stringify(next)
+);
+// → boughtCourseIds: [1, 2]
+navigate(\`/course/\${course.id}\`);`,
+    payloadColor:"#10b981" },
+
+  // Phase 4: Learning
+  { from:"n-student", to:"n-react",   label:"→ /course/:id",         phase:4,
+    title:"CoursePlayerPage loads",
+    desc:"useParams extracts courseId. getCourseById() looks up course. findLectureByName() resolves ?lecture param — fuzzy match against subchapter names, case-insensitive, normalized. First lecture default if no match.",
+    payload:`// URL: /course/1?lecture=npm+link&t=120
+const course   = getCourseById(courseId);
+const selected = findLectureByName(
+  course,
+  searchParams.get("lecture")  // "npm link"
+);
+// → { chapterIndex: 2, lecture: {name, src} }`,
+    payloadColor:"#6366f1" },
+
+  { from:"n-react", to:"n-firebase",  label:"GET video src",         phase:4,
+    title:"Video streams from Firebase Storage",
+    desc:"HTML5 <video> element loads src directly from Firebase Storage URL stored in tracks.js. Browser handles HTTP range requests and buffering. No backend proxy — zero server load for video delivery.",
+    payload:`<video
+  ref={videoRef}
+  src={lecture.src}
+  controls
+  controlsList="nodownload"
+/>
+// src: "https://firebasestorage.googleapis.com/
+//       v0/b/topdev-93530.appspot.com/o/..."`,
+    payloadColor:"#3b82f6" },
+
+  { from:"n-react", to:"n-react",     label:"chapter > 2?",          phase:4,
+    title:"Chapter access gate",
+    desc:"For each lecture: chapterIndex > 2 && !hasCourse = locked. Locked chapters play a placeholder video with an overlay: Lock icon, 'Lesson locked', 'Unlock track' CTA linking back to CourseDetailsPage.",
+    payload:`const hasCourse = session.hasCourse(course.id);
+const locked = chapterIndex > 2 && !hasCourse;
+
+// locked → plays placeholder src
+// overlay rendered:
+<div className="absolute inset-0 bg-black/70">
+  <Lock className="h-10 w-10 text-red-300" />
+  <Link to={\`/coursedetails/\${id}\`}>
+    Unlock track
+  </Link>
+</div>`,
+    payloadColor:"#e63946" },
+
+  { from:"n-student", to:"n-react",   label:"Ask AI →",              phase:4,
+    title:"Deep-link: player ↔ assistant",
+    desc:"'Ask AI' button in CoursePlayerPage header links to /assistant. AI answers deep-link back into the player via ?lecture=name&t=seconds. Player seeks to exact second on loadedmetadata event.",
+    payload:`// Player header → AI assistant
+<Link to="/assistant">Ask AI</Link>
+
+// AI source card → back to player:
+href=\`/course/\${cid}?lecture=\${title}&t=\${start}\`
+
+// Player seeks on load:
+video.addEventListener("loadedmetadata",
+  () => { video.currentTime = startTime; },
+  { once: true });`,
+    payloadColor:"#6366f1" },
+
+  // Phase 5: AI Assistant
+  { from:"n-student", to:"n-react",   label:"→ /assistant",          phase:5,
+    title:"AskPage — Chat workspace",
+    desc:"AskPage renders ChatWorkspace (main) + CourseSidebar (left, hidden on mobile). CourseSidebar queries GET /api/courses — marks which courses are indexed for AI. Welcome message shown in chat.",
+    payload:`// CourseSidebar fetches indexed courses:
+const { data: indexedCourses } = useQuery({
+  queryKey: ["courses"],
+  queryFn: fetchCourses,   // GET /api/courses
+});
+// Marks each course: "Indexed for AI"
+//                 or "Platform course"`,
+    payloadColor:"#6366f1" },
+
+  { from:"n-student", to:"n-react",   label:"question",              phase:5,
+    title:"Question submitted",
+    desc:"Student types or clicks a suggestion pill. submitQuestion() appends {role:'student', content} to messages immediately (optimistic UI). Input cleared. askMutation.mutate(text) fires. Spinner shown.",
+    payload:`submitQuestion("Why does npm link matter?");
+// 1. append { role: "student", content }
+// 2. setQuestion("")
+// 3. askMutation.mutate(text)
+//    → POST /api/ai/ask
+// 4. Loader2 spinner while isPending`,
+    payloadColor:"#6366f1" },
+
+  { from:"n-react", to:"n-fastapi",   label:"POST /api/ai/ask",      phase:5,
+    title:"RAG pipeline starts",
+    desc:"TanStack mutation fetches POST /api/ai/ask. FastAPI receives AskRequest. RagService.ask(question) orchestrates: embed → vector search → lexical re-rank → threshold → generate.",
+    payload:`POST /api/ai/ask
+{ "question": "Why does npm link matter
+               while building a library?" }
+
+// FastAPI → RagService.ask(question)
+// Sequence: embed → search → rank
+//           → threshold → generate`,
+    payloadColor:"#e63946" },
+
+  { from:"n-fastapi", to:"n-openai",  label:"embed(question)",       phase:5,
+    title:"Question vectorized",
+    desc:"EmbeddingService.embed(question) calls OpenAI text-embedding-3-small. Same model used at startup indexing — ensures question and chunk vectors share the same semantic space for meaningful cosine similarity.",
+    payload:`openai.embeddings.create(
+  model = "text-embedding-3-small",
+  input = "Why does npm link matter..."
+)
+# → 1536-dim float vector
+# same space as indexed chunks ✓`,
+    payloadColor:"#f59e0b" },
+
+  { from:"n-fastapi", to:"n-fastapi", label:"search + re-rank",      phase:5,
+    title:"Cosine search + lexical re-rank",
+    desc:"VectorStore.search() runs cosine similarity on all ~320 chunks → top 8. _rank_matches() applies lexical overlap (stop-word filtered Jaccard). score=max(semantic, lexical). Top 5 above 0.15 threshold selected.",
+    payload:`# 1. Semantic search
+top8 = vector_store.search(query_vec, top_k=8)
+
+# 2. Lexical overlap (stop-word filtered)
+lexical = _lexical_overlap(question, chunk.text)
+
+# 3. Merge: max(semantic*1.0, lexical)
+# 4. Threshold gate ≥ 0.15
+selected = [c for c,s in ranked if s >= 0.15]
+# → top 5, best_score = 0.82`,
+    payloadColor:"#e63946" },
+
+  { from:"n-fastapi", to:"n-openai",  label:"generate answer",       phase:5,
+    title:"GPT-4.1-mini generates answer",
+    desc:"AnswerGenerator formats context blocks: [Course | Lecture | start-end]\\ntext. Calls gpt-4.1-mini with SYSTEM_PROMPT: answer only from course context, cite lecture + timestamp, never hallucinate.",
+    payload:`# Context block format:
+"[Build a Library | npm link | 02:14-04:28]
+ When you run npm link in your library dir..."
+
+openai.responses.create(
+  model        = "gpt-4.1-mini",
+  instructions = SYSTEM_PROMPT,
+  input        = build_context_prompt(q, blocks)
+)`,
+    payloadColor:"#f59e0b" },
+
+  { from:"n-fastapi", to:"n-react",   label:"AskResponse",           phase:5,
+    title:"Grounded answer + SourceCards",
+    desc:"AskResponse returned: answer + sources[]. React appends assistant message. Each source renders as a SourceCard: lecture title, timestamp badge, snippet, deep-link → /course/:id?lecture=X&t=seconds.",
+    payload:`{
+  "answer": "npm link creates a symlink in global
+             node_modules pointing to your local
+             library directory, enabling live edits
+             without republishing to npm...",
+  "sources": [{
+    "lecture_title": "npm link and local dev",
+    "timestamp": "02:14",
+    "start_time": 134,
+    "score": 0.8241
+  }],
+  "insufficient_context": false
+}`,
+    payloadColor:"#10b981" },
+];
+
+// ── Node positions ──────────────────────────────────────────────────────────
+const POS = {
+  "n-student":  { left:"2%",  top:"38%" },
+  "n-react":    { left:"20%", top:"15%" },
+  "n-fastapi":  { left:"42%", top:"38%" },
+  "n-openai":   { left:"64%", top:"15%" },
+  "n-razorpay": { left:"64%", top:"60%" },
+  "n-firebase": { left:"84%", top:"38%" },
+};
+for (const [id, p] of Object.entries(POS)) {
+  const el = document.getElementById(id);
+  el.style.left = p.left; el.style.top = p.top;
+}
+
+// ── Build step dots ─────────────────────────────────────────────────────────
+const stepListEl = document.getElementById("step-list");
+for (let ph = 1; ph <= 5; ph++) {
+  const group = document.createElement("div");
+  group.className = "phase-group";
+  group.id = `phase-group-${ph}`;
+
+  const lbl = document.createElement("div");
+  lbl.className = "phase-group-label";
+  lbl.textContent = PHASES[ph-1].name.split(" ")[0];
+  group.appendChild(lbl);
+
+  const dotsRow = document.createElement("div");
+  dotsRow.className = "phase-dots";
+  STEPS.forEach((s, i) => {
+    if (s.phase !== ph) return;
+    const dot = document.createElement("div");
+    dot.className = "step-dot";
+    dot.dataset.step = i;
+    dot.title = s.title;
+    dot.addEventListener("click", () => { stopPlay(); goTo(i); });
+    dotsRow.appendChild(dot);
+  });
+  group.appendChild(dotsRow);
+  stepListEl.appendChild(group);
+}
+
+// ── SVG lines ───────────────────────────────────────────────────────────────
+const SVG_NS = "http://www.w3.org/2000/svg";
+function nodeCenter(id) {
+  const stage = document.getElementById("stage");
+  const node  = document.getElementById(id);
+  const sr = stage.getBoundingClientRect();
+  const nr = node.getBoundingClientRect();
+  return { x: nr.left-sr.left+nr.width/2, y: nr.top-sr.top+nr.height/2 };
+}
+function drawLines() {
+  const svg = document.getElementById("svg-conn");
+  svg.innerHTML = "";
+  const edges = [
+    ["n-student","n-react"],["n-react","n-fastapi"],
+    ["n-fastapi","n-openai"],["n-fastapi","n-razorpay"],
+    ["n-react","n-firebase"],["n-razorpay","n-react"],
+    ["n-fastapi","n-react"],["n-react","n-openai"],
+  ];
+  for (const [a,b] of edges) {
+    const ca=nodeCenter(a), cb=nodeCenter(b);
+    const line=document.createElementNS(SVG_NS,"line");
+    line.setAttribute("x1",ca.x); line.setAttribute("y1",ca.y);
+    line.setAttribute("x2",cb.x); line.setAttribute("y2",cb.y);
+    line.setAttribute("stroke","#2a3045");
+    line.setAttribute("stroke-width","1.5");
+    line.setAttribute("stroke-dasharray","5 4");
+    svg.appendChild(line);
+  }
+}
+window.addEventListener("resize", drawLines);
+setTimeout(drawLines, 50);
+
+// ── Packet animation ─────────────────────────────────────────────────────────
+const NODE_COLOR = {
+  "n-student":"#6366f1","n-react":"#10b981","n-fastapi":"#e63946",
+  "n-openai":"#f59e0b","n-razorpay":"#8b5cf6","n-firebase":"#3b82f6",
+};
+let packetAnim = null;
+function animatePacket(fromId, toId, color, label, cb) {
+  if (packetAnim) { clearInterval(packetAnim); packetAnim = null; }
+  const pkt = document.getElementById("packet");
+  const lbl = document.getElementById("pkt-label");
+  const ca  = nodeCenter(fromId);
+  const cb2 = nodeCenter(toId);
+  pkt.style.background  = color;
+  pkt.style.boxShadow   = `0 0 12px ${color}`;
+  lbl.style.color       = color;
+  lbl.style.borderColor = color;
+  lbl.textContent       = label;
+
+  if (fromId === toId) {
+    pkt.style.left = `${ca.x-6}px`; pkt.style.top = `${ca.y-6}px`;
+    lbl.style.left = `${ca.x+10}px`; lbl.style.top = `${ca.y-10}px`;
+    pkt.style.opacity="1"; lbl.style.opacity="1";
+    setTimeout(() => { pkt.style.opacity="0"; lbl.style.opacity="0"; if(cb)cb(); }, 600);
+    return;
+  }
+
+  const FRAMES=40; let frame=0;
+  pkt.style.opacity="1"; lbl.style.opacity="1";
+  packetAnim = setInterval(() => {
+    const t=frame/FRAMES;
+    pkt.style.left=`${ca.x+(cb2.x-ca.x)*t-6}px`;
+    pkt.style.top =`${ca.y+(cb2.y-ca.y)*t-6}px`;
+    lbl.style.left=`${ca.x+(cb2.x-ca.x)*t+10}px`;
+    lbl.style.top =`${ca.y+(cb2.y-ca.y)*t-18}px`;
+    frame++;
+    if (frame>FRAMES) {
+      clearInterval(packetAnim); packetAnim=null;
+      pkt.style.opacity="0"; lbl.style.opacity="0";
+      if(cb)cb();
+    }
+  }, 16);
+}
+
+// ── State & render ───────────────────────────────────────────────────────────
+let currentStep=-1, playing=false, playTimer=null, speed=1.5;
+function getDelay() { return Math.round(2400/speed); }
+
+function render(idx) {
+  const step  = STEPS[idx];
+  const phase = PHASES[step.phase-1];
+  document.getElementById("prog").style.width = `${((idx+1)/STEPS.length)*100}%`;
+
+  const banner = document.getElementById("phase-header");
+  banner.classList.remove("idle");
+  document.getElementById("phase-pill").textContent    = `Phase ${step.phase} of 5 — ${phase.name}`;
+  document.getElementById("phase-name").textContent    = phase.name;
+  document.getElementById("phase-tagline").textContent = phase.tagline;
+
+  document.getElementById("s-num").textContent   = idx+1;
+  document.getElementById("s-title").textContent = step.title;
+  document.getElementById("s-desc").textContent  = step.desc;
+  const pb = document.getElementById("s-payload");
+  pb.textContent = step.payload;
+  pb.style.color = step.payloadColor;
+  pb.style.borderLeftColor = step.payloadColor;
+
+  document.querySelectorAll(".node").forEach(n=>n.classList.remove("active"));
+  document.getElementById(step.from).classList.add("active");
+  if (step.to!==step.from) document.getElementById(step.to).classList.add("active");
+
+  document.getElementById("celebration").classList.toggle("show", idx===STEPS.length-1);
+  updateDots(idx);
+}
+
+function updateDots(idx) {
+  const ph = STEPS[idx].phase;
+  for (let p=1; p<=5; p++) {
+    const g = document.getElementById(`phase-group-${p}`);
+    if (!g) continue;
+    g.classList.remove("phase-active","phase-done");
+    if (p===ph) g.classList.add("phase-active");
+    else if (p<ph) g.classList.add("phase-done");
+  }
+  document.querySelectorAll(".step-dot").forEach(d => {
+    const si=parseInt(d.dataset.step);
+    d.classList.remove("done","current");
+    if (si<idx) d.classList.add("done");
+    else if (si===idx) d.classList.add("current");
+  });
+}
+
+function goTo(idx) {
+  if (idx<0||idx>=STEPS.length) return;
+  currentStep=idx;
+  const step=STEPS[idx];
+  animatePacket(step.from, step.to, NODE_COLOR[step.from], step.label, ()=>{
+    render(idx);
+    if(playing) scheduleNext();
+  });
+}
+function goNext() { if(currentStep>=STEPS.length-1){stopPlay();return;} goTo(currentStep+1); }
+function goPrev() { if(currentStep<=0) return; goTo(currentStep-1); }
+
+function scheduleNext() { clearTimeout(playTimer); playTimer=setTimeout(goNext,getDelay()); }
+function startPlay() {
+  if(playing) return;
+  playing=true;
+  document.getElementById("btn-play").textContent="⏸ Pause";
+  if(currentStep===-1) goTo(0); else scheduleNext();
+}
+function stopPlay() {
+  playing=false; clearTimeout(playTimer);
+  document.getElementById("btn-play").textContent="▶ Play";
+}
+function restart() {
+  stopPlay(); currentStep=-1;
+  document.getElementById("prog").style.width="0%";
+  document.getElementById("phase-header").classList.add("idle");
+  document.getElementById("phase-pill").textContent="—";
+  document.getElementById("phase-name").textContent="Press Play or → to begin";
+  document.getElementById("s-num").textContent="—";
+  document.getElementById("s-title").textContent="Press Play or → to begin";
+  document.getElementById("s-desc").textContent="Student browses → authenticates → pays → watches gated videos → asks the AI assistant → gets grounded answers with source citations.";
+  document.getElementById("s-payload").textContent="—";
+  document.getElementById("celebration").classList.remove("show");
+  document.querySelectorAll(".node").forEach(n=>n.classList.remove("active"));
+  document.querySelectorAll(".step-dot").forEach(d=>d.classList.remove("done","current"));
+  for(let p=1;p<=5;p++){const g=document.getElementById(`phase-group-${p}`);if(g)g.classList.remove("phase-active","phase-done");}
+}
+
+document.getElementById("btn-play").addEventListener("click",()=>{ if(playing)stopPlay();else startPlay(); });
+document.getElementById("btn-next").addEventListener("click",()=>{ stopPlay();goNext(); });
+document.getElementById("btn-prev").addEventListener("click",()=>{ stopPlay();goPrev(); });
+document.getElementById("btn-restart").addEventListener("click",restart);
+document.addEventListener("keydown",e=>{
+  if(e.key==="ArrowRight"){stopPlay();goNext();}
+  if(e.key==="ArrowLeft"){stopPlay();goPrev();}
+  if(e.key===" "){e.preventDefault();if(playing)stopPlay();else startPlay();}
+});
+const slider=document.getElementById("speed-slider");
+slider.addEventListener("input",()=>{
+  speed=parseFloat(slider.value);
+  document.getElementById("speed-label").textContent=`${speed}×`;
+});
+</script>
+</body>
+</html>
