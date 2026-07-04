@@ -380,6 +380,7 @@ nav {
   padding: 28px 28px;
   border-bottom: 1px solid var(--border);
   transition: background 0.15s;
+  cursor: pointer;
 }
 .project-row:last-child { border-bottom: none; }
 .project-row:hover { background: #faf8f4; }
@@ -694,7 +695,7 @@ footer {
   <div class="project-table">
 
     <!-- CodeMas -->
-    <div class="project-row">
+    <div class="project-row" onclick="window.location.href='codemas_design.html'">
       <div class="project-idx">P.01</div>
       <div class="project-main">
         <div class="project-name">CodeMas — AI Coding Assessment Platform</div>
@@ -718,14 +719,14 @@ footer {
           <span class="project-tag-r">Docker</span>
         </div>
         <div class="project-links-r">
-          <a href="codemas_design.html" class="proj-link">System Design</a>
-          <a href="codemas_ai_agents.html" class="proj-link">AI Agents</a>
+          <a href="codemas_design.html" class="proj-link" onclick="event.stopPropagation()">System Design</a>
+          <a href="codemas_ai_agents.html" class="proj-link" onclick="event.stopPropagation()">AI Agents</a>
         </div>
       </div>
     </div>
 
     <!-- the01.dev -->
-    <div class="project-row">
+    <div class="project-row" onclick="window.location.href='01dev_design.html'">
       <div class="project-idx">P.02</div>
       <div class="project-main">
         <div class="project-name">the01.dev — AI-Powered Ed-Tech Platform</div>
@@ -747,15 +748,15 @@ footer {
           <span class="project-tag-r">OpenAI</span>
         </div>
         <div class="project-links-r">
-          <a href="01dev_design.html" class="proj-link">System Design</a>
-          <a href="the01dev_multiagent_animation.html" class="proj-link">Multi-Agent</a>
-          <a href="ask_ai_animation.html" class="proj-link">RAG Pipeline</a>
+          <a href="01dev_design.html" class="proj-link" onclick="event.stopPropagation()">System Design</a>
+          <a href="the01dev_multiagent_animation.html" class="proj-link" onclick="event.stopPropagation()">Multi-Agent</a>
+          <a href="ask_ai_animation.html" class="proj-link" onclick="event.stopPropagation()">RAG Pipeline</a>
         </div>
       </div>
     </div>
 
     <!-- Kalaam -->
-    <div class="project-row">
+    <div class="project-row" onclick="window.location.href='kalaam_design.html'">
       <div class="project-idx">P.03</div>
       <div class="project-main">
         <div class="project-name">Kalaam — India's First Hindi Programming Language</div>
@@ -776,7 +777,7 @@ footer {
           <span class="project-tag-r">npm</span>
         </div>
         <div class="project-links-r">
-          <a href="kalaam_design.html" class="proj-link">System Design</a>
+          <a href="kalaam_design.html" class="proj-link" onclick="event.stopPropagation()">System Design</a>
         </div>
       </div>
     </div>
@@ -802,7 +803,7 @@ footer {
     </div>
 
     <!-- stringy-core -->
-    <div class="project-row">
+    <div class="project-row" onclick="window.location.href='stringy_design.html'">
       <div class="project-idx">P.05</div>
       <div class="project-main">
         <div class="project-name">stringy-core — JavaScript String Utility Library</div>
@@ -820,7 +821,7 @@ footer {
           <span class="project-tag-r">9 modules</span>
         </div>
         <div class="project-links-r">
-          <a href="stringy_design.html" class="proj-link">System Design</a>
+          <a href="stringy_design.html" class="proj-link" onclick="event.stopPropagation()">System Design</a>
         </div>
       </div>
     </div>
