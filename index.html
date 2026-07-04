@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <link rel="icon" type="image/jpeg" href="E09EB739-7DA5-43EE-AA6D-868C79A0F082_1_105_c.jpeg">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Swanand Kadam — Senior Full-Stack Engineer</title>
+<title>Swanand Kadam — Senior Full Stack / AI Engineer</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
@@ -18,6 +18,7 @@
   --indigo: #6366f1;
   --amber: #f59e0b;
   --purple: #8b5cf6;
+  --red: #e63946;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -709,6 +710,7 @@ footer {
   <ul class="nav-links">
     <li><a href="#about">About</a></li>
     <li><a href="#projects">Projects</a></li>
+    <li><a href="#writing">Writing</a></li>
     <li><a href="#contact">Contact</a></li>
   </ul>
 </nav>
@@ -718,13 +720,13 @@ footer {
   <div class="hero-inner">
     <!-- LEFT -->
     <div class="hero-left">
-      <div class="hero-tag">Available for work</div>
+      <div class="hero-tag">Available for new opportunities</div>
       <h1>Swanand<br><span>Kadam.</span></h1>
-      <p class="hero-title">Senior Full-Stack Engineer &nbsp;·&nbsp; 5+ yrs &nbsp;·&nbsp; Python · TypeScript · React</p>
+      <p class="hero-title">Senior Full Stack / AI Engineer &nbsp;·&nbsp; 6+ yrs &nbsp;·&nbsp; Co-founder &nbsp;·&nbsp; Pune, India</p>
       <p class="hero-desc">
-        I build systems that scale, languages that teach, and platforms that ship.
-        From real-time exam infrastructure to a programming language in Hindi — I work at the layer
-        most engineers never touch.
+        I build AI-native systems and lead engineering teams from zero to production.
+        Multi-agent pipelines, RAG with hybrid retrieval, 19× plagiarism detection improvement,
+        a programming language in Hindi, and a TEDx talk on why we should code in our own languages.
       </p>
       <div class="hero-actions">
         <a href="#projects" class="btn-primary">View Projects</a>
@@ -756,30 +758,28 @@ footer {
   <div class="about-grid">
     <div class="about-text">
       <p>
-        I'm a senior full-stack engineer with a bias toward <strong>building from first principles</strong>.
-        Not because it's harder, but because it's the only way to truly own what you ship.
-        I've written a custom interpreter, a real-time execution pipeline, and a payment-gated
-        video delivery system — each from a blank file.
+        I'm a senior full stack and AI engineer who co-founded <strong>the01.dev</strong>, an AI-powered
+        ed-tech platform where I led a 2-engineer team and owned architecture end-to-end.
+        That included a <strong>PDF-to-lesson multi-agent pipeline</strong> using LangChain and Mastra
+        with Planner-Executor and Supervisor-Worker patterns, a production RAG assistant backed by
+        pgvector with HNSW indexing and hybrid cosine + BM25 retrieval, and an adaptive practice
+        engine with a concept knowledge graph. Before that, I joined Masai School as one of the
+        first engineers reporting directly to the CTO.
       </p>
       <p>
-        My work sits at the intersection of <strong>scale and purpose</strong>. The coding exam
-        platform I built handles 10,000 concurrent students — not as a demo, but in production,
-        during live exams. It also detects plagiarism and fake submissions post-exam using a
-        two-phase pipeline: behavioural scoring followed by TF-IDF cosine similarity across the full cohort.
-        The programming language I built runs entirely on a budget Android phone,
-        offline, in Hindi and Marathi, because the student who needs it most doesn't have a laptop
-        or reliable internet.
+        At Masai I built <strong>CodeMas</strong> — a real-time coding assessment platform handling
+        10,000 concurrent users and ~10K submissions/sec at deadline bursts via AWS Lambda + SQS + SSE.
+        The plagiarism engine went from detecting 5% of cheating cases to 95% — a 19× lift —
+        by reframing the problem from "are two submissions similar" to "did this student write this."
+        I also created <strong>Kalaam</strong>, India's first Hindi programming language,
+        which earned me a <strong>TEDx Bangalore</strong> talk ("Why we should be able to code in
+        our own languages"), 500+ monthly users, and a 10+ contributor open-source community.
       </p>
       <p>
-        I care about systems that work under pressure and products that reach people who
-        are usually left out. That's the thread running through everything I build.
-      </p>
-      <p>
-        I also contribute to open source. <strong>stringy-core</strong> — a zero-dependency
-        JavaScript string utility library — is published on npm and built as a community
-        contribution platform. The repo ships stub functions with clear input/output specs,
-        inviting developers to implement and PR them. It's a small thing, but it's how
-        I think good libraries should be built: in the open, with other engineers.
+        I write too. Published in <strong>Better Programming</strong>, three articles on
+        <strong>HackerNoon</strong>, and featured on <strong>InfoQ</strong>. I care about
+        systems that work under pressure, products that reach people who are usually left out,
+        and open source that actually gets used.
       </p>
     </div>
     <div class="about-photo">
@@ -789,20 +789,20 @@ footer {
   </div>
   <div class="about-stats">
     <div class="stat-card">
+      <div class="stat-number">19×</div>
+      <div class="stat-label">Plagiarism detection improvement — 5% to 95% of cases caught</div>
+    </div>
+    <div class="stat-card">
       <div class="stat-number">10K</div>
-      <div class="stat-label">Concurrent students on a single exam platform</div>
+      <div class="stat-label">Concurrent users · ~10K submissions/sec at deadline bursts</div>
     </div>
     <div class="stat-card">
-      <div class="stat-number">5</div>
-      <div class="stat-label">Languages supported in a custom-built interpreter</div>
+      <div class="stat-number">₹2Cr+</div>
+      <div class="stat-label">Revenue on Bharatvarsh.art — D2C e-commerce platform I built and led</div>
     </div>
     <div class="stat-card">
-      <div class="stat-number">4</div>
-      <div class="stat-label">Production systems shipped end-to-end</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-number">0</div>
-      <div class="stat-label">Third-party frameworks where a scratch build made more sense</div>
+      <div class="stat-number">500+</div>
+      <div class="stat-label">Monthly users of Kalaam — India's first Hindi programming language</div>
     </div>
   </div>
 </section>
@@ -823,26 +823,46 @@ footer {
         <div class="project-name">CodeMas</div>
         <div class="project-status">Production</div>
       </div>
-      <div class="project-tagline">Secure, real-time coding exam platform for 10,000 concurrent students</div>
+      <div class="project-tagline">Real-time coding assessment platform · 10K concurrent users · 10K submissions/sec · built at Masai School</div>
       <p class="project-desc">
-        Students submit code → attempt check (Postgres) → INSERT submission → LPUSH to Redis →
-        Celery worker BRPOP → Docker sandbox executes → result via Redis pub/sub →
-        SSE push → browser updates. All of this in under 2 seconds per submission, at 10K concurrent users.
-        Post-exam plagiarism runs a two-phase pipeline: behavioural scoring (paste ratio, speed anomaly,
-        tab switches) followed by TF-IDF + cosine similarity across the full cohort.
+        Joined as one of the first engineers reporting directly to the CTO. Infrastructure:
+        code submit → AWS Lambda + SQS + Docker sandbox → SSE push, sub-10s results at
+        ~10K submissions/sec deadline bursts.
       </p>
+      <p class="project-desc" style="margin-top:12px"><strong style="color:var(--indigo)">AI features — 5 agents in production:</strong></p>
+      <ul style="list-style:none;margin-top:10px;display:flex;flex-direction:column;gap:9px">
+        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
+          <span style="position:absolute;left:0;color:var(--indigo);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
+          <strong style="color:#f1f5f9">Exam Generator</strong> — GPT drafts complete exams (questions + test cases) from a topic and difficulty with human-in-the-loop review before persistence. <strong style="color:#818cf8">~80% faster exam creation.</strong>
+        </li>
+        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
+          <span style="position:absolute;left:0;color:var(--indigo);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
+          <strong style="color:#f1f5f9">Rubric Scoring Agent</strong> — async GPT grades every submission on correctness, code quality, approach, and edge cases (0–2 each) with per-dimension justifications. <strong style="color:#818cf8">Consistent feedback at scale across 10K+ submissions with zero trainer review overhead.</strong>
+        </li>
+        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
+          <span style="position:absolute;left:0;color:var(--indigo);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
+          <strong style="color:#f1f5f9">Socratic Hint Agent</strong> — for failed submissions, generates a pedagogical nudge pointing at the concept without revealing the answer, isolated from the delivery path. <strong style="color:#818cf8">Students self-correct without trainer intervention.</strong>
+        </li>
+        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
+          <span style="position:absolute;left:0;color:var(--indigo);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
+          <strong style="color:#f1f5f9">Trainer Dashboard Agent</strong> — AI-generated cohort summaries, per-student performance narratives, and exam insights. <strong style="color:#818cf8">Replaced manual spreadsheet reporting entirely — hours of post-exam analysis eliminated.</strong>
+        </li>
+        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
+          <span style="position:absolute;left:0;color:var(--indigo);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
+          <strong style="color:#f1f5f9">Plagiarism Engine</strong> — two-layer detection: behavioural signals (paste ratio, speed anomaly, tab switches) + TF-IDF cosine similarity. Reframed the problem from "are submissions similar" to "did this student write this." <strong style="color:#818cf8">Detection rate: 5% → 95% — a 19× lift.</strong>
+        </li>
+      </ul>
       <div class="tech-row">
-        <span class="tag">Vue 3</span>
-        <span class="tag">Django 4.2</span>
-        <span class="tag">DRF</span>
-        <span class="tag">Celery</span>
-        <span class="tag">Redis</span>
-        <span class="tag">PostgreSQL</span>
-        <span class="tag">MongoDB</span>
-        <span class="tag">Docker</span>
-        <span class="tag">Nginx</span>
+        <span class="tag">Django</span>
+        <span class="tag">AWS Lambda</span>
+        <span class="tag">SQS</span>
         <span class="tag">SSE</span>
-        <span class="tag">Simple JWT</span>
+        <span class="tag">GPT-4o-mini</span>
+        <span class="tag">PostgreSQL</span>
+        <span class="tag">Docker</span>
+        <span class="tag">Vue 3</span>
+        <span class="tag">Redis</span>
+        <span class="tag">DRF</span>
       </div>
       <div class="project-links">
         <a href="submission_animation.html" target="_blank" class="proj-btn primary">
@@ -871,23 +891,35 @@ footer {
         <div class="project-name">Kalaam</div>
         <div class="project-status">npm · v2.3.3</div>
       </div>
-      <div class="project-tagline">A programming language in Hindi, Marathi, Bengali, Telugu, and Odia</div>
-      <p class="project-desc">
-        Built for tier-3 city students aged 14–18 who have no laptop and intermittent internet.
-        The "zeroth step" into programming — code looks like the language you already speak.
-        Fully offline PWA, zero API calls, runs on a budget Android browser. The interpreter is a
-        published npm package with a public <code style="font-family:'JetBrains Mono',monospace;font-size:0.82em;color:#34d399">Compile(source, languageKeywords)</code> API.
-        Learning Mode replays every evaluation step in the student's own language — no teacher required.
-        Adding a new language is one keyword map entry, no parser changes.
-      </p>
+      <div class="project-tagline">India's first Hindi programming language · TEDx Bangalore · 500+ monthly users · 10+ contributors</div>
+      <p class="project-desc">Hand-written lexer and instruction-sequence interpreter, published as an npm package (<code style="font-family:'JetBrains Mono',monospace;font-size:0.82em;color:#34d399">kalaam-core</code>), built for students who have no laptop and intermittent internet.</p>
+      <ul style="list-style:none;margin-top:10px;display:flex;flex-direction:column;gap:9px">
+        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
+          <span style="position:absolute;left:0;color:var(--green);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
+          <strong style="color:#f1f5f9">Multi-language Architecture</strong> — 5 languages (Hindi, Marathi, Bengali, Telugu, Odia) supported via centralized keyword configuration; adding a new language is one map entry, zero parser changes. <strong style="color:#34d399">Infinitely extensible without touching the interpreter core.</strong>
+        </li>
+        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
+          <span style="position:absolute;left:0;color:var(--green);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
+          <strong style="color:#f1f5f9">Fully Offline PWA</strong> — zero API calls, service-worker cached, runs entirely in the browser on a budget Android phone with no internet. <strong style="color:#34d399">Reaches students in tier-3 cities who are locked out of every other coding tool.</strong>
+        </li>
+        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
+          <span style="position:absolute;left:0;color:var(--green);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
+          <strong style="color:#f1f5f9">Open-source Community</strong> — led 10+ contributors through structured releases with clear contribution guidelines and staged reviews. <strong style="color:#34d399">500+ monthly active users on kalaamlang.in.</strong>
+        </li>
+        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
+          <span style="position:absolute;left:0;color:var(--green);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
+          <strong style="color:#f1f5f9">TEDx Bangalore</strong> — invited to speak on "Why we should be able to code in our own languages." <strong style="color:#34d399">Recognised as a meaningful intervention in CS access for non-English speakers in India.</strong>
+        </li>
+      </ul>
       <div class="tech-row">
+        <span class="tag">Custom Lexer</span>
+        <span class="tag">Interpreter</span>
+        <span class="tag">npm · kalaam-core</span>
         <span class="tag">Vue 2</span>
         <span class="tag">Quasar PWA</span>
         <span class="tag">CodeMirror</span>
-        <span class="tag">Custom Interpreter</span>
-        <span class="tag">npm package</span>
-        <span class="tag">Jest</span>
         <span class="tag">Service Worker</span>
+        <span class="tag">Jest</span>
       </div>
       <div class="project-links">
         <a href="interpreter_animation.html" target="_blank" class="proj-btn primary">
@@ -902,9 +934,9 @@ footer {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
           kalaamlang.in
         </a>
-        <a href="https://www.npmjs.com/package/kalaam" target="_blank" rel="noopener" class="proj-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3z"/><path d="M9 9v9m6-9v6m-6 0h6"/></svg>
-          npm
+        <a href="https://github.com/swanandapps/Kalaam-Core" target="_blank" rel="noopener" class="proj-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+          GitHub
         </a>
       </div>
     </div>
@@ -916,28 +948,39 @@ footer {
         <div class="project-name">0.1% DEV</div>
         <div class="project-status">Live · 8 courses</div>
       </div>
-      <div class="project-tagline">Ed-tech platform with a RAG-powered AI learning assistant</div>
-      <p class="project-desc">
-        Full-stack course platform teaching deep CS fundamentals — Build a Programming Language,
-        JavaScript Engine Internals, Build a Real-Time System, and more. Rewritten in React 18 +
-        FastAPI. The standout feature: a RAG AI assistant that answers student questions grounded
-        strictly in course transcripts — no hallucinations. Transcripts are chunked into 180-word
-        sliding windows, embedded with <code style="font-family:'JetBrains Mono',monospace;font-size:0.82em;color:#fbbf24">text-embedding-3-small</code> at startup,
-        then queried via cosine similarity + lexical re-ranking. Answers from GPT-4.1-mini cite
-        the exact lecture and timestamp, with a deep-link straight into the video player.
-        Payments via server-side Razorpay order creation — secret key never leaves FastAPI.
-      </p>
+      <div class="project-tagline">AI-powered ed-tech platform · Co-founder · Multi-agent pipeline · RAG · Adaptive practice</div>
+      <p class="project-desc">Co-founded and led engineering (2-person team, owned architecture end-to-end) for a deep CS fundamentals course platform.</p>
+      <ul style="list-style:none;margin-top:10px;display:flex;flex-direction:column;gap:9px">
+        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
+          <span style="position:absolute;left:0;color:var(--amber);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
+          <strong style="color:#f1f5f9">PDF-to-Lesson Multi-Agent Pipeline</strong> — LangChain + Mastra with Planner-Executor and Supervisor-Worker patterns; human-in-the-loop approval via suspend/resume keeps instructors in control of every generated lesson. <strong style="color:#fbbf24">~67% reduction in unnecessary LLM calls via on-demand generation.</strong>
+        </li>
+        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
+          <span style="position:absolute;left:0;color:var(--amber);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
+          <strong style="color:#f1f5f9">RAG Course Assistant</strong> — pgvector with HNSW indexing, hybrid cosine + BM25 retrieval, GPT-4.1-mini generation with source citations streamed via SSE; answers deep-link to the exact video timestamp. <strong style="color:#fbbf24">Zero hallucinations — grounded strictly in proprietary course transcripts.</strong>
+        </li>
+        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
+          <span style="position:absolute;left:0;color:var(--amber);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
+          <strong style="color:#f1f5f9">Adaptive Practice Engine</strong> — GPT-generated question banks, spaced repetition scheduling, and a concept knowledge graph in Postgres that tracks what each student has mastered. <strong style="color:#fbbf24">Personalised revision paths without any manual curation.</strong>
+        </li>
+        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
+          <span style="position:absolute;left:0;color:var(--amber);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
+          <strong style="color:#f1f5f9">Payments &amp; Access</strong> — Razorpay order creation with atomic access provisioning (no race condition between payment confirmation and content unlock) + XOR-encoded video protection with Firebase App Check. <strong style="color:#fbbf24">Proprietary content protected end-to-end; zero payment disputes from access failures.</strong>
+        </li>
+      </ul>
       <div class="tech-row">
+        <span class="tag">LangChain</span>
+        <span class="tag">Mastra</span>
+        <span class="tag">pgvector</span>
+        <span class="tag">Multi-agent</span>
         <span class="tag">React 18</span>
         <span class="tag">TypeScript</span>
-        <span class="tag">Vite</span>
         <span class="tag">FastAPI</span>
-        <span class="tag">TanStack Query</span>
-        <span class="tag">Tailwind CSS</span>
         <span class="tag">OpenAI</span>
         <span class="tag">RAG</span>
         <span class="tag">Razorpay</span>
-        <span class="tag">Firebase Storage</span>
+        <span class="tag">Firebase</span>
+        <span class="tag">SSE</span>
       </div>
       <div class="project-links">
         <a href="platform_flow.html" target="_blank" class="proj-btn primary">
@@ -959,20 +1002,42 @@ footer {
       </div>
     </div>
 
+    <!-- Bharatvarsh.art -->
+    <div class="project-card" style="border-left-color:#e63946">
+      <div class="project-number">04 / 05</div>
+      <div class="project-header">
+        <div class="project-name" style="color:#f87171">Bharatvarsh.art</div>
+        <div class="project-status" style="color:#f87171;border-color:rgba(248,113,113,0.3);background:rgba(230,57,70,0.06)">₹2Cr+ Revenue</div>
+      </div>
+      <div class="project-tagline">D2C e-commerce platform for Indian cultural wall art — built and led engineering end-to-end</div>
+      <p class="project-desc">
+        Built and led the full engineering for a D2C e-commerce platform selling Indian cultural
+        wall art, scaled to ₹2Cr+ in revenue. Owned architecture, payments, inventory, and
+        delivery integrations from scratch — demonstrating that I can take a product from zero
+        to meaningful commercial scale, not just build features.
+      </p>
+      <div class="tech-row">
+        <span class="tag">E-commerce</span>
+        <span class="tag">Payments</span>
+        <span class="tag">D2C</span>
+        <span class="tag">Full-stack</span>
+      </div>
+    </div>
+
     <!-- stringy-core -->
     <div class="project-card" style="border-left-color:#f59e0b">
-      <div class="project-number">04 / 04</div>
+      <div class="project-number">05 / 05</div>
       <div class="project-header">
         <div class="project-name" style="color:#f59e0b">stringy-core</div>
-        <div class="project-status">npm Package</div>
+        <div class="project-status">npm · 19 forks</div>
       </div>
-      <div class="project-tagline">Zero-dependency JavaScript string utility library — Lodash for strings</div>
+      <div class="project-tagline">Zero-dependency JavaScript string utility library — 50+ functions · 9 modules · production contribution workflow</div>
       <p class="project-desc">
         50+ pure string functions across 9 modules: case manipulation, cleaning, formatting,
         masking &amp; security (maskEmail, maskPhone, moderate), metadata extraction (URLs, emails,
         IPs, hashtags, JSON), specialized operations (Levenshtein distance, balanced brackets),
         and generation. Ships as ESM with both named tree-shakeable exports and a unified
-        <code style="font-family:monospace;font-size:0.85em">_s</code> namespace.
+        <code style="font-family:monospace;font-size:0.85em">_s</code> namespace. 19 forks.
         Built as an open-source contribution platform — stub functions with Contribution Station
         comments invite community PRs.
       </p>
@@ -1011,21 +1076,81 @@ footer {
 
 <div class="divider"></div>
 
+<div class="divider"></div>
+
+<!-- WRITING & SPEAKING -->
+<section id="writing" style="max-width:1000px">
+  <div class="section-label">Writing &amp; Speaking</div>
+  <h2 class="section-heading">Beyond the code.</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
+
+    <a href="https://www.youtube.com/watch?v=_TEDx_Kalaam" target="_blank" rel="noopener" style="text-decoration:none">
+      <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:10px;padding:20px 22px;transition:border-color 0.2s,transform 0.2s" onmouseover="this.style.borderColor='var(--muted)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.borderLeftColor='var(--green)';this.style.transform=''">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--green);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">TEDx Bangalore</div>
+        <div style="font-size:0.9rem;font-weight:600;color:var(--text);margin-bottom:6px;line-height:1.4">Why we should be able to code in our own languages</div>
+        <div style="font-size:0.78rem;color:var(--muted);line-height:1.5">The story behind building Kalaam — India's first Hindi programming language — and why mother tongue matters in CS education.</div>
+      </div>
+    </a>
+
+    <a href="https://medium.com/better-programming/the-definitive-guide-to-boosting-your-web-application-performance-2b172574f37f" target="_blank" rel="noopener" style="text-decoration:none">
+      <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--indigo);border-radius:10px;padding:20px 22px;transition:border-color 0.2s,transform 0.2s" onmouseover="this.style.borderColor='var(--muted)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.borderLeftColor='var(--indigo)';this.style.transform=''">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--indigo);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Better Programming</div>
+        <div style="font-size:0.9rem;font-weight:600;color:var(--text);margin-bottom:6px;line-height:1.4">The Definitive Guide to Boosting Web Application Performance</div>
+        <div style="font-size:0.78rem;color:var(--muted);line-height:1.5">Published in Medium's Better Programming publication — a comprehensive guide to frontend and backend performance optimization.</div>
+      </div>
+    </a>
+
+    <a href="https://hackernoon.com/u/swanand" target="_blank" rel="noopener" style="text-decoration:none">
+      <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:10px;padding:20px 22px;transition:border-color 0.2s,transform 0.2s" onmouseover="this.style.borderColor='var(--muted)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.borderLeftColor='var(--amber)';this.style.transform=''">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--amber);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">HackerNoon · 3 articles</div>
+        <div style="font-size:0.9rem;font-weight:600;color:var(--text);margin-bottom:6px;line-height:1.4">Technical Writing on HackerNoon</div>
+        <div style="font-size:0.78rem;color:var(--muted);line-height:1.5">Three published articles on software engineering, open source, and building developer tools.</div>
+      </div>
+    </a>
+
+    <a href="https://www.infoq.com/profile/Swanand-Kadam/" target="_blank" rel="noopener" style="text-decoration:none">
+      <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--purple);border-radius:10px;padding:20px 22px;transition:border-color 0.2s,transform 0.2s" onmouseover="this.style.borderColor='var(--muted)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.borderLeftColor='var(--purple)';this.style.transform=''">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--purple);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">InfoQ</div>
+        <div style="font-size:0.9rem;font-weight:600;color:var(--text);margin-bottom:6px;line-height:1.4">InfoQ Author Profile</div>
+        <div style="font-size:0.78rem;color:var(--muted);line-height:1.5">Featured contributor on InfoQ — the software development community for senior engineers and architects.</div>
+      </div>
+    </a>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
 <!-- CONTACT -->
 <section id="contact">
   <div class="section-label">Contact</div>
   <h2 class="contact-heading">Let's build<br><span>something.</span></h2>
   <p class="contact-sub">
-    I'm open to senior engineering roles, consulting engagements, and
-    projects where the problem is genuinely interesting.
+    I'm open to senior full stack / AI engineering roles, consulting on LLM systems and
+    multi-agent pipelines, and products where the problem is genuinely hard.
   </p>
-  <a href="mailto:swanandkadam828@gmail.com" class="contact-email">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-      <polyline points="22,6 12,13 2,6"/>
-    </svg>
-    swanandkadam828@gmail.com
-  </a>
+  <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
+    <a href="mailto:beingswanand@gmail.com" class="contact-email">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+        <polyline points="22,6 12,13 2,6"/>
+      </svg>
+      beingswanand@gmail.com
+    </a>
+    <a href="https://www.linkedin.com/in/swanandkadam" target="_blank" rel="noopener" class="contact-email">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+        <rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/>
+      </svg>
+      LinkedIn
+    </a>
+    <a href="https://github.com/swanandapps" target="_blank" rel="noopener" class="contact-email">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+      </svg>
+      GitHub
+    </a>
+  </div>
 </section>
 
 <!-- BACK TO TOP -->
@@ -1068,22 +1193,23 @@ window.addEventListener('scroll', () => {
 
   const LINES = [
     { type: 'cmd',  text: 'whoami' },
-    { type: 'out',  text: '<span class="hi">Swanand Kadam</span> — Senior Full-Stack Engineer · 5+ yrs' },
+    { type: 'out',  text: '<span class="hi">Swanand Kadam</span> — Senior Full Stack / AI Engineer · Co-founder · 6+ yrs' },
     { type: 'blank' },
-    { type: 'cmd',  text: 'ls ./projects' },
-    { type: 'out',  text: '<span class="gr">CodeMas/</span>   <span class="am">Kalaam/</span>' },
-    { type: 'out',  text: '<span class="am">0.1%DEV/</span>   <span class="gr">stringy-core/</span>' },
+    { type: 'cmd',  text: 'cat ./ai_systems.json' },
+    { type: 'out',  text: '<span class="gr">multi_agent_pipeline</span>  → LangChain · Mastra · Planner-Executor' },
+    { type: 'out',  text: '<span class="gr">rag_assistant</span>         → pgvector · HNSW · BM25 hybrid' },
+    { type: 'out',  text: '<span class="gr">plagiarism_engine</span>     → 5% → 95% detection · 19× lift' },
+    { type: 'out',  text: '<span class="gr">exam_platform</span>         → 10K users · Lambda · SQS · SSE' },
     { type: 'blank' },
     { type: 'cmd',  text: 'cat ./stack.txt' },
-    { type: 'out',  text: '<span class="hi">Python · TypeScript · React · Vue · Django</span>' },
-    { type: 'out',  text: '<span class="hi">Redis · Celery · Docker · Nuxt · Firebase</span>' },
-    { type: 'out',  text: '<span class="hi">PostgreSQL · MongoDB · Razorpay · Nginx</span>' },
+    { type: 'out',  text: '<span class="hi">LangChain · Mastra · pgvector · OpenAI · FastAPI · Django</span>' },
+    { type: 'out',  text: '<span class="hi">React 18 · TypeScript · AWS Lambda · SQS · Docker</span>' },
     { type: 'blank' },
     { type: 'cmd',  text: 'git log --oneline' },
-    { type: 'out',  text: '<span class="gr">✦</span> <span class="hi">10k concurrent exams + plagiarism detection</span>' },
-    { type: 'out',  text: '<span class="gr">✦</span> <span class="hi">built a programming language in Hindi</span>' },
-    { type: 'out',  text: '<span class="gr">✦</span> <span class="hi">launched the01.dev — 8 deep CS courses</span>' },
-    { type: 'out',  text: '<span class="gr">✦</span> <span class="hi">open-sourced stringy-core on npm</span>' },
+    { type: 'out',  text: '<span class="gr">✦</span> <span class="hi">co-founded the01.dev — multi-agent ed-tech platform</span>' },
+    { type: 'out',  text: '<span class="gr">✦</span> <span class="hi">built CodeMas at Masai School — first engineer</span>' },
+    { type: 'out',  text: '<span class="gr">✦</span> <span class="hi">TEDx Bangalore — India\'s first Hindi language</span>' },
+    { type: 'out',  text: '<span class="gr">✦</span> <span class="hi">bharatvarsh.art — ₹2Cr+ D2C revenue</span>' },
   ];
 
   let lineIdx = 0;

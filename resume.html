@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/jpeg" href="E09EB739-7DA5-43EE-AA6D-868C79A0F082_1_105_c.jpeg">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swanand Kadam — Resume</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #0f1117;
+  --surface: #1a1f2e;
+  --border: #2a3045;
+  --green: #10b981;
+  --text: #f1f5f9;
+  --muted: #64748b;
+  --indigo: #6366f1;
+  --amber: #f59e0b;
+  --blue: #3b82f6;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  line-height: 1.6;
+}
+
+/* ── NAV ── */
+.top-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 48px;
+  background: rgba(15,17,23,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+
+.back-link {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.back-link:hover { color: var(--green); }
+
+.print-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 6px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.02em;
+}
+.print-btn:hover { color: var(--text); border-color: var(--muted); }
+
+/* ── MAIN ── */
+main {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 88px 48px 80px;
+}
+
+/* ── HEADER ── */
+.resume-header {
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 44px;
+}
+
+.availability-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.69rem;
+  color: var(--green);
+  border: 1px solid rgba(16,185,129,0.3);
+  background: rgba(16,185,129,0.06);
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 20px;
+  letter-spacing: 0.06em;
+}
+.availability-pill::before {
+  content: '';
+  width: 5px; height: 5px;
+  background: var(--green);
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+.resume-name {
+  font-size: 2.8rem;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.resume-title {
+  font-size: 1rem;
+  color: var(--muted);
+  font-weight: 400;
+  margin-bottom: 22px;
+  letter-spacing: 0.01em;
+}
+
+.resume-contact {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.2s;
+  letter-spacing: 0.02em;
+}
+.contact-item:hover { color: var(--green); }
+.contact-item svg { width: 12px; height: 12px; flex-shrink: 0; }
+
+/* ── SECTIONS ── */
+.resume-section {
+  margin-bottom: 48px;
+}
+
+.section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--green);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-bottom: 18px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── SUMMARY ── */
+.summary-text {
+  font-size: 0.93rem;
+  color: #94a3b8;
+  line-height: 1.85;
+  max-width: 760px;
+}
+.summary-text strong { color: var(--text); font-weight: 600; }
+
+/* ── AI PROJECTS ── */
+.ai-project {
+  margin-bottom: 36px;
+}
+
+.ai-project + .ai-project {
+  padding-top: 32px;
+  border-top: 1px solid rgba(42,48,69,0.6);
+}
+
+.ai-project-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ai-project-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.ai-project-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--muted);
+  padding: 3px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.ai-project-tagline {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 14px;
+  font-style: italic;
+  letter-spacing: 0.01em;
+}
+
+.ai-bullets {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-bullets li {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  padding-left: 20px;
+  position: relative;
+  line-height: 1.65;
+}
+
+.ai-bullets li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--green);
+  font-size: 0.72rem;
+  top: 3px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.ai-bullets li strong { color: var(--text); font-weight: 600; }
+
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78em;
+  color: #6ee7b7;
+  background: rgba(16,185,129,0.08);
+  border: 1px solid rgba(16,185,129,0.15);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+/* ── SKILLS ── */
+.skills-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.skill-row {
+  display: flex;
+  gap: 16px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.skill-category {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--muted);
+  min-width: 120px;
+  flex-shrink: 0;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding-top: 2px;
+}
+
+.skill-items {
+  font-size: 0.845rem;
+  color: #94a3b8;
+  line-height: 1.65;
+  flex: 1;
+}
+
+/* ── PROJECTS GRID ── */
+.projects-mini {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.project-mini {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid transparent;
+  border-radius: 8px;
+  padding: 16px 20px;
+  transition: border-color 0.2s;
+}
+
+.project-mini.indigo { border-left-color: var(--indigo); }
+.project-mini.green  { border-left-color: var(--green); }
+.project-mini.amber  { border-left-color: var(--amber); }
+.project-mini.blue   { border-left-color: var(--blue); }
+
+.project-mini-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text);
+  margin-bottom: 5px;
+  letter-spacing: -0.01em;
+}
+
+.project-mini-desc {
+  font-size: 0.77rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+/* ── FOOTER ── */
+.resume-footer {
+  text-align: center;
+  padding-top: 40px;
+  border-top: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.69rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.resume-footer a {
+  color: var(--green);
+  text-decoration: none;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 640px) {
+  .top-nav { padding: 12px 20px; }
+  main { padding: 74px 20px 60px; }
+  .resume-name { font-size: 2rem; }
+  .projects-mini { grid-template-columns: 1fr; }
+  .skill-category { min-width: 100%; }
+  .resume-contact { gap: 16px; }
+}
+
+/* ── PRINT ── */
+@media print {
+  .top-nav { display: none !important; }
+  body {
+    background: #fff;
+    color: #111;
+  }
+  main { padding: 20px; max-width: 100%; }
+
+  :root {
+    --bg: #fff;
+    --surface: #f3f4f6;
+    --border: #d1d5db;
+    --green: #059669;
+    --text: #111827;
+    --muted: #6b7280;
+    --indigo: #4f46e5;
+    --amber: #d97706;
+    --blue: #2563eb;
+  }
+
+  .summary-text,
+  .ai-bullets li,
+  .skill-items,
+  .project-mini-desc { color: #374151; }
+
+  code {
+    color: #059669;
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+  }
+
+  .contact-item { color: #374151; }
+
+  .availability-pill {
+    background: #f0fdf4;
+    border-color: #a7f3d0;
+    color: #059669;
+  }
+
+  .availability-pill::before { animation: none; }
+
+  .resume-section { margin-bottom: 32px; }
+  .ai-project { margin-bottom: 24px; }
+  .ai-project + .ai-project { padding-top: 20px; }
+
+  .resume-footer { color: #9ca3af; }
+  .resume-footer a { color: #059669; }
+
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+</style>
+</head>
+<body>
+
+<div class="top-nav">
+  <a href="index.html" class="back-link">← Back to Portfolio</a>
+  <button class="print-btn" onclick="window.print()">Print / Save PDF</button>
+</div>
+
+<main>
+
+  <!-- HEADER -->
+  <div class="resume-header">
+    <div class="availability-pill">Available for AI Engineering roles</div>
+    <div class="resume-name">Swanand Kadam</div>
+    <div class="resume-title">Senior AI Engineer &nbsp;·&nbsp; LLM Systems · RAG Pipelines · Behavioral Detection &nbsp;·&nbsp; 5+ yrs</div>
+    <div class="resume-contact">
+      <a href="mailto:beingswanand@gmail.com" class="contact-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        beingswanand@gmail.com
+      </a>
+      <a href="https://swanandapps.github.io" class="contact-item" target="_blank">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        swanandapps.github.io
+      </a>
+      <a href="https://github.com/swanandapps" class="contact-item" target="_blank">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+        github.com/swanandapps
+      </a>
+      <span class="contact-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        India
+      </span>
+    </div>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="resume-section">
+    <div class="section-label">Profile</div>
+    <p class="summary-text">
+      AI systems engineer who designs and ships <strong>LLM-native products</strong> — not wrappers
+      around ChatGPT, but purpose-built pipelines where the model is integrated into the core product
+      loop. I've shipped a <strong>five-agent AI grading and detection platform</strong> on top of a
+      real-time coding exam system (rubric scoring, Socratic hints, plagiarism explanation, exam
+      summaries, AI exam generation) and a <strong>production RAG assistant</strong> built from
+      scratch with a custom vector store, hybrid re-ranking, and source-linked citations into a
+      live video player. I work across the full stack — FastAPI, React 18, Django, Celery — and
+      have built systems handling <strong>10,000 concurrent users</strong>.
+    </p>
+  </div>
+
+  <!-- AI SYSTEMS -->
+  <div class="resume-section">
+    <div class="section-label">AI Systems Built</div>
+
+    <div class="ai-project">
+      <div class="ai-project-header">
+        <div class="ai-project-name">CodeMas — AI Grading &amp; Detection Engine</div>
+        <div class="ai-project-meta">Django · Celery · GPT-4o-mini · TF-IDF · SSE</div>
+      </div>
+      <div class="ai-project-tagline">Real-time coding exam platform · 10,000 concurrent students · 5 AI agents in production</div>
+      <ul class="ai-bullets">
+        <li>
+          <strong>Rubric Scoring Agent</strong> — async Celery task scores every submission on
+          4 dimensions (correctness, code quality, approach, edge cases), each 0–2 with a
+          per-dimension justification. Fires after result delivery; never on the hot path.
+          Idempotent: safe to retry without double-scoring.
+        </li>
+        <li>
+          <strong>Socratic Hint Agent</strong> — for failed submissions, generates a
+          pedagogical nudge (1–3 sentences) pointing at the concept without revealing the
+          answer. Stores once, survives page refresh. Skips gracefully if no API key is set.
+        </li>
+        <li>
+          <strong>Plagiarism Explanation Agent</strong> — after TF-IDF cosine similarity
+          flags a code pair, GPT writes a trainer-facing evidence brief citing specific code
+          overlaps, behavioural signals, and a <code>low/medium/high</code> confidence
+          rating. Evidence for the human reviewer — never a verdict.
+        </li>
+        <li>
+          <strong>Exam Summary Agent</strong> — aggregates per-submission rubric scores
+          and pass/fail outcomes into a 3–4 sentence personalized performance narrative per
+          student per exam. Generated lazily on first view, cached permanently.
+        </li>
+        <li>
+          <strong>AI Exam Generator</strong> — trainer-facing tool: given topic, language,
+          difficulty, and question count, returns a complete draft exam (questions + 3 test
+          cases each). Human-in-the-loop: draft returned for review, never auto-persisted.
+        </li>
+        <li>
+          <strong>3-layer detection engine</strong> — behavioural scoring (paste ratio 0.40,
+          speed anomaly 0.30, tab switches 0.15, attempt surprise 0.15) →
+          TF-IDF + cosine similarity O(K×N) suspect scan → GPT explanation layer with full
+          <code>ReviewAuditLog</code> trail and versioned <code>PlagiarismPolicy</code>.
+        </li>
+      </ul>
+    </div>
+
+    <div class="ai-project">
+      <div class="ai-project-header">
+        <div class="ai-project-name">0.1% DEV — RAG Learning Assistant</div>
+        <div class="ai-project-meta">FastAPI · text-embedding-3-small · gpt-4.1-mini · React 18</div>
+      </div>
+      <div class="ai-project-tagline">Ed-tech course platform · 8 deep CS fundamentals courses · RAG grounded strictly in proprietary transcripts</div>
+      <ul class="ai-bullets">
+        <li>
+          <strong>Custom chunker</strong> — 180-word sliding windows (35-word overlap,
+          step=145) over transcript JSON, metadata-tagged with course ID, lecture name,
+          and timestamp range per chunk.
+        </li>
+        <li>
+          <strong>In-memory vector store</strong> — pure Python cosine similarity,
+          zero NumPy or FAISS. <code>embed_many()</code> batch-embeds at startup via
+          <code>text-embedding-3-small</code>. FAISS/Pinecone swap is a one-file change
+          to <code>vector_store.py</code>.
+        </li>
+        <li>
+          <strong>Hybrid re-ranking</strong> — top 8 semantic candidates re-scored by
+          <code>max(semantic, jaccard_lexical)</code> with stop-word filtering; threshold
+          gate at 0.15 returns a canned message with no LLM call (saves cost, blocks
+          hallucination).
+        </li>
+        <li>
+          <strong>Source-linked answers</strong> — <code>gpt-4.1-mini</code> citations
+          map to exact lecture and timestamp; React <code>SourceCard</code> components
+          deep-link into the video player at the cited second via <code>?t=seconds</code>.
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- SKILLS -->
+  <div class="resume-section">
+    <div class="section-label">Technical Skills</div>
+    <div class="skills-grid">
+      <div class="skill-row">
+        <div class="skill-category">AI / LLM</div>
+        <div class="skill-items">OpenAI GPT-4o-mini · gpt-4.1-mini · text-embedding-3-small · RAG pipelines · TF-IDF · cosine similarity · vector stores · structured JSON outputs · async LLM orchestration · threshold gating</div>
+      </div>
+      <div class="skill-row">
+        <div class="skill-category">Backend</div>
+        <div class="skill-items">FastAPI · Django 4.2 + DRF · Celery · Redis · PostgreSQL · MongoDB · Docker · Nginx · Gunicorn · Simple JWT · SSE</div>
+      </div>
+      <div class="skill-row">
+        <div class="skill-category">Frontend</div>
+        <div class="skill-items">React 18 + TypeScript + Vite · TanStack Query v5 · React Router v6 · Tailwind CSS · Vue 3 · Quasar PWA · Nuxt 3 · CodeMirror</div>
+      </div>
+      <div class="skill-row">
+        <div class="skill-category">Open Source</div>
+        <div class="skill-items">npm <code>kalaam</code> v2.3.3 (custom interpreter) · npm <code>stringy-core</code> (50+ pure functions) · ESM modules · tree-shaking · Service Workers</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROJECTS -->
+  <div class="resume-section">
+    <div class="section-label">Projects</div>
+    <div class="projects-mini">
+      <div class="project-mini indigo">
+        <div class="project-mini-name">CodeMas</div>
+        <div class="project-mini-desc">Real-time coding exam platform · 10K concurrent students · 5 AI agents · 3-layer plagiarism detection · Docker sandbox execution · Redis pub/sub · SSE</div>
+      </div>
+      <div class="project-mini amber">
+        <div class="project-mini-name">0.1% DEV</div>
+        <div class="project-mini-desc">Ed-tech course platform · React 18 + FastAPI · RAG AI assistant · Razorpay server-side payments · Firebase video delivery · 8 deep CS courses</div>
+      </div>
+      <div class="project-mini green">
+        <div class="project-mini-name">Kalaam</div>
+        <div class="project-mini-desc">Programming language in Hindi, Marathi, Bengali, Telugu, Odia · Custom 5-phase interpreter · Offline PWA · npm package · Learning Mode execution trace</div>
+      </div>
+      <div class="project-mini blue">
+        <div class="project-mini-name">stringy-core</div>
+        <div class="project-mini-desc">Zero-dependency JS string utility library · 50+ pure functions · 9 modules · Published on npm · ESM with tree-shaking · Contribution Station for open-source PRs</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="resume-footer">
+    Architecture animations · System design docs · Live demos at
+    <a href="https://swanandapps.github.io" target="_blank">swanandapps.github.io</a>
+  </div>
+
+</main>
+
+</body>
+</html>
