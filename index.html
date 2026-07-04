@@ -93,10 +93,41 @@ nav {
 
 /* ── HERO ── */
 .hero {
-  padding: 100px 40px 60px;
-  text-align: center;
-  max-width: 900px;
+  padding: 90px 40px 60px;
+  max-width: 1040px;
   margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 64px;
+}
+.hero-content {
+  flex: 1;
+  min-width: 0;
+}
+.hero-photo-wrap {
+  flex-shrink: 0;
+  width: 280px;
+  position: relative;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.hero-photo-wrap img {
+  width: 100%;
+  display: block;
+  filter: grayscale(20%);
+  transition: filter 0.3s;
+}
+.hero-photo-wrap:hover img { filter: grayscale(0%); }
+.hero-photo-caption {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  color: #fff;
+  background: rgba(26,26,24,0.78);
+  backdrop-filter: blur(6px);
+  padding: 8px 12px;
 }
 
 .hero-pill {
@@ -138,16 +169,14 @@ nav {
 }
 
 .hero-sub {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   color: var(--muted);
-  max-width: 600px;
-  margin: 0 auto 28px;
+  margin-bottom: 28px;
   line-height: 1.75;
 }
 
 .hero-pills {
   display: flex;
-  justify-content: center;
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 32px;
@@ -166,7 +195,6 @@ nav {
 
 .hero-actions {
   display: flex;
-  justify-content: center;
   gap: 12px;
 }
 
@@ -568,7 +596,8 @@ footer {
 
 @media (max-width: 760px) {
   nav { padding: 0 20px; }
-  .hero { padding: 80px 20px 40px; }
+  .hero { padding: 80px 20px 40px; flex-direction: column; }
+  .hero-photo-wrap { width: 100%; max-width: 360px; }
   .stats { grid-template-columns: 1fr 1fr; padding: 0 20px; }
   .experience, .projects, .notable, .contact { padding-left: 20px; padding-right: 20px; }
   .exp-cards { grid-template-columns: 1fr; }
@@ -595,25 +624,31 @@ footer {
 
 <!-- HERO -->
 <div class="hero">
-  <div class="hero-pill">Senior AI / Full Stack Engineer — 6+ years</div>
-  <h1>
-    Systems that scale<span class="period">.</span><br>
-    AI that ships<span class="period">.</span><br>
-    <span class="underline-wrap">Code that matters<span class="period">.</span></span>
-  </h1>
-  <p class="hero-sub">
-    6+ years building AI-native systems — multi-agent pipelines, RAG with hybrid retrieval, and a detection engine that improved accuracy 19×. Also built India's first Hindi programming language and gave a TEDx talk about it.
-  </p>
-  <div class="hero-pills">
-    <span class="hero-pill-tag">LangChain · Mastra</span>
-    <span class="hero-pill-tag">pgvector · RAG</span>
-    <span class="hero-pill-tag">AWS Lambda · SQS</span>
-    <span class="hero-pill-tag">React 18 · FastAPI · Django</span>
-    <span class="hero-pill-tag">Python · TypeScript</span>
+  <div class="hero-content">
+    <div class="hero-pill">Senior AI / Full Stack Engineer — 6+ years</div>
+    <h1>
+      Systems that scale<span class="period">.</span><br>
+      AI that ships<span class="period">.</span><br>
+      <span class="underline-wrap">Code that matters<span class="period">.</span></span>
+    </h1>
+    <p class="hero-sub">
+      6+ years building AI-native systems — multi-agent pipelines, RAG with hybrid retrieval, and a detection engine that improved accuracy 19×. Also built India's first Hindi programming language and gave a TEDx talk about it.
+    </p>
+    <div class="hero-pills">
+      <span class="hero-pill-tag">LangChain · Mastra</span>
+      <span class="hero-pill-tag">pgvector · RAG</span>
+      <span class="hero-pill-tag">AWS Lambda · SQS</span>
+      <span class="hero-pill-tag">React 18 · FastAPI · Django</span>
+      <span class="hero-pill-tag">Python · TypeScript</span>
+    </div>
+    <div class="hero-actions">
+      <a href="#projects" class="btn-primary">View Projects</a>
+      <a href="#contact" class="btn-ghost">Get in touch</a>
+    </div>
   </div>
-  <div class="hero-actions">
-    <a href="#projects" class="btn-primary">View Projects</a>
-    <a href="#contact" class="btn-ghost">Get in touch</a>
+  <div class="hero-photo-wrap">
+    <img src="E09EB739-7DA5-43EE-AA6D-868C79A0F082_1_105_c.jpeg" alt="Swanand Kadam speaking at Verse, Mumbai" />
+    <div class="hero-photo-caption">Speaking at Verse, Mumbai</div>
   </div>
 </div>
 
