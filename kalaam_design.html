@@ -4,234 +4,441 @@
 <meta charset="UTF-8">
 <link rel="icon" type="image/jpeg" href="E09EB739-7DA5-43EE-AA6D-868C79A0F082_1_105_c.jpeg">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kalaam — System Design</title>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<title>Kalaam — System Architecture</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
-:root {
-  --bg: #0f1117;
-  --surface: #1a1f2e;
-  --border: #2a3045;
-  --green: #10b981;
-  --text: #f1f5f9;
-  --muted: #64748b;
-  --indigo: #6366f1;
-}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
+
+:root {
+  --bg: #f0ebe0;
+  --surface: #fff;
+  --border: #ddd8cc;
+  --accent: #c4573a;
+  --text: #1a1a18;
+  --muted: #888;
+  --mono: 'JetBrains Mono', monospace;
+}
 
 body {
   background: var(--bg);
   color: var(--text);
   font-family: 'Inter', sans-serif;
-  line-height: 1.7;
+  min-height: 100vh;
 }
 
-header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 40px;
-  background: rgba(15,17,23,0.92);
-  backdrop-filter: blur(12px);
+.back-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  height: 44px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px;
+  background: rgba(240,235,224,0.97);
+  backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
 }
-
-.back-link {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.82rem;
-  color: var(--muted);
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: color 0.2s;
+.back-nav-link {
+  font-family: var(--mono); font-size: 11px; color: var(--muted);
+  text-decoration: none; transition: color 0.2s;
 }
-.back-link:hover { color: var(--green); }
-
-.doc-badge {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  color: #10b981;
-  background: rgba(16,185,129,0.1);
-  border: 1px solid rgba(16,185,129,0.25);
-  padding: 4px 12px;
-  border-radius: 20px;
+.back-nav-link:hover { color: var(--accent); }
+.back-nav-badge {
+  font-family: var(--mono); font-size: 10px; color: var(--accent);
+  background: rgba(196,87,58,0.08); border: 1px solid rgba(196,87,58,0.25);
+  padding: 3px 12px; border-radius: 20px;
 }
 
-main {
-  max-width: 860px;
+.page-header {
+  padding: 72px 48px 32px;
+  max-width: 1040px;
   margin: 0 auto;
-  padding: 48px 32px 96px;
 }
 
-#content h1 {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 8px;
-  line-height: 1.3;
+.page-eyebrow {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 10px;
 }
 
-#content h2 {
-  font-size: 1.35rem;
-  font-weight: 600;
-  color: var(--text);
-  margin-top: 48px;
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
+.page-title {
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  font-weight: 900; letter-spacing: -0.04em; line-height: 1.0;
+  color: var(--text); margin-bottom: 12px;
 }
 
-#content h3 {
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: var(--green);
-  margin-top: 28px;
-  margin-bottom: 10px;
+.page-title .period { color: var(--accent); }
+
+.page-sub {
+  font-size: 1rem; color: var(--muted); max-width: 620px; line-height: 1.7;
+  margin-bottom: 28px;
 }
 
-#content h4 {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--muted);
-  margin-top: 20px;
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+.stats-row {
+  display: flex; gap: 12px; flex-wrap: wrap;
+}
+.stat-chip {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; padding: 10px 16px;
+}
+.stat-chip-num {
+  font-family: var(--mono); font-size: 1.15rem; font-weight: 700;
+  color: var(--text); letter-spacing: -0.02em; line-height: 1;
+}
+.stat-chip-num .accent { color: var(--accent); }
+.stat-chip-label {
+  font-size: 0.73rem; color: var(--muted); line-height: 1.4;
 }
 
-#content p {
-  color: #cbd5e1;
-  margin-bottom: 14px;
-  font-size: 0.95rem;
+.diagram-wrap {
+  max-width: 1040px;
+  margin: 28px auto 0;
+  padding: 0 48px;
 }
 
-#content strong { color: var(--text); }
-
-#content a { color: var(--green); text-decoration: none; }
-#content a:hover { text-decoration: underline; }
-
-#content ul, #content ol {
-  padding-left: 24px;
-  margin-bottom: 14px;
-}
-
-#content li {
-  color: #cbd5e1;
-  font-size: 0.95rem;
-  margin-bottom: 6px;
-}
-
-#content pre {
+.diagram-section {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 20px 24px;
-  overflow-x: auto;
-  margin: 20px 0;
+  overflow: hidden;
+  margin-bottom: 16px;
 }
 
-#content code {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.82rem;
-  color: #a5f3d0;
+.diagram-section-label {
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 4px;
+}
+.diagram-section-label .path-label {
+  font-size: 0.6rem; color: var(--accent);
 }
 
-#content p code, #content li code {
-  background: rgba(16,185,129,0.08);
-  border: 1px solid rgba(16,185,129,0.15);
-  border-radius: 4px;
-  padding: 1px 6px;
-  font-size: 0.82rem;
-  color: #6ee7b7;
-}
-
-#content blockquote {
-  border-left: 3px solid var(--green);
-  padding: 12px 20px;
-  margin: 20px 0;
-  background: rgba(16,185,129,0.05);
-  border-radius: 0 6px 6px 0;
-  color: var(--muted);
-  font-style: italic;
-}
-
-#content table {
+.arch-svg {
+  display: block;
   width: 100%;
-  border-collapse: collapse;
-  margin: 20px 0;
-  font-size: 0.88rem;
+  height: auto;
 }
 
-#content th {
+.section-eyebrow {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--muted);
+  max-width: 1040px; margin: 32px auto 14px; padding: 0 48px;
+}
+
+.comp-grid {
+  max-width: 1040px;
+  margin: 0 auto 60px;
+  padding: 0 48px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.comp-card {
   background: var(--surface);
-  color: var(--text);
-  font-weight: 600;
-  padding: 10px 16px;
-  text-align: left;
   border: 1px solid var(--border);
+  border-left: 3px solid;
+  border-radius: 4px;
+  padding: 18px 18px;
 }
 
-#content td {
-  padding: 9px 16px;
-  border: 1px solid var(--border);
-  color: #cbd5e1;
-  vertical-align: top;
+.comp-card-layer {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em;
+  text-transform: uppercase; margin-bottom: 8px;
 }
 
-#content tr:nth-child(even) td { background: rgba(26,31,46,0.4); }
-
-hr {
-  border: none;
-  border-top: 1px solid var(--border);
-  margin: 36px 0;
+.comp-card-name {
+  font-size: 0.9rem; font-weight: 700; color: var(--text);
+  margin-bottom: 6px; letter-spacing: -0.01em;
 }
 
-.loading {
-  color: var(--muted);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.85rem;
-  padding: 80px 0;
-  text-align: center;
+.comp-card-desc {
+  font-size: 0.8rem; color: #555; line-height: 1.65;
 }
 
-@media (max-width: 640px) {
-  header { padding: 14px 20px; }
-  main { padding: 32px 20px 64px; }
-  #content h1 { font-size: 1.5rem; }
-  #content h2 { font-size: 1.15rem; }
-  #content pre { font-size: 0.75rem; padding: 14px; }
-  #content table { font-size: 0.78rem; }
-  #content th, #content td { padding: 7px 10px; }
+.comp-card-tags {
+  display: flex; gap: 5px; flex-wrap: wrap; margin-top: 12px;
+}
+.comp-tag {
+  font-family: var(--mono); font-size: 0.55rem; padding: 2px 7px;
+  border: 1px solid var(--border); border-radius: 2px; color: var(--muted);
+  background: var(--bg);
+}
+
+@media (max-width: 720px) {
+  .page-header, .diagram-wrap, .comp-grid, .section-eyebrow { padding-left: 20px; padding-right: 20px; }
+  .comp-grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
 <body>
 
-<header>
-  <a href="index.html" class="back-link" onclick="if(history.length&lt;=1){return true;}window.close();return false;">← Back to Portfolio</a>
-  <span class="doc-badge">System Design</span>
-</header>
+<div class="back-nav">
+  <a href="index.html" class="back-nav-link">← Portfolio</a>
+  <span class="back-nav-badge">Kalaam — Architecture</span>
+</div>
 
-<main>
-  <div id="content"><div class="loading">Loading document…</div></div>
-</main>
+<div class="page-header">
+  <div class="page-eyebrow">System Design</div>
+  <h1 class="page-title">Kalaam<span class="period">.</span></h1>
+  <p class="page-sub">
+    A programming language in Hindi, Marathi, Bengali, Telugu, and Odia. Mobile-first, fully offline,
+    zero API calls. Built for tier-3 city students who have no laptop and intermittent internet.
+  </p>
+  <div class="stats-row">
+    <div class="stat-chip">
+      <div class="stat-chip-num">5<span class="accent"> langs</span></div>
+      <div class="stat-chip-label">Hindi · Marathi<br>Bengali · Telugu · Odia</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-chip-num">0<span class="accent"> deps</span></div>
+      <div class="stat-chip-label">Zero runtime<br>dependencies</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-chip-num">100<span class="accent">%</span></div>
+      <div class="stat-chip-label">Offline capable<br>service-worker PWA</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-chip-num">npm<span class="accent"> v2</span></div>
+      <div class="stat-chip-label">Published as<br>kalaam v2.3.3</div>
+    </div>
+  </div>
+</div>
 
-<script>
-fetch('kalaam_design.md')
-  .then(r => r.text())
-  .then(md => {
-    document.getElementById('content').innerHTML = marked.parse(md);
-  })
-  .catch(() => {
-    document.getElementById('content').innerHTML = '<p style="color:#ef4444">Failed to load document.</p>';
-  });
-</script>
+<div class="diagram-wrap">
+
+  <!-- ── DIAGRAM 1: Interpreter Pipeline ── -->
+  <div class="diagram-section">
+    <div class="diagram-section-label">
+      <span>Interpreter Pipeline — 5 phases, pure JavaScript, zero server calls</span>
+      <span class="path-label">Source Code → Clean → Scan → Tokenize → Interpret → kalaam{} output</span>
+    </div>
+    <svg class="arch-svg" viewBox="0 0 940 222" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ah"   markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#888"/></marker>
+        <marker id="ah-g" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#059669"/></marker>
+        <marker id="ah-c" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#c4573a"/></marker>
+      </defs>
+
+      <!-- Input box -->
+      <rect x="14" y="50" width="112" height="90" rx="6" fill="white" stroke="#64748b" stroke-width="1.5"/>
+      <text x="70" y="75"  font-size="9" font-weight="700" fill="#475569" text-anchor="middle">Source Code</text>
+      <text x="70" y="91"  font-size="7" fill="#888" text-anchor="middle">Hindi · Marathi</text>
+      <text x="70" y="104" font-size="7" fill="#888" text-anchor="middle">Bengali · Telugu</text>
+      <text x="70" y="117" font-size="7" fill="#888" text-anchor="middle">Odia</text>
+      <text x="70" y="131" font-size="6.5" fill="#aaa" text-anchor="middle" font-style="italic">any supported lang</text>
+
+      <!-- Phase 1: Cleaning -->
+      <rect x="150" y="50" width="134" height="90" rx="6" fill="white" stroke="#6366f1" stroke-width="1.5"/>
+      <text x="217" y="71"  font-size="7" font-weight="600" fill="#6366f1" text-anchor="middle" font-family="'JetBrains Mono',monospace">PHASE 1</text>
+      <text x="217" y="87"  font-size="9.5" font-weight="700" fill="#6366f1" text-anchor="middle">Cleaning</text>
+      <text x="217" y="103" font-size="7.5" fill="#888" text-anchor="middle">earlyCleaning()</text>
+      <text x="217" y="117" font-size="7"   fill="#aaa" text-anchor="middle">keyword substitution</text>
+      <text x="217" y="130" font-size="7"   fill="#aaa" text-anchor="middle">lang → norm tokens</text>
+
+      <!-- Phase 2: Scanning -->
+      <rect x="308" y="50" width="134" height="90" rx="6" fill="white" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="375" y="71"  font-size="7" font-weight="600" fill="#3b82f6" text-anchor="middle" font-family="'JetBrains Mono',monospace">PHASE 2</text>
+      <text x="375" y="87"  font-size="9.5" font-weight="700" fill="#3b82f6" text-anchor="middle">Scanning</text>
+      <text x="375" y="103" font-size="7.5" fill="#888" text-anchor="middle">character-level scan</text>
+      <text x="375" y="117" font-size="7"   fill="#aaa" text-anchor="middle">→ cleaned_sourcedata[]</text>
+      <text x="375" y="130" font-size="7"   fill="#aaa" text-anchor="middle">whitespace · literals</text>
+
+      <!-- Phase 3: Tokenizing -->
+      <rect x="466" y="50" width="134" height="90" rx="6" fill="white" stroke="#d97706" stroke-width="1.5"/>
+      <text x="533" y="71"  font-size="7" font-weight="600" fill="#d97706" text-anchor="middle" font-family="'JetBrains Mono',monospace">PHASE 3</text>
+      <text x="533" y="87"  font-size="9.5" font-weight="700" fill="#d97706" text-anchor="middle">Tokenizing</text>
+      <text x="533" y="103" font-size="7.5" fill="#888" text-anchor="middle">20 Push* functions</text>
+      <text x="533" y="117" font-size="7"   fill="#aaa" text-anchor="middle">→ typed tokens[]</text>
+      <text x="533" y="130" font-size="7"   fill="#aaa" text-anchor="middle">TypeChecking pass</text>
+
+      <!-- Phase 4: Interpretation -->
+      <rect x="624" y="50" width="134" height="90" rx="6" fill="white" stroke="#059669" stroke-width="1.5"/>
+      <text x="691" y="71"  font-size="7" font-weight="600" fill="#059669" text-anchor="middle" font-family="'JetBrains Mono',monospace">PHASE 4</text>
+      <text x="691" y="87"  font-size="9.5" font-weight="700" fill="#059669" text-anchor="middle">Interpretation</text>
+      <text x="691" y="103" font-size="7.5" fill="#888" text-anchor="middle">walk tokens[]</text>
+      <text x="691" y="117" font-size="7"   fill="#aaa" text-anchor="middle">execute vs memory{}</text>
+      <text x="691" y="130" font-size="7"   fill="#aaa" text-anchor="middle">build ExecutionStack[]</text>
+
+      <!-- Phase 5 / Output -->
+      <rect x="782" y="50" width="144" height="90" rx="6" fill="white" stroke="#c4573a" stroke-width="2"/>
+      <text x="854" y="68"  font-size="7" font-weight="600" fill="#c4573a" text-anchor="middle" font-family="'JetBrains Mono',monospace">OUTPUT</text>
+      <text x="854" y="84"  font-size="9.5" font-weight="700" fill="#c4573a" text-anchor="middle">kalaam{}</text>
+      <text x="854" y="100" font-size="7.5" fill="#888" text-anchor="middle">output · isError</text>
+      <text x="854" y="115" font-size="7"   fill="#aaa" text-anchor="middle">ExecutionStack[]</text>
+      <text x="854" y="129" font-size="7"   fill="#aaa" text-anchor="middle">TimeTaken</text>
+
+      <!-- Pipeline arrows -->
+      <path d="M 126,95 L 150,95" stroke="#64748b" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+      <path d="M 284,95 L 308,95" stroke="#6366f1" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+      <path d="M 442,95 L 466,95" stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+      <path d="M 600,95 L 624,95" stroke="#d97706" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+      <path d="M 758,95 L 782,95" stroke="#059669" stroke-width="1.5" fill="none" marker-end="url(#ah-c)"/>
+
+      <!-- Arrow labels -->
+      <text x="138" y="89" font-size="6.5" fill="#999" text-anchor="middle">norm</text>
+      <text x="296" y="89" font-size="6.5" fill="#999" text-anchor="middle">chars</text>
+      <text x="454" y="89" font-size="6.5" fill="#999" text-anchor="middle">tokens</text>
+      <text x="612" y="89" font-size="6.5" fill="#999" text-anchor="middle">execute</text>
+      <text x="770" y="89" font-size="6.5" fill="#999" text-anchor="middle">output</text>
+
+      <!-- Bottom note: Learning Mode -->
+      <rect x="14" y="160" width="912" height="44" rx="4" fill="rgba(196,87,58,0.04)" stroke="rgba(196,87,58,0.2)" stroke-width="1" stroke-dasharray="5 3"/>
+      <text x="470" y="179" font-size="9" font-weight="600" fill="#c4573a" text-anchor="middle">Learning Mode — ExecutionStack[] is the key innovation</text>
+      <text x="470" y="196" font-size="7.5" fill="#888" text-anchor="middle">Every operation appends to ExecutionStack[]. The UI replays it step-by-step in the student's language — teaching how the interpreter evaluates the code. No teacher required.</text>
+    </svg>
+  </div>
+
+  <!-- ── DIAGRAM 2: Multi-language Architecture ── -->
+  <div class="diagram-section">
+    <div class="diagram-section-label">
+      <span>Multi-language Architecture — one interpreter core, N language keyword maps</span>
+      <span class="path-label">Add new language = 1 keyword map entry · no parser changes · no recompile</span>
+    </div>
+    <svg class="arch-svg" viewBox="0 0 940 284" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ah2"   markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#888"/></marker>
+        <marker id="ah2-g" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#059669"/></marker>
+      </defs>
+
+      <!-- PWA Shell (top-left) -->
+      <rect x="28"  y="18" width="360" height="86" rx="6" fill="white" stroke="#6366f1" stroke-width="1.5"/>
+      <text x="208" y="41"  font-size="11"  font-weight="700" fill="#6366f1" text-anchor="middle">PWA Shell</text>
+      <text x="208" y="58"  font-size="8"   fill="#888" text-anchor="middle">Vue 2 + Quasar · CodeMirror (custom syntax mode) · Service Worker</text>
+      <text x="208" y="74"  font-size="7.5" fill="#aaa" text-anchor="middle">offline cached · installable · mobile-first UI</text>
+      <!-- Offline pill -->
+      <rect x="246" y="24" width="136" height="14" rx="3" fill="rgba(99,102,241,0.07)" stroke="rgba(99,102,241,0.28)" stroke-width="0.8"/>
+      <text x="314" y="34"  font-size="7" fill="#6366f1" text-anchor="middle" font-family="'JetBrains Mono',monospace">100% offline · no API calls</text>
+
+      <!-- Interpreter Core (top-right) -->
+      <rect x="430" y="18" width="346" height="86" rx="6" fill="white" stroke="#059669" stroke-width="2"/>
+      <text x="603" y="41"  font-size="11"  font-weight="700" fill="#059669" text-anchor="middle">kalaam Interpreter Core</text>
+      <text x="603" y="58"  font-size="8"   fill="#888" text-anchor="middle">npm package · v2.3.3 · zero runtime deps</text>
+      <text x="603" y="74"  font-size="7.5" fill="#aaa" text-anchor="middle">Compile(source, languageKeywords) → kalaam{}</text>
+
+      <!-- Arrow: PWA → Interpreter -->
+      <path d="M 388,61 L 430,61" stroke="#6366f1" stroke-width="1.5" fill="none" marker-end="url(#ah2)"/>
+      <text x="409" y="55" font-size="7" fill="#888" text-anchor="middle">calls</text>
+
+      <!-- Language keyword maps (bottom, 5 boxes) -->
+      <!-- Bus pattern: 5 language boxes → bus rail → trunk → Interpreter Core -->
+      <!-- Language box centers: 94, 282, 470, 658, 846 (slot width 188) -->
+
+      <!-- Language boxes (y=158, h=82) -->
+      <!-- Hindi -->
+      <rect x="28"  y="158" width="132" height="82" rx="6" fill="white" stroke="#e63946" stroke-width="1.5"/>
+      <text x="94"  y="178" font-size="10" font-weight="700" fill="#e63946" text-anchor="middle">हिंदी</text>
+      <text x="94"  y="194" font-size="9"  font-weight="600" fill="#888" text-anchor="middle">Hindi</text>
+      <text x="94"  y="210" font-size="7"  fill="#aaa" text-anchor="middle">चर, यदि, वरना</text>
+      <text x="94"  y="223" font-size="7"  fill="#aaa" text-anchor="middle">जबतक, प्रिंट</text>
+
+      <!-- Marathi -->
+      <rect x="216" y="158" width="132" height="82" rx="6" fill="white" stroke="#d97706" stroke-width="1.5"/>
+      <text x="282" y="178" font-size="10" font-weight="700" fill="#d97706" text-anchor="middle">मराठी</text>
+      <text x="282" y="194" font-size="9"  font-weight="600" fill="#888" text-anchor="middle">Marathi</text>
+      <text x="282" y="210" font-size="7"  fill="#aaa" text-anchor="middle">चल, जर, नाहीतर</text>
+      <text x="282" y="223" font-size="7"  fill="#aaa" text-anchor="middle">जोपर्यंत, छाप</text>
+
+      <!-- Bengali -->
+      <rect x="404" y="158" width="132" height="82" rx="6" fill="white" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="470" y="178" font-size="10" font-weight="700" fill="#3b82f6" text-anchor="middle">বাংলা</text>
+      <text x="470" y="194" font-size="9"  font-weight="600" fill="#888" text-anchor="middle">Bengali</text>
+      <text x="470" y="210" font-size="7"  fill="#aaa" text-anchor="middle">চল, যদি, অন্যথায়</text>
+      <text x="470" y="223" font-size="7"  fill="#aaa" text-anchor="middle">যতক্ষণ, প্রিন্ট</text>
+
+      <!-- Telugu -->
+      <rect x="592" y="158" width="132" height="82" rx="6" fill="white" stroke="#7c3aed" stroke-width="1.5"/>
+      <text x="658" y="178" font-size="10" font-weight="700" fill="#7c3aed" text-anchor="middle">తెలుగు</text>
+      <text x="658" y="194" font-size="9"  font-weight="600" fill="#888" text-anchor="middle">Telugu</text>
+      <text x="658" y="210" font-size="7"  fill="#aaa" text-anchor="middle">వేరియబుల్, ఉంటే</text>
+      <text x="658" y="223" font-size="7"  fill="#aaa" text-anchor="middle">వరకు, ముద్రించు</text>
+
+      <!-- Odia -->
+      <rect x="780" y="158" width="132" height="82" rx="6" fill="white" stroke="#059669" stroke-width="1.5"/>
+      <text x="846" y="178" font-size="10" font-weight="700" fill="#059669" text-anchor="middle">ଓଡ଼ିଆ</text>
+      <text x="846" y="194" font-size="9"  font-weight="600" fill="#888" text-anchor="middle">Odia</text>
+      <text x="846" y="210" font-size="7"  fill="#aaa" text-anchor="middle">ଚଳ, ଯଦି, ନହେଲେ</text>
+      <text x="846" y="223" font-size="7"  fill="#aaa" text-anchor="middle">ଯ ପର୍ଯ୍ୟ, ପ୍ରିଣ୍ଟ</text>
+
+      <!-- Language stubs (from box top y=158 UP to bus y=142) -->
+      <line x1="94"  y1="158" x2="94"  y2="142" stroke="#bbb" stroke-width="1.2"/>
+      <line x1="282" y1="158" x2="282" y2="142" stroke="#bbb" stroke-width="1.2"/>
+      <line x1="470" y1="158" x2="470" y2="142" stroke="#bbb" stroke-width="1.2"/>
+      <line x1="658" y1="158" x2="658" y2="142" stroke="#bbb" stroke-width="1.2"/>
+      <line x1="846" y1="158" x2="846" y2="142" stroke="#bbb" stroke-width="1.2"/>
+
+      <!-- Bus rail -->
+      <line x1="94" y1="142" x2="846" y2="142" stroke="#bbb" stroke-width="1.5"/>
+
+      <!-- Trunk: bus → Interpreter Core bottom (y=104) -->
+      <path d="M 603,142 L 603,104" stroke="#059669" stroke-width="1.5" fill="none" marker-end="url(#ah2-g)"/>
+      <text x="618" y="127" font-size="7" fill="#059669">languageKeywords</text>
+    </svg>
+  </div>
+
+</div>
+
+<!-- KEY DECISIONS -->
+<div class="section-eyebrow">Key Design Decisions</div>
+<div class="comp-grid">
+
+  <div class="comp-card" style="border-left-color:#059669">
+    <div class="comp-card-layer" style="color:#059669">Core Architecture</div>
+    <div class="comp-card-name">Zero runtime dependencies</div>
+    <div class="comp-card-desc">The kalaam npm package has zero runtime dependencies. The interpreter is pure JavaScript — no parser framework, no tokenizer library, no runtime engine. This keeps the bundle tiny, works completely offline, and means any environment that runs JS can run Kalaam.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">pure JS</span><span class="comp-tag">npm</span><span class="comp-tag">zero deps</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#e63946">
+    <div class="comp-card-layer" style="color:#e63946">Multi-language Design</div>
+    <div class="comp-card-name">Add a language = 1 keyword map entry</div>
+    <div class="comp-card-desc">The interpreter is language-agnostic. Phase 1 (Cleaning) substitutes language-specific keywords into normalized tokens before any parsing begins. Adding Hindi, Marathi, Bengali, Telugu, or Odia required no parser changes — just one keyword map object per language.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">keyword substitution</span><span class="comp-tag">5 languages</span><span class="comp-tag">extensible</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#c4573a">
+    <div class="comp-card-layer" style="color:#c4573a">Learning Innovation</div>
+    <div class="comp-card-name">ExecutionStack — the interpreter teaches itself</div>
+    <div class="comp-card-desc">Every operation the interpreter performs appends to ExecutionStack[]. The PWA UI replays this stack line-by-line in the student's language, showing what each line does and why. Students learn not just to write code but how the computer evaluates it — without a teacher or internet.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">ExecutionStack[]</span><span class="comp-tag">step replay</span><span class="comp-tag">no teacher</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#6366f1">
+    <div class="comp-card-layer" style="color:#6366f1">Deployment</div>
+    <div class="comp-card-name">PWA with service-worker cache — truly offline</div>
+    <div class="comp-card-desc">The Vue 2 + Quasar PWA is service-worker cached on first load. After that, no internet is needed — the app, interpreter, and all language assets run entirely from the device. Designed for tier-3 city students with intermittent connectivity and no laptop.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">Quasar PWA</span><span class="comp-tag">service worker</span><span class="comp-tag">offline-first</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#d97706">
+    <div class="comp-card-layer" style="color:#d97706">Editor</div>
+    <div class="comp-card-name">CodeMirror with custom Kalaam syntax mode</div>
+    <div class="comp-card-desc">The code editor uses CodeMirror with a custom syntax mode written specifically for Kalaam. It highlights Hindi/Marathi/etc. keywords, strings, and comments in real-time. The mode understands the normalized token structure from Phase 1, giving accurate syntax coloring for all 5 languages.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">CodeMirror</span><span class="comp-tag">custom syntax mode</span><span class="comp-tag">5 language highlight</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#3b82f6">
+    <div class="comp-card-layer" style="color:#3b82f6">Public API</div>
+    <div class="comp-card-name">Single clean entry point — Compile()</div>
+    <div class="comp-card-desc">The package exposes one public function: Compile(sourcecode, languageKeywords) which returns { output, ExecutionStack, isError, TimeTaken }. The caller decides which language keyword map to pass. The interpreter doesn't know or care which language is active — it only sees normalized tokens after Phase 1.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">Compile()</span><span class="comp-tag">language-agnostic core</span><span class="comp-tag">npm v2.3.3</span>
+    </div>
+  </div>
+
+</div>
+
 </body>
 </html>

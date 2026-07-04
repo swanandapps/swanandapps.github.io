@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CodeMas — AI Agents</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #f0ebe0; --surface: #fff; --border: #ddd8cc;
+  --green: #10b981; --text: #1a1a18; --muted: #888;
+  --indigo: #6366f1; --amber: #f59e0b; --purple: #8b5cf6;
+  --blue: #3b82f6; --red: #e63946;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; line-height:1.6; min-height:100vh; }
+
+.back-nav {
+  position:fixed; top:0; left:0; right:0; z-index:200;
+  height:40px; display:flex; align-items:center; justify-content:space-between;
+  padding:0 28px; background:rgba(240,235,224,0.96);
+  backdrop-filter:blur(10px); border-bottom:1px solid #ddd8cc;
+}
+.back-nav-link { font-family:'JetBrains Mono',monospace; font-size:11px; color:#64748b; text-decoration:none; transition:color 0.2s; }
+.back-nav-link:hover { color:#10b981; }
+.back-nav-badge { font-family:'JetBrains Mono',monospace; font-size:10px; color:#f59e0b; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.25); padding:3px 10px; border-radius:20px; }
+
+.page-header { padding:60px 40px 16px; text-align:center; }
+.page-title { font-size:1.6rem; font-weight:700; letter-spacing:-0.02em; margin-bottom:6px; }
+.page-sub { font-size:0.85rem; color:var(--muted); }
+
+/* Phase Banner */
+.phase-banner { max-width:800px; margin:20px auto 0; padding:0 24px; }
+.phase-pill { display:inline-block; font-family:'JetBrains Mono',monospace; font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase; padding:4px 14px; border-radius:20px; background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.3); color:var(--amber); margin-bottom:10px; }
+.phase-name { font-size:1.25rem; font-weight:700; letter-spacing:-0.02em; margin-bottom:4px; }
+.phase-sep { height:1px; background:linear-gradient(90deg,transparent,var(--border),transparent); margin:8px 0; }
+.phase-tagline { font-size:0.8rem; color:var(--muted); font-style:italic; }
+
+/* Stage */
+.stage-wrap { max-width:900px; margin:20px auto; padding:0 24px; }
+.stage {
+  background:var(--surface); border:1px solid var(--border); border-radius:14px;
+  position:relative; height:320px; overflow:hidden;
+}
+.stage-grid {
+  position:absolute; inset:0;
+  background-image: linear-gradient(rgba(42,48,69,0.25) 1px,transparent 1px), linear-gradient(90deg,rgba(42,48,69,0.25) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+
+/* Nodes */
+.node {
+  position:absolute; display:flex; flex-direction:column; align-items:center;
+  gap:6px; cursor:default; transition:opacity 0.4s;
+}
+.node-circle {
+  width:52px; height:52px; border-radius:50%; display:flex; align-items:center;
+  justify-content:center; font-size:1.2rem; border:2px solid transparent;
+  box-shadow:0 4px 16px rgba(0,0,0,0.4); transition:all 0.3s;
+  position:relative;
+}
+.node-label { font-family:'JetBrains Mono',monospace; font-size:0.62rem; color:var(--muted); text-align:center; letter-spacing:0.04em; white-space:nowrap; }
+
+.node.active .node-circle { transform:scale(1.15); }
+.node.dim { opacity:0.3; }
+
+/* SVG connections */
+.connections { position:absolute; inset:0; pointer-events:none; }
+
+/* Packet */
+.packet {
+  position:absolute; width:10px; height:10px; border-radius:50%;
+  display:none; pointer-events:none;
+  box-shadow:0 0 8px currentColor;
+  transform:translate(-50%,-50%);
+}
+.packet.active { display:block; }
+
+/* Step description */
+.step-desc { max-width:800px; margin:16px auto; padding:0 24px; }
+.step-box {
+  background:var(--surface); border:1px solid var(--border); border-radius:10px;
+  padding:18px 22px; min-height:72px; display:flex; align-items:center; gap:16px;
+}
+.step-num { font-family:'JetBrains Mono',monospace; font-size:0.68rem; color:var(--amber); flex-shrink:0; letter-spacing:0.1em; }
+.step-text { font-size:0.88rem; color:#cbd5e1; line-height:1.65; }
+.step-text strong { color:var(--text); }
+.step-text em { color:var(--amber); font-style:normal; font-weight:600; }
+
+/* Controls */
+.controls { max-width:800px; margin:14px auto 0; padding:0 24px; display:flex; align-items:center; gap:12px; }
+.ctrl-btn {
+  padding:7px 20px; border-radius:6px; font-size:0.78rem; font-weight:600;
+  border:1px solid var(--border); background:var(--surface); color:var(--muted);
+  cursor:pointer; transition:all 0.2s;
+}
+.ctrl-btn:hover { color:var(--text); border-color:var(--muted); }
+.ctrl-btn.play { background:var(--amber); border-color:var(--amber); color:#000; }
+.ctrl-btn.play:hover { background:#e08c00; }
+.progress-wrap { flex:1; height:3px; background:var(--border); border-radius:2px; overflow:hidden; }
+.progress-bar { height:100%; background:var(--amber); transition:width 0.3s; border-radius:2px; }
+.step-counter { font-family:'JetBrains Mono',monospace; font-size:0.68rem; color:var(--muted); white-space:nowrap; }
+
+/* Dots */
+.dots-wrap { max-width:800px; margin:18px auto 40px; padding:0 24px; display:flex; flex-direction:column; gap:10px; }
+.dot-group {}
+.dot-group-label { font-family:'JetBrains Mono',monospace; font-size:0.6rem; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:6px; }
+.dot-row { display:flex; gap:6px; flex-wrap:wrap; }
+.dot {
+  width:8px; height:8px; border-radius:50%; background:var(--border);
+  cursor:pointer; transition:all 0.2s; flex-shrink:0;
+}
+.dot.done { background:var(--amber); opacity:0.5; }
+.dot.current { background:var(--amber); transform:scale(1.4); }
+</style>
+</head>
+<body>
+
+<div class="back-nav">
+  <a href="index.html" class="back-nav-link">← Back to Portfolio</a>
+  <span class="back-nav-badge">CodeMas — AI Agents</span>
+</div>
+
+<div class="page-header">
+  <div class="page-title">CodeMas AI Agents</div>
+  <div class="page-sub">5 production AI agents · GPT-4o-mini · Async · Human-in-the-loop</div>
+</div>
+
+<div class="phase-banner">
+  <div class="phase-pill" id="phasePill">Phase 1 of 5 — Exam Generation</div>
+  <div class="phase-name" id="phaseName">Exam Generation</div>
+  <div class="phase-sep"></div>
+  <div class="phase-tagline" id="phaseTagline">Trainer triggers GPT to draft a complete exam — ~80% faster than manual creation</div>
+</div>
+
+<div class="stage-wrap">
+  <div class="stage">
+    <div class="stage-grid"></div>
+
+    <svg class="connections" id="connSvg"></svg>
+
+    <!-- Nodes -->
+    <div class="node" id="nTrainer" style="left:4%;top:30%">
+      <div class="node-circle" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.5)">👨‍🏫</div>
+      <div class="node-label">Trainer</div>
+    </div>
+    <div class="node" id="nStudent" style="left:4%;top:65%">
+      <div class="node-circle" style="background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.5)">👨‍💻</div>
+      <div class="node-label">Student</div>
+    </div>
+    <div class="node" id="nExamAgent" style="left:30%;top:12%">
+      <div class="node-circle" style="background:rgba(245,158,11,0.15);border-color:rgba(245,158,11,0.5)">⚙️</div>
+      <div class="node-label">Exam Generator</div>
+    </div>
+    <div class="node" id="nRubricAgent" style="left:56%;top:12%">
+      <div class="node-circle" style="background:rgba(245,158,11,0.15);border-color:rgba(245,158,11,0.5)">📊</div>
+      <div class="node-label">Rubric Agent</div>
+    </div>
+    <div class="node" id="nHintAgent" style="left:30%;top:62%">
+      <div class="node-circle" style="background:rgba(245,158,11,0.15);border-color:rgba(245,158,11,0.5)">💡</div>
+      <div class="node-label">Hint Agent</div>
+    </div>
+    <div class="node" id="nDashAgent" style="left:56%;top:62%">
+      <div class="node-circle" style="background:rgba(245,158,11,0.15);border-color:rgba(245,158,11,0.5)">📋</div>
+      <div class="node-label">Dashboard Agent</div>
+    </div>
+    <div class="node" id="nPlagAgent" style="left:43%;top:37%">
+      <div class="node-circle" style="background:rgba(230,57,70,0.15);border-color:rgba(230,57,70,0.5)">🔍</div>
+      <div class="node-label">Plagiarism Agent</div>
+    </div>
+    <div class="node" id="nGPT" style="left:78%;top:37%">
+      <div class="node-circle" style="background:rgba(139,92,246,0.15);border-color:rgba(139,92,246,0.5)">🤖</div>
+      <div class="node-label">GPT-4o-mini</div>
+    </div>
+    <div class="node" id="nDB" style="left:78%;top:72%">
+      <div class="node-circle" style="background:rgba(16,185,129,0.15);border-color:rgba(16,185,129,0.5)">🗄️</div>
+      <div class="node-label">Database</div>
+    </div>
+
+    <div class="packet" id="packet" style="background:#f59e0b;color:#f59e0b"></div>
+  </div>
+</div>
+
+<div class="step-desc">
+  <div class="step-box">
+    <div class="step-num" id="stepNum">01 / 21</div>
+    <div class="step-text" id="stepText">Trainer opens the exam creation panel and enters a topic: <strong>"Binary Search Trees, Python, Medium difficulty, 3 questions."</strong></div>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="ctrl-btn" id="btnPrev" onclick="prevStep()">← Prev</button>
+  <button class="ctrl-btn play" id="btnPlay" onclick="togglePlay()">▶ Play</button>
+  <button class="ctrl-btn" onclick="nextStep()">Next →</button>
+  <div class="progress-wrap"><div class="progress-bar" id="progressBar" style="width:4.76%"></div></div>
+  <div class="step-counter" id="stepCounter">1 / 21</div>
+</div>
+
+<div class="dots-wrap" id="dotsWrap"></div>
+
+<script>
+const PHASES = [
+  { name:'Exam Generation', pill:'Phase 1 of 5 — Exam Generation', tagline:'Trainer triggers GPT to draft a complete exam — ~80% faster than manual creation', steps:4 },
+  { name:'Rubric Scoring', pill:'Phase 2 of 5 — Rubric Scoring', tagline:'Async GPT grades every submission on 4 dimensions — zero trainer overhead', steps:4 },
+  { name:'Socratic Hints', pill:'Phase 3 of 5 — Socratic Hints', tagline:'Failed submissions get a pedagogical nudge — student self-corrects without intervention', steps:4 },
+  { name:'Trainer Dashboard', pill:'Phase 4 of 5 — Trainer Dashboard', tagline:'AI generates cohort summaries — replaces manual spreadsheet reporting entirely', steps:5 },
+  { name:'Plagiarism Engine', pill:'Phase 5 of 5 — Plagiarism Engine', tagline:'Behavioural signals + TF-IDF cosine + GPT explanation — 5% → 95% detection, 19× lift', steps:4 },
+];
+
+const STEPS = [
+  // Phase 1: Exam Generation
+  { phase:0, from:'nTrainer', to:'nExamAgent', text:'Trainer enters topic: <strong>"Binary Search Trees, Python, Medium, 3 questions."</strong> Request sent to Exam Generator Agent.', active:['nTrainer','nExamAgent'] },
+  { phase:0, from:'nExamAgent', to:'nGPT', text:'Exam Generator Agent constructs a structured prompt and calls <strong>GPT-4o-mini</strong> with topic, language, difficulty, and question count.', active:['nExamAgent','nGPT'] },
+  { phase:0, from:'nGPT', to:'nExamAgent', text:'GPT returns a <strong>draft exam JSON</strong>: 3 questions with descriptions, difficulty labels, and 3 test cases each — concrete stdin/stdout pairs.', active:['nGPT','nExamAgent'] },
+  { phase:0, from:'nExamAgent', to:'nTrainer', text:'Draft returned to trainer for review. <strong>Nothing is persisted until the trainer approves.</strong> Human-in-the-loop by design. <em>~80% faster than writing questions manually.</em>', active:['nExamAgent','nTrainer'] },
+
+  // Phase 2: Rubric Scoring
+  { phase:1, from:'nStudent', to:'nRubricAgent', text:'Student\'s submission is evaluated by the test-case engine. <strong>Result delivered to browser.</strong> Rubric Scoring Agent is queued async — never on the delivery path.', active:['nStudent','nRubricAgent'] },
+  { phase:1, from:'nRubricAgent', to:'nGPT', text:'Agent sends submission code, language, and test results (e.g. <strong>7/10 passed</strong>) to GPT-4o-mini with a structured scoring prompt.', active:['nRubricAgent','nGPT'] },
+  { phase:1, from:'nGPT', to:'nRubricAgent', text:'GPT returns scores on 4 dimensions: <strong>correctness 2/2, code quality 1/2, approach 2/2, edge cases 1/2</strong> — each with a one-sentence justification.', active:['nGPT','nRubricAgent'] },
+  { phase:1, from:'nRubricAgent', to:'nDB', text:'<strong>RubricScore stored</strong> in database. Idempotent — retrying the task never double-scores. <em>Consistent feedback at scale across 10K+ submissions with zero trainer overhead.</em>', active:['nRubricAgent','nDB'] },
+
+  // Phase 3: Socratic Hints
+  { phase:2, from:'nStudent', to:'nHintAgent', text:'Submission <strong>fails</strong> a test case. Result delivered. Socratic Hint Agent triggered for this submission — only fired on failures, never on passing submissions.', active:['nStudent','nHintAgent'] },
+  { phase:2, from:'nHintAgent', to:'nGPT', text:'Agent sends the <strong>failing test case, expected output, student\'s actual output, and the student\'s code</strong> to GPT with a pedagogical hint prompt.', active:['nHintAgent','nGPT'] },
+  { phase:2, from:'nGPT', to:'nHintAgent', text:'GPT returns a Socratic nudge: <strong>"Think about what happens when the list is empty before you access index 0."</strong> Concept-level — answer never revealed.', active:['nGPT','nHintAgent'] },
+  { phase:2, from:'nHintAgent', to:'nStudent', text:'<strong>AIHint stored</strong> and shown to student on demand. Stored once — survives page refresh without regenerating. <em>Students self-correct without trainer intervention.</em>', active:['nHintAgent','nStudent'] },
+
+  // Phase 4: Trainer Dashboard
+  { phase:3, from:'nTrainer', to:'nDashAgent', text:'Exam closes. Trainer opens the dashboard. <strong>Dashboard Agent</strong> triggered to generate cohort-level analysis for this exam.', active:['nTrainer','nDashAgent'] },
+  { phase:3, from:'nDashAgent', to:'nDB', text:'Agent queries database for all submissions, outcomes, and rubric scores for this exam — building a complete picture of student performance.', active:['nDashAgent','nDB'] },
+  { phase:3, from:'nDashAgent', to:'nGPT', text:'Aggregated data sent to GPT: pass rates, average rubric scores, common failure patterns. GPT asked to write <strong>cohort narrative and per-student summaries.</strong>', active:['nDashAgent','nGPT'] },
+  { phase:3, from:'nGPT', to:'nDashAgent', text:'GPT returns structured summaries. Agent stores them against the exam record.', active:['nGPT','nDashAgent'] },
+  { phase:3, from:'nDashAgent', to:'nTrainer', text:'<strong>Dashboard populated</strong> with cohort insights, at-risk students, and per-student narratives. <em>Replaced manual spreadsheet analysis entirely — hours of post-exam work eliminated.</em>', active:['nDashAgent','nTrainer'] },
+
+  // Phase 5: Plagiarism Engine
+  { phase:4, from:'nStudent', to:'nPlagAgent', text:'Exam closes. TF-IDF cosine similarity engine compares submission pairs. A pair scores <strong>0.87 similarity</strong> — above the 0.80 threshold. Plagiarism Explanation Agent triggered.', active:['nStudent','nPlagAgent'] },
+  { phase:4, from:'nPlagAgent', to:'nDB', text:'Agent fetches both submissions plus their <strong>behavioural signals</strong>: paste ratio, time to complete, tab switch count, and BehaviouralFlag risk scores.', active:['nPlagAgent','nDB'] },
+  { phase:4, from:'nPlagAgent', to:'nGPT', text:'Both code submissions + similarity score + behavioural signals sent to GPT. GPT asked for <strong>concrete evidence</strong> — not a verdict, but a trainer-readable argument.', active:['nPlagAgent','nGPT'] },
+  { phase:4, from:'nGPT', to:'nTrainer', text:'Evidence brief returned: <strong>summary, 3 specific code matches, confidence: HIGH.</strong> Stored as PlagiarismExplanation. Trainer reviews and decides. <em>Detection: 5% → 95% — a 19× lift.</em>', active:['nGPT','nTrainer'] },
+];
+
+let current = 0;
+let playing = false;
+let playTimer = null;
+
+function getNodeCenter(id) {
+  const el = document.getElementById(id);
+  const stage = document.querySelector('.stage');
+  const sR = stage.getBoundingClientRect();
+  const eR = el.getBoundingClientRect();
+  return {
+    x: ((eR.left + eR.width/2) - sR.left) / sR.width * 100,
+    y: ((eR.top + eR.height/2) - sR.top) / sR.height * 100
+  };
+}
+
+function buildConnections() {
+  const svg = document.getElementById('connSvg');
+  svg.innerHTML = '';
+  const pairs = [
+    ['nTrainer','nExamAgent'],['nTrainer','nStudent'],
+    ['nExamAgent','nGPT'],['nRubricAgent','nGPT'],
+    ['nHintAgent','nGPT'],['nDashAgent','nGPT'],
+    ['nPlagAgent','nGPT'],['nStudent','nHintAgent'],
+    ['nStudent','nRubricAgent'],['nRubricAgent','nDB'],
+    ['nDashAgent','nDB'],['nPlagAgent','nDB'],
+    ['nDashAgent','nTrainer'],['nPlagAgent','nTrainer'],
+  ];
+  pairs.forEach(([a,b]) => {
+    const p1 = getNodeCenter(a);
+    const p2 = getNodeCenter(b);
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',p1.x+'%'); line.setAttribute('y1',p1.y+'%');
+    line.setAttribute('x2',p2.x+'%'); line.setAttribute('y2',p2.y+'%');
+    line.setAttribute('stroke','#ddd8cc'); line.setAttribute('stroke-width','1.5');
+    line.setAttribute('stroke-dasharray','4 4');
+    svg.appendChild(line);
+  });
+}
+
+function animatePacket(fromId, toId) {
+  const packet = document.getElementById('packet');
+  const stage = document.querySelector('.stage');
+  const sR = stage.getBoundingClientRect();
+  const f = document.getElementById(fromId).getBoundingClientRect();
+  const t = document.getElementById(toId).getBoundingClientRect();
+  const x1 = ((f.left+f.width/2)-sR.left)/sR.width*100;
+  const y1 = ((f.top+f.height/2)-sR.top)/sR.height*100;
+  const x2 = ((t.left+t.width/2)-sR.left)/sR.width*100;
+  const y2 = ((t.top+t.height/2)-sR.top)/sR.height*100;
+
+  packet.style.left = x1+'%';
+  packet.style.top = y1+'%';
+  packet.classList.add('active');
+
+  let start = null;
+  const dur = 700;
+  function frame(ts) {
+    if (!start) start = ts;
+    const p = Math.min((ts-start)/dur, 1);
+    const ease = p<0.5 ? 2*p*p : -1+(4-2*p)*p;
+    packet.style.left = (x1+(x2-x1)*ease)+'%';
+    packet.style.top = (y1+(y2-y1)*ease)+'%';
+    if (p < 1) requestAnimationFrame(frame);
+    else packet.classList.remove('active');
+  }
+  requestAnimationFrame(frame);
+}
+
+function render() {
+  const step = STEPS[current];
+  const phase = PHASES[step.phase];
+
+  document.getElementById('phasePill').textContent = phase.pill;
+  document.getElementById('phaseName').textContent = phase.name;
+  document.getElementById('phaseTagline').textContent = phase.tagline;
+  document.getElementById('stepNum').textContent = String(current+1).padStart(2,'0') + ' / 21';
+  document.getElementById('stepText').innerHTML = step.text;
+  document.getElementById('progressBar').style.width = ((current+1)/21*100)+'%';
+  document.getElementById('stepCounter').textContent = (current+1)+' / 21';
+  document.getElementById('btnPrev').disabled = current === 0;
+
+  document.querySelectorAll('.node').forEach(n => {
+    n.classList.remove('active','dim');
+    if (step.active && step.active.includes(n.id)) n.classList.add('active');
+    else n.classList.add('dim');
+  });
+
+  if (step.from && step.to) animatePacket(step.from, step.to);
+
+  document.querySelectorAll('.dot').forEach((d,i) => {
+    d.classList.remove('done','current');
+    if (i < current) d.classList.add('done');
+    else if (i === current) d.classList.add('current');
+  });
+}
+
+function buildDots() {
+  const wrap = document.getElementById('dotsWrap');
+  wrap.innerHTML = '';
+  let idx = 0;
+  PHASES.forEach((ph, pi) => {
+    const grp = document.createElement('div'); grp.className='dot-group';
+    const lbl = document.createElement('div'); lbl.className='dot-group-label'; lbl.textContent=ph.name;
+    const row = document.createElement('div'); row.className='dot-row';
+    for (let i=0;i<ph.steps;i++) {
+      const d = document.createElement('div'); d.className='dot';
+      const ci = idx;
+      d.onclick = () => { current=ci; render(); };
+      row.appendChild(d);
+      idx++;
+    }
+    grp.appendChild(lbl); grp.appendChild(row); wrap.appendChild(grp);
+  });
+}
+
+function nextStep() { if (current < 20) { current++; render(); } else stopPlay(); }
+function prevStep() { if (current > 0) { current--; render(); } }
+function togglePlay() {
+  playing = !playing;
+  document.getElementById('btnPlay').textContent = playing ? '⏸ Pause' : '▶ Play';
+  if (playing) { playTimer = setInterval(() => { if(current<20) nextStep(); else stopPlay(); }, 1800); }
+  else clearInterval(playTimer);
+}
+function stopPlay() { playing=false; clearInterval(playTimer); document.getElementById('btnPlay').textContent='▶ Play'; }
+
+document.addEventListener('keydown', e => {
+  if (e.key==='ArrowRight') nextStep();
+  if (e.key==='ArrowLeft') prevStep();
+  if (e.key===' ') { e.preventDefault(); togglePlay(); }
+});
+
+window.addEventListener('load', () => { buildDots(); buildConnections(); render(); });
+window.addEventListener('resize', buildConnections);
+</script>
+</body>
+</html>

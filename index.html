@@ -4,31 +4,29 @@
 <meta charset="UTF-8">
 <link rel="icon" type="image/jpeg" href="E09EB739-7DA5-43EE-AA6D-868C79A0F082_1_105_c.jpeg">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Swanand Kadam — Senior Full Stack / AI Engineer</title>
+<title>Swanand Kadam — Senior AI / Full Stack Engineer</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
-
-:root {
-  --bg: #0f1117;
-  --surface: #1a1f2e;
-  --border: #2a3045;
-  --green: #10b981;
-  --text: #f1f5f9;
-  --muted: #64748b;
-  --indigo: #6366f1;
-  --amber: #f59e0b;
-  --purple: #8b5cf6;
-  --red: #e63946;
-}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
-
 html { scroll-behavior: smooth; }
+
+:root {
+  --bg: #f0ebe0;
+  --surface: #fff;
+  --border: #ddd8cc;
+  --accent: #c4573a;
+  --accent-light: #e8d5cf;
+  --text: #1a1a18;
+  --muted: #888;
+  --mono: 'JetBrains Mono', monospace;
+}
 
 body {
   background: var(--bg);
   color: var(--text);
   font-family: 'Inter', sans-serif;
+  font-size: 16px;
   line-height: 1.6;
   overflow-x: hidden;
 }
@@ -41,664 +39,530 @@ nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 48px;
-  background: rgba(15,17,23,0.85);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(42,48,69,0.6);
+  padding: 0 40px;
+  height: 44px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
 }
 
 .nav-logo {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.9rem;
-  color: var(--green);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
   text-decoration: none;
   letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .nav-links {
   display: flex;
-  gap: 36px;
+  gap: 32px;
   list-style: none;
 }
-
 .nav-links a {
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   color: var(--muted);
   text-decoration: none;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   transition: color 0.2s;
-  letter-spacing: 0.02em;
 }
-
+.nav-links a::before { content: '# '; color: var(--accent); }
 .nav-links a:hover { color: var(--text); }
+
+.nav-cta {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 7px 18px;
+  background: var(--accent);
+  color: #fff;
+  text-decoration: none;
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+.nav-cta:hover { background: #a84530; }
 
 /* ── HERO ── */
 .hero {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 120px 48px 80px;
-  position: relative;
-  overflow: hidden;
-}
-
-/* subtle grid */
-.hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(42,48,69,0.4) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(42,48,69,0.4) 1px, transparent 1px);
-  background-size: 60px 60px;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black, transparent);
-  pointer-events: none;
-}
-
-/* green glow */
-.hero::after {
-  content: '';
-  position: absolute;
-  top: 30%;
-  left: -10%;
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, rgba(16,185,129,0.07) 0%, transparent 70%);
-  pointer-events: none;
-}
-
-.hero-inner {
-  max-width: 1200px;
-  width: 100%;
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 60px;
-  align-items: center;
-}
-
-.hero-left { min-width: 0; }
-.hero-right { min-width: 0; }
-
-/* Terminal */
-.terminal {
-  background: #0d1117;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.8rem;
-  box-shadow: 0 24px 48px rgba(0,0,0,0.5);
-}
-.terminal-bar {
-  background: #161b22;
-  padding: 10px 14px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  border-bottom: 1px solid var(--border);
-}
-.t-dot { width: 10px; height: 10px; border-radius: 50%; }
-.t-dot.red    { background: #ff5f57; }
-.t-dot.yellow { background: #febc2e; }
-.t-dot.green  { background: #28c840; }
-.terminal-title {
-  flex: 1;
+  padding: 100px 40px 60px;
   text-align: center;
-  font-size: 0.68rem;
-  color: var(--muted);
-  letter-spacing: 0.04em;
+  max-width: 900px;
+  margin: 0 auto;
 }
-.terminal-body {
-  padding: 18px 20px 22px;
-  min-height: 320px;
-  line-height: 1.7;
-}
-.t-line { display: flex; gap: 8px; margin-bottom: 2px; }
-.t-prompt { color: var(--green); flex-shrink: 0; }
-.t-cmd { color: var(--text); }
-.t-out { color: #64748b; padding-left: 16px; }
-.t-out .hi { color: #94a3b8; }
-.t-out .gr { color: var(--green); }
-.t-out .am { color: var(--amber); }
-.t-cursor {
+
+.hero-pill {
   display: inline-block;
-  width: 8px; height: 14px;
-  background: var(--green);
-  vertical-align: middle;
-  margin-left: 2px;
-  animation: blink 1s step-end infinite;
-}
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-
-.hero-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  color: var(--green);
-  border: 1px solid rgba(16,185,129,0.3);
-  background: rgba(16,185,129,0.06);
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--border);
   padding: 5px 14px;
-  border-radius: 20px;
-  margin-bottom: 28px;
-  letter-spacing: 0.06em;
-}
-
-.hero-tag::before {
-  content: '';
-  width: 6px; height: 6px;
-  background: var(--green);
-  border-radius: 50%;
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.8); }
+  border-radius: 2px;
+  margin-bottom: 32px;
 }
 
 .hero h1 {
-  font-size: clamp(2.8rem, 6vw, 5rem);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.08;
+  font-size: clamp(3.2rem, 8vw, 6.4rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1.0;
   color: var(--text);
-  margin-bottom: 12px;
-}
-
-.hero h1 span { color: var(--green); }
-
-.hero-title {
-  font-size: clamp(1rem, 2vw, 1.25rem);
-  color: var(--muted);
-  font-weight: 400;
   margin-bottom: 28px;
-  letter-spacing: 0.01em;
 }
 
-.hero-desc {
-  font-size: 1.05rem;
-  color: #94a3b8;
-  max-width: 580px;
+.hero h1 .period { color: var(--accent); }
+.hero h1 .underline-wrap {
+  position: relative;
+  display: inline-block;
+}
+.hero h1 .underline-wrap::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 0; right: 0;
+  height: 6px;
+  background: var(--accent);
+  opacity: 0.35;
+  border-radius: 2px;
+}
+
+.hero-sub {
+  font-size: 1.15rem;
+  color: var(--muted);
+  max-width: 600px;
+  margin: 0 auto 28px;
   line-height: 1.75;
-  margin-bottom: 44px;
+}
+
+.hero-pills {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 32px;
+}
+
+.hero-pill-tag {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 2px;
+  background: var(--surface);
 }
 
 .hero-actions {
   display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
 }
 
 .btn-primary {
-  padding: 12px 28px;
-  background: var(--green);
-  color: #000;
-  font-weight: 600;
-  font-size: 0.88rem;
-  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 11px 28px;
+  background: var(--accent);
+  color: #fff;
   text-decoration: none;
-  transition: background 0.2s, transform 0.15s;
-  border: none;
-  cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.2s;
 }
-
-.btn-primary:hover { background: #0ea271; transform: translateY(-1px); }
+.btn-primary:hover { background: #a84530; }
 
 .btn-ghost {
-  padding: 12px 28px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 11px 28px;
   background: transparent;
   color: var(--text);
-  font-weight: 500;
-  font-size: 0.88rem;
-  border-radius: 6px;
-  border: 1px solid var(--border);
   text-decoration: none;
-  transition: border-color 0.2s, color 0.2s, transform 0.15s;
-  cursor: pointer;
-}
-
-.btn-ghost:hover { border-color: var(--muted); transform: translateY(-1px); }
-
-.scroll-hint {
-  position: absolute;
-  bottom: 36px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  color: var(--muted);
-  font-size: 0.72rem;
-  font-family: 'JetBrains Mono', monospace;
-  letter-spacing: 0.08em;
-  animation: fadeFloat 3s ease-in-out infinite;
-  z-index: 1;
-}
-
-.scroll-hint::after {
-  content: '';
-  width: 1px;
-  height: 40px;
-  background: linear-gradient(var(--muted), transparent);
-}
-
-@keyframes fadeFloat {
-  0%, 100% { opacity: 0.4; transform: translateX(-50%) translateY(0); }
-  50% { opacity: 0.8; transform: translateX(-50%) translateY(4px); }
-}
-
-/* ── SECTIONS ── */
-section {
-  padding: 100px 48px;
-  max-width: 1000px;
-  margin: 0 auto;
-}
-
-.section-label {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.72rem;
-  color: var(--green);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  margin-bottom: 14px;
-}
-
-.section-heading {
-  font-size: clamp(1.6rem, 3vw, 2.2rem);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  margin-bottom: 40px;
-}
-
-/* ── ABOUT ── */
-.about-grid {
-  display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: 56px;
-  align-items: start;
-}
-
-.about-text p {
-  color: #94a3b8;
-  line-height: 1.8;
-  font-size: 0.95rem;
-  margin-bottom: 18px;
-}
-
-.about-text p strong { color: var(--text); font-weight: 600; }
-
-.about-photo {
-  position: relative;
-  border-radius: 14px;
-  overflow: hidden;
   border: 1px solid var(--border);
-  transition: border-color 0.3s;
+  border-radius: 3px;
+  transition: border-color 0.2s;
 }
+.btn-ghost:hover { border-color: var(--muted); }
 
-.about-photo:hover { border-color: var(--green); }
-
-.about-photo img {
-  width: 100%;
-  display: block;
-  object-fit: cover;
-  filter: grayscale(15%);
-  transition: filter 0.3s;
-}
-
-.about-photo:hover img { filter: grayscale(0%); }
-
-.about-photo-tag {
-  position: absolute;
-  bottom: 14px;
-  left: 14px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.68rem;
-  color: var(--text);
-  background: rgba(15,17,23,0.82);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(42,48,69,0.8);
-  border-radius: 6px;
-  padding: 5px 10px;
-  letter-spacing: 0.04em;
-}
-
-.about-stats {
+/* ── STAT CARDS ── */
+.stats {
+  max-width: 900px;
+  margin: 48px auto 0;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  margin-top: 32px;
+  gap: 12px;
+  padding: 0 40px;
 }
 
 .stat-card {
-  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 20px 20px;
-  transition: border-color 0.2s;
+  background: var(--surface);
+  border-radius: 4px;
+  padding: 18px 16px;
 }
 
-.stat-card:hover { border-color: var(--muted); }
-
 .stat-number {
-  font-size: 1.8rem;
-  font-weight: 800;
-  color: var(--green);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--mono);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text);
   letter-spacing: -0.02em;
   line-height: 1;
+  margin-bottom: 8px;
+}
+
+.stat-arrow { color: var(--accent); }
+
+.stat-sub {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--accent);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   margin-bottom: 6px;
 }
 
-.stat-label {
-  font-size: 0.78rem;
+.stat-desc {
+  font-size: 0.82rem;
   color: var(--muted);
-  line-height: 1.4;
-}
-
-/* ── PROJECTS ── */
-#projects { max-width: 1000px; }
-
-.projects-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.project-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 36px 40px;
-  position: relative;
-  transition: border-color 0.3s, transform 0.2s;
-  overflow: hidden;
-}
-
-.project-card::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-  border-radius: 12px 0 0 12px;
-  transition: opacity 0.3s;
-}
-
-.project-card.indigo::before  { background: var(--indigo); }
-.project-card.green::before   { background: var(--green); }
-.project-card.amber::before   { background: var(--amber); }
-
-.project-card:hover {
-  border-color: var(--muted);
-  transform: translateY(-2px);
-}
-
-.project-card + .project-card { margin-top: 20px; }
-
-.project-number {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.68rem;
-  color: var(--muted);
-  letter-spacing: 0.1em;
-  margin-bottom: 12px;
-}
-
-.project-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 24px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
-.project-name {
-  font-size: 1.4rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.project-card.indigo .project-name  { color: #818cf8; }
-.project-card.green  .project-name  { color: #34d399; }
-.project-card.amber  .project-name  { color: #fbbf24; }
-
-.project-status {
-  font-size: 0.7rem;
-  font-family: 'JetBrains Mono', monospace;
-  padding: 3px 10px;
-  border-radius: 20px;
-  border: 1px solid;
-  white-space: nowrap;
-  flex-shrink: 0;
-  margin-top: 4px;
-}
-
-.project-card.indigo .project-status { color: #818cf8; border-color: rgba(129,140,248,0.3); background: rgba(99,102,241,0.06); }
-.project-card.green  .project-status { color: #34d399; border-color: rgba(52,211,153,0.3); background: rgba(16,185,129,0.06); }
-.project-card.amber  .project-status { color: #fbbf24; border-color: rgba(251,191,36,0.3); background: rgba(245,158,11,0.06); }
-
-.project-tagline {
-  font-size: 0.88rem;
-  color: var(--muted);
-  margin-bottom: 14px;
-  font-style: italic;
-}
-
-.project-desc {
-  font-size: 0.88rem;
-  color: #94a3b8;
-  line-height: 1.75;
-  margin-bottom: 20px;
-}
-
-.decision-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 20px 0;
-  font-size: 0.8rem;
-}
-.decision-table th {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  text-align: left;
-  padding: 8px 14px;
-  border-bottom: 1px solid var(--border);
-  font-weight: 500;
-}
-.decision-table td {
-  padding: 9px 14px;
-  border-bottom: 1px solid rgba(42,48,69,0.5);
-  color: #94a3b8;
-  vertical-align: top;
-  line-height: 1.5;
-}
-.decision-table tr:last-child td { border-bottom: none; }
-.decision-table td:first-child {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  color: var(--text);
-  white-space: nowrap;
-}
-.decision-table td.ssr { color: var(--green); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; }
-.decision-table td.spa { color: #f59e0b; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; }
-.decision-table td.hybrid { color: #6366f1; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; }
-
-.tech-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  margin-bottom: 24px;
-}
-
-.tag {
-  font-size: 0.69rem;
-  font-family: 'JetBrains Mono', monospace;
-  padding: 3px 10px;
-  border-radius: 4px;
-  border: 1px solid var(--border);
-  color: var(--muted);
-  background: rgba(0,0,0,0.2);
-}
-
-.project-links {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.proj-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 18px;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  text-decoration: none;
-  border: 1px solid var(--border);
-  color: var(--muted);
-  background: rgba(0,0,0,0.25);
-  transition: all 0.2s;
-  cursor: pointer;
-}
-
-.proj-btn:hover { color: var(--text); border-color: var(--muted); }
-
-.proj-btn.primary {
-  border-color: rgba(16,185,129,0.4);
-  color: var(--green);
-  background: rgba(16,185,129,0.06);
-}
-
-.proj-btn.primary:hover { background: rgba(16,185,129,0.12); }
-
-.proj-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
-
-/* ── CONTACT ── */
-#contact {
-  text-align: center;
-  padding: 100px 48px 120px;
-  max-width: 700px;
-  margin: 0 auto;
-}
-
-.contact-heading {
-  font-size: clamp(2rem, 4vw, 3rem);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  margin-bottom: 16px;
-}
-
-.contact-heading span { color: var(--green); }
-
-.contact-sub {
-  color: var(--muted);
-  font-size: 0.95rem;
-  margin-bottom: 36px;
-  line-height: 1.7;
-}
-
-.contact-email {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 32px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.95rem;
-  text-decoration: none;
-  background: var(--surface);
-  transition: all 0.2s;
-}
-
-.contact-email:hover {
-  border-color: var(--green);
-  color: var(--green);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(16,185,129,0.1);
-}
-
-/* ── FOOTER ── */
-footer {
-  border-top: 1px solid var(--border);
-  padding: 24px 48px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.footer-text {
-  font-size: 0.78rem;
-  color: var(--muted);
-  font-family: 'JetBrains Mono', monospace;
-}
-
-/* ── BACK TO TOP ── */
-.back-to-top {
-  position: fixed;
-  bottom: 32px;
-  right: 32px;
-  width: 44px;
-  height: 44px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--muted);
-  text-decoration: none;
-  font-size: 1.1rem;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s, color 0.2s, border-color 0.2s, transform 0.2s;
-  z-index: 99;
-}
-
-.back-to-top.visible {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.back-to-top:hover {
-  color: var(--green);
-  border-color: var(--green);
-  transform: translateY(-3px);
+  line-height: 1.45;
 }
 
 /* ── DIVIDER ── */
 .divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--border), transparent);
-  margin: 0 48px;
+  background: var(--border);
+  margin: 60px 40px;
 }
 
-/* ── RESPONSIVE ── */
-@media (max-width: 900px) {
-  .hero-inner { grid-template-columns: 1fr; gap: 40px; }
-  .hero-right { display: none; }
+/* ── EXPERIENCE ── */
+.experience {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 40px;
 }
-@media (max-width: 768px) {
-  nav { padding: 16px 24px; }
-  .nav-links { gap: 20px; }
-  .hero { padding: 100px 24px 70px; }
-  section { padding: 70px 24px; }
-  .about-grid { grid-template-columns: 1fr; }
-  .about-stats { grid-template-columns: repeat(2, 1fr); }
-  .about-photo { max-width: 320px; }
-  .project-card { padding: 28px 24px; }
-  footer { padding: 20px 24px; flex-direction: column; gap: 8px; text-align: center; }
-  .divider { margin: 0 24px; }
-  #contact { padding: 70px 24px 90px; }
+
+.exp-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.exp-card {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 4px;
+  padding: 24px;
+  transition: border-color 0.2s;
+}
+.exp-card:hover { border-color: var(--muted); }
+
+.exp-card.highlight {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.exp-num {
+  font-family: var(--mono);
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+.exp-card.highlight .exp-num { color: #fff; }
+
+.exp-title {
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+  color: var(--text);
+  line-height: 1.3;
+}
+.exp-card.highlight .exp-title { color: #fff; }
+
+.exp-org {
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-bottom: 12px;
+  font-family: var(--mono);
+}
+.exp-card.highlight .exp-org { color: rgba(255,255,255,0.7); }
+
+.exp-desc {
+  font-size: 0.88rem;
+  color: #666;
+  line-height: 1.65;
+}
+.exp-card.highlight .exp-desc { color: rgba(255,255,255,0.85); }
+
+.exp-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 14px;
+}
+.exp-tag {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  padding: 2px 8px;
+  border-radius: 2px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: var(--bg);
+}
+.exp-card.highlight .exp-tag {
+  border-color: rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.1);
+}
+
+/* ── PROJECTS ── */
+.projects {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+.section-tag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 4px 12px;
+  border-radius: 2px;
+  margin-bottom: 20px;
+}
+
+.section-heading {
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  color: var(--text);
+  margin-bottom: 32px;
+}
+.section-heading .period { color: var(--accent); }
+
+.project-table {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.project-row {
+  display: grid;
+  grid-template-columns: 56px 1fr 180px;
+  align-items: start;
+  gap: 20px;
+  padding: 28px 28px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.project-row:last-child { border-bottom: none; }
+.project-row:hover { background: #faf8f4; }
+
+.project-idx {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  padding-top: 3px;
+}
+
+.project-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  margin-bottom: 5px;
+  line-height: 1.3;
+}
+
+.project-tagline {
+  font-size: 0.88rem;
+  color: var(--muted);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.project-bullets {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.project-bullets li {
+  font-size: 0.93rem;
+  color: #444;
+  padding-left: 20px;
+  position: relative;
+  line-height: 1.7;
+}
+.project-bullets li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--accent);
+  top: 3px;
+}
+.project-bullets li .impact {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.project-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.project-tags-r {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  justify-content: flex-end;
+}
+.project-tag-r {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  padding: 3px 8px;
+  border-radius: 2px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: var(--bg);
+}
+
+.project-links-r {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.proj-link {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--accent);
+  text-decoration: none;
+  border: 1px solid var(--accent-light);
+  padding: 4px 10px;
+  border-radius: 2px;
+  transition: background 0.15s;
+}
+.proj-link:hover { background: var(--accent-light); }
+
+/* ── NOTABLE ── */
+.notable {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+.notable-grid {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.notable-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.notable-row:last-child { border-bottom: none; }
+.notable-row:hover { background: #faf8f4; }
+
+.notable-name {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+.notable-desc {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.notable-metric {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+  text-align: right;
+}
+
+/* ── CONTACT ── */
+.contact {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 60px 40px 80px;
+  text-align: center;
+}
+
+.contact h2 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  margin-bottom: 28px;
+  color: var(--text);
+}
+.contact h2 .period { color: var(--accent); }
+
+.contact-btns {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 18px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.footer-text {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 760px) {
+  nav { padding: 0 20px; }
+  .hero { padding: 80px 20px 40px; }
+  .stats { grid-template-columns: 1fr 1fr; padding: 0 20px; }
+  .experience, .projects, .notable, .contact { padding-left: 20px; padding-right: 20px; }
+  .exp-cards { grid-template-columns: 1fr; }
+  .project-row { grid-template-columns: 1fr; }
+  .project-right { align-items: flex-start; }
+  .divider { margin: 40px 20px; }
+  footer { padding: 16px 20px; flex-direction: column; gap: 6px; text-align: center; }
 }
 </style>
 </head>
@@ -706,591 +570,320 @@ footer {
 
 <!-- NAV -->
 <nav>
-  <a href="#" class="nav-logo">SK</a>
+  <a href="#" class="nav-logo">Swanand // Kadam</a>
   <ul class="nav-links">
-    <li><a href="#about">About</a></li>
+    <li><a href="#experience">Experience</a></li>
     <li><a href="#projects">Projects</a></li>
-    <li><a href="#writing">Writing</a></li>
     <li><a href="#contact">Contact</a></li>
   </ul>
+  <a href="mailto:beingswanand@gmail.com" class="nav-cta">Get in touch</a>
 </nav>
 
 <!-- HERO -->
-<div class="hero" id="home">
-  <div class="hero-inner">
-    <!-- LEFT -->
-    <div class="hero-left">
-      <div class="hero-tag">Available for new opportunities</div>
-      <h1>Swanand<br><span>Kadam.</span></h1>
-      <p class="hero-title">Senior Full Stack / AI Engineer &nbsp;·&nbsp; 6+ yrs &nbsp;·&nbsp; Co-founder &nbsp;·&nbsp; Pune, India</p>
-      <p class="hero-desc">
-        I build AI-native systems and lead engineering teams from zero to production.
-        Multi-agent pipelines, RAG with hybrid retrieval, 19× plagiarism detection improvement,
-        a programming language in Hindi, and a TEDx talk on why we should code in our own languages.
-      </p>
-      <div class="hero-actions">
-        <a href="#projects" class="btn-primary">View Projects</a>
-        <a href="#contact" class="btn-ghost">Get in touch</a>
-      </div>
-    </div>
-    <!-- RIGHT: terminal -->
-    <div class="hero-right">
-      <div class="terminal">
-        <div class="terminal-bar">
-          <span class="t-dot red"></span>
-          <span class="t-dot yellow"></span>
-          <span class="t-dot green"></span>
-          <span class="terminal-title">swanand@portfolio ~ </span>
-        </div>
-        <div class="terminal-body" id="termBody"></div>
-      </div>
-    </div>
+<div class="hero">
+  <div class="hero-pill">Senior AI / Full Stack Engineer — 6+ years</div>
+  <h1>
+    Building<span class="period">.</span> Detecting<span class="period">.</span><br>
+    <span class="underline-wrap">Shipping<span class="period">.</span></span>
+  </h1>
+  <p class="hero-sub">
+    6+ years building AI-native systems — multi-agent pipelines, RAG with hybrid retrieval, and a detection engine that improved accuracy 19×. Also built India's first Hindi programming language and gave a TEDx talk about it.
+  </p>
+  <div class="hero-pills">
+    <span class="hero-pill-tag">LangChain · Mastra</span>
+    <span class="hero-pill-tag">pgvector · RAG</span>
+    <span class="hero-pill-tag">AWS Lambda · SQS</span>
+    <span class="hero-pill-tag">React 18 · FastAPI · Django</span>
+    <span class="hero-pill-tag">Python · TypeScript</span>
   </div>
-  <div class="scroll-hint">scroll</div>
+  <div class="hero-actions">
+    <a href="#projects" class="btn-primary">View Projects</a>
+    <a href="#contact" class="btn-ghost">Get in touch</a>
+  </div>
+</div>
+
+<!-- STAT CARDS -->
+<div class="stats">
+  <div class="stat-card">
+    <div class="stat-sub">Detection lift</div>
+    <div class="stat-number">5<span class="stat-arrow">→</span>95<span style="font-size:1rem">%</span></div>
+    <div class="stat-desc">Plagiarism detection<br>19× improvement</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-sub">Scale</div>
+    <div class="stat-number">10K<span style="font-size:0.9rem;color:var(--muted)">/sec</span></div>
+    <div class="stat-desc">Submissions at peak<br>10K concurrent users</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-sub">LLM cost saved</div>
+    <div class="stat-number">67<span style="font-size:1rem">%</span></div>
+    <div class="stat-desc">Fewer LLM calls via<br>on-demand generation</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-sub">Revenue built</div>
+    <div class="stat-number">₹2Cr<span style="font-size:0.9rem">+</span></div>
+    <div class="stat-desc">D2C e-commerce<br>Bharatvarsh.art</div>
+  </div>
 </div>
 
 <div class="divider"></div>
 
-<!-- ABOUT -->
-<section id="about">
-  <div class="section-label">About me</div>
-  <h2 class="section-heading">Building Easy solutions<br>for Difficult problems.</h2>
-  <div class="about-grid">
-    <div class="about-text">
-      <p>
-        I'm a senior full stack and AI engineer who co-founded <strong>the01.dev</strong>, an AI-powered
-        ed-tech platform where I led a 2-engineer team and owned architecture end-to-end.
-        That included a <strong>PDF-to-lesson multi-agent pipeline</strong> using LangChain and Mastra
-        with Planner-Executor and Supervisor-Worker patterns, a production RAG assistant backed by
-        pgvector with HNSW indexing and hybrid cosine + BM25 retrieval, and an adaptive practice
-        engine with a concept knowledge graph. Before that, I joined Masai School as one of the
-        first engineers reporting directly to the CTO.
-      </p>
-      <p>
-        At Masai I built <strong>CodeMas</strong> — a real-time coding assessment platform handling
-        10,000 concurrent users and ~10K submissions/sec at deadline bursts via AWS Lambda + SQS + SSE.
-        The plagiarism engine went from detecting 5% of cheating cases to 95% — a 19× lift —
-        by reframing the problem from "are two submissions similar" to "did this student write this."
-        I also created <strong>Kalaam</strong>, India's first Hindi programming language,
-        which earned me a <strong>TEDx Bangalore</strong> talk ("Why we should be able to code in
-        our own languages"), 500+ monthly users, and a 10+ contributor open-source community.
-      </p>
-      <p>
-        I write too. Published in <strong>Better Programming</strong>, three articles on
-        <strong>HackerNoon</strong>, and featured on <strong>InfoQ</strong>. I care about
-        systems that work under pressure, products that reach people who are usually left out,
-        and open source that actually gets used.
-      </p>
+<!-- EXPERIENCE -->
+<div class="experience" id="experience">
+  <div class="exp-cards">
+
+    <div class="exp-card">
+      <div class="exp-num">01</div>
+      <div class="exp-title">Multi-Agent<br>Systems</div>
+      <div class="exp-org">the01.dev · Co-founder</div>
+      <div class="exp-desc">PDF-to-lesson pipeline using LangChain + Mastra with Planner-Executor and Supervisor-Worker patterns. Human-in-the-loop via suspend/resume. ~67% fewer LLM calls.</div>
+      <div class="exp-tags">
+        <span class="exp-tag">LangChain</span>
+        <span class="exp-tag">Mastra</span>
+        <span class="exp-tag">pgvector</span>
+      </div>
     </div>
-    <div class="about-photo">
-      <img src="E09EB739-7DA5-43EE-AA6D-868C79A0F082_1_105_c.jpeg" alt="Swanand Kadam" />
-      <div class="about-photo-tag">Speaking at Verse, Mumbai</div>
+
+    <div class="exp-card highlight">
+      <div class="exp-num">02</div>
+      <div class="exp-title">Digital Detection<br>Engine</div>
+      <div class="exp-org">CodeMas · Masai School</div>
+      <div class="exp-desc">Reframed plagiarism from "are submissions similar" to "did this student write this." Behavioural signals + TF-IDF cosine similarity. Detection: 5% → 95% — a 19× lift.</div>
+      <div class="exp-tags">
+        <span class="exp-tag">Django</span>
+        <span class="exp-tag">AWS Lambda</span>
+        <span class="exp-tag">SQS</span>
+      </div>
     </div>
+
+    <div class="exp-card">
+      <div class="exp-num">03</div>
+      <div class="exp-title">RAG Pipelines<br>&amp; Retrieval</div>
+      <div class="exp-org">the01.dev · FastAPI</div>
+      <div class="exp-desc">pgvector with HNSW indexing, hybrid cosine + BM25 retrieval, GPT-4.1-mini with source citations streamed via SSE. Answers deep-link to exact video timestamps.</div>
+      <div class="exp-tags">
+        <span class="exp-tag">pgvector</span>
+        <span class="exp-tag">BM25</span>
+        <span class="exp-tag">OpenAI</span>
+      </div>
+    </div>
+
   </div>
-  <div class="about-stats">
-    <div class="stat-card">
-      <div class="stat-number">19×</div>
-      <div class="stat-label">Plagiarism detection improvement — 5% to 95% of cases caught</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-number">10K</div>
-      <div class="stat-label">Concurrent users · ~10K submissions/sec at deadline bursts</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-number">₹2Cr+</div>
-      <div class="stat-label">Revenue on Bharatvarsh.art — D2C e-commerce platform I built and led</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-number">500+</div>
-      <div class="stat-label">Monthly users of Kalaam — India's first Hindi programming language</div>
-    </div>
-  </div>
-</section>
+</div>
 
 <div class="divider"></div>
 
 <!-- PROJECTS -->
-<section id="projects">
-  <div class="section-label">Work</div>
-  <h2 class="section-heading">Projects</h2>
+<div class="projects" id="projects">
+  <div class="section-tag">Selected Work</div>
+  <h2 class="section-heading">Five projects<span class="period">.</span> Real outcomes<span class="period">.</span></h2>
 
-  <div class="projects-list">
+  <div class="project-table">
 
     <!-- CodeMas -->
-    <div class="project-card indigo">
-      <div class="project-number">01 / 04</div>
-      <div class="project-header">
-        <div class="project-name">CodeMas</div>
-        <div class="project-status">Production</div>
+    <div class="project-row">
+      <div class="project-idx">P.01</div>
+      <div class="project-main">
+        <div class="project-name">CodeMas — AI Coding Assessment Platform</div>
+        <div class="project-tagline">Masai School · First engineer reporting to CTO · 10K concurrent users · ~10K submissions/sec</div>
+        <ul class="project-bullets">
+          <li><strong>Exam Generator</strong> — GPT drafts complete exams (questions + test cases) from topic and difficulty; human reviews before any persistence. <span class="impact">~80% faster exam creation.</span></li>
+          <li><strong>Rubric Scoring Agent</strong> — async GPT grades every submission on correctness, code quality, approach, and edge cases (0–2 each) with per-dimension justifications. <span class="impact">Consistent feedback at scale across 10K+ submissions — zero trainer overhead.</span></li>
+          <li><strong>Socratic Hint Agent</strong> — for failed submissions, generates a pedagogical nudge pointing at the concept without revealing the answer. <span class="impact">Students self-correct without trainer intervention.</span></li>
+          <li><strong>Trainer Dashboard Agent</strong> — AI-generated cohort summaries and per-student performance narratives. <span class="impact">Replaced manual spreadsheet reporting entirely.</span></li>
+          <li><strong>Plagiarism Engine</strong> — behavioural signals (paste ratio, speed anomaly, tab switches) + TF-IDF cosine similarity. Reframed from "are submissions similar" to "did this student write this." <span class="impact">Detection: 5% → 95% — a 19× lift.</span></li>
+        </ul>
       </div>
-      <div class="project-tagline">Real-time coding assessment platform · 10K concurrent users · 10K submissions/sec · built at Masai School</div>
-      <p class="project-desc">
-        Joined as one of the first engineers reporting directly to the CTO. Infrastructure:
-        code submit → AWS Lambda + SQS + Docker sandbox → SSE push, sub-10s results at
-        ~10K submissions/sec deadline bursts.
-      </p>
-      <p class="project-desc" style="margin-top:12px"><strong style="color:var(--indigo)">AI features — 5 agents in production:</strong></p>
-      <ul style="list-style:none;margin-top:10px;display:flex;flex-direction:column;gap:9px">
-        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
-          <span style="position:absolute;left:0;color:var(--indigo);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
-          <strong style="color:#f1f5f9">Exam Generator</strong> — GPT drafts complete exams (questions + test cases) from a topic and difficulty with human-in-the-loop review before persistence. <strong style="color:#818cf8">~80% faster exam creation.</strong>
-        </li>
-        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
-          <span style="position:absolute;left:0;color:var(--indigo);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
-          <strong style="color:#f1f5f9">Rubric Scoring Agent</strong> — async GPT grades every submission on correctness, code quality, approach, and edge cases (0–2 each) with per-dimension justifications. <strong style="color:#818cf8">Consistent feedback at scale across 10K+ submissions with zero trainer review overhead.</strong>
-        </li>
-        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
-          <span style="position:absolute;left:0;color:var(--indigo);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
-          <strong style="color:#f1f5f9">Socratic Hint Agent</strong> — for failed submissions, generates a pedagogical nudge pointing at the concept without revealing the answer, isolated from the delivery path. <strong style="color:#818cf8">Students self-correct without trainer intervention.</strong>
-        </li>
-        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
-          <span style="position:absolute;left:0;color:var(--indigo);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
-          <strong style="color:#f1f5f9">Trainer Dashboard Agent</strong> — AI-generated cohort summaries, per-student performance narratives, and exam insights. <strong style="color:#818cf8">Replaced manual spreadsheet reporting entirely — hours of post-exam analysis eliminated.</strong>
-        </li>
-        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
-          <span style="position:absolute;left:0;color:var(--indigo);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
-          <strong style="color:#f1f5f9">Plagiarism Engine</strong> — two-layer detection: behavioural signals (paste ratio, speed anomaly, tab switches) + TF-IDF cosine similarity. Reframed the problem from "are submissions similar" to "did this student write this." <strong style="color:#818cf8">Detection rate: 5% → 95% — a 19× lift.</strong>
-        </li>
-      </ul>
-      <div class="tech-row">
-        <span class="tag">Django</span>
-        <span class="tag">AWS Lambda</span>
-        <span class="tag">SQS</span>
-        <span class="tag">SSE</span>
-        <span class="tag">GPT-4o-mini</span>
-        <span class="tag">PostgreSQL</span>
-        <span class="tag">Docker</span>
-        <span class="tag">Vue 3</span>
-        <span class="tag">Redis</span>
-        <span class="tag">DRF</span>
+      <div class="project-right">
+        <div class="project-tags-r">
+          <span class="project-tag-r">Django</span>
+          <span class="project-tag-r">AWS Lambda</span>
+          <span class="project-tag-r">SQS</span>
+          <span class="project-tag-r">SSE</span>
+          <span class="project-tag-r">GPT-4o-mini</span>
+          <span class="project-tag-r">PostgreSQL</span>
+          <span class="project-tag-r">Docker</span>
+        </div>
+        <div class="project-links-r">
+          <a href="submission_animation.html" class="proj-link">Animation</a>
+          <a href="codemas_ai_agents.html" class="proj-link">AI Agents</a>
+          <a href="plagiarism_flow.html" class="proj-link">Plagiarism</a>
+          <a href="codemas_design.html" class="proj-link">Design Doc</a>
+        </div>
       </div>
-      <div class="project-links">
-        <a href="submission_animation.html" target="_blank" class="proj-btn primary">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          Architecture Animation
-        </a>
-        <a href="codemas_design.html" target="_blank" class="proj-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          System Design
-        </a>
-        <a href="plagiarism_flow.html" target="_blank" class="proj-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          Plagiarism Flow
-        </a>
-        <a href="codemas_platform_flows.html" target="_blank" class="proj-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
-          Platform Flows
-        </a>
+    </div>
+
+    <!-- the01.dev -->
+    <div class="project-row">
+      <div class="project-idx">P.02</div>
+      <div class="project-main">
+        <div class="project-name">the01.dev — AI-Powered Ed-Tech Platform</div>
+        <div class="project-tagline">Co-founder · Led engineering (2-person team) · Architecture owned end-to-end · 8 deep CS courses</div>
+        <ul class="project-bullets">
+          <li><strong>PDF-to-Lesson Multi-Agent Pipeline</strong> — LangChain + Mastra with Planner-Executor and Supervisor-Worker patterns; human-in-the-loop approval via suspend/resume. <span class="impact">~67% reduction in unnecessary LLM calls via on-demand generation.</span></li>
+          <li><strong>RAG Course Assistant</strong> — pgvector with HNSW indexing, hybrid cosine + BM25 retrieval, GPT-4.1-mini with source citations streamed via SSE; answers deep-link to the exact video timestamp. <span class="impact">Zero hallucinations — grounded strictly in proprietary transcripts.</span></li>
+          <li><strong>Adaptive Practice Engine</strong> — GPT-generated question banks, spaced repetition scheduling, and a concept knowledge graph in Postgres. <span class="impact">Personalised revision paths with zero manual curation.</span></li>
+          <li><strong>Payments &amp; Access</strong> — Razorpay with atomic access provisioning + XOR-encoded video protection with Firebase App Check. <span class="impact">Zero payment-access race conditions; proprietary content protected end-to-end.</span></li>
+        </ul>
+      </div>
+      <div class="project-right">
+        <div class="project-tags-r">
+          <span class="project-tag-r">LangChain</span>
+          <span class="project-tag-r">Mastra</span>
+          <span class="project-tag-r">pgvector</span>
+          <span class="project-tag-r">React 18</span>
+          <span class="project-tag-r">FastAPI</span>
+          <span class="project-tag-r">OpenAI</span>
+        </div>
+        <div class="project-links-r">
+          <a href="the01dev_multiagent_animation.html" class="proj-link">Multi-Agent</a>
+          <a href="platform_flow.html" class="proj-link">Platform Flow</a>
+          <a href="ask_ai_animation.html" class="proj-link">RAG Pipeline</a>
+          <a href="01dev_design.html" class="proj-link">Design Doc</a>
+        </div>
       </div>
     </div>
 
     <!-- Kalaam -->
-    <div class="project-card green">
-      <div class="project-number">02 / 04</div>
-      <div class="project-header">
-        <div class="project-name">Kalaam</div>
-        <div class="project-status">npm · v2.3.3</div>
+    <div class="project-row">
+      <div class="project-idx">P.03</div>
+      <div class="project-main">
+        <div class="project-name">Kalaam — India's First Hindi Programming Language</div>
+        <div class="project-tagline">Open Source · TEDx Bangalore · npm · kalaam-core · 500+ monthly users</div>
+        <ul class="project-bullets">
+          <li><strong>Multi-language Architecture</strong> — 5 languages (Hindi, Marathi, Bengali, Telugu, Odia) via centralized keyword configuration; adding a new language is one map entry, zero parser changes. <span class="impact">Infinitely extensible without touching the interpreter core.</span></li>
+          <li><strong>Fully Offline PWA</strong> — zero API calls, service-worker cached, runs in the browser on a budget Android phone with no internet. <span class="impact">Reaches tier-3 city students locked out of every other coding tool.</span></li>
+          <li><strong>Open-Source Community</strong> — led 10+ contributors through structured releases. <span class="impact">500+ monthly active users on kalaamlang.in.</span></li>
+          <li><strong>TEDx Bangalore</strong> — invited to speak on "Why we should be able to code in our own languages." <span class="impact">Recognised as a meaningful intervention in CS access for non-English speakers.</span></li>
+        </ul>
       </div>
-      <div class="project-tagline">India's first Hindi programming language · TEDx Bangalore · 500+ monthly users · 10+ contributors</div>
-      <p class="project-desc">Hand-written lexer and instruction-sequence interpreter, published as an npm package (<code style="font-family:'JetBrains Mono',monospace;font-size:0.82em;color:#34d399">kalaam-core</code>), built for students who have no laptop and intermittent internet.</p>
-      <ul style="list-style:none;margin-top:10px;display:flex;flex-direction:column;gap:9px">
-        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
-          <span style="position:absolute;left:0;color:var(--green);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
-          <strong style="color:#f1f5f9">Multi-language Architecture</strong> — 5 languages (Hindi, Marathi, Bengali, Telugu, Odia) supported via centralized keyword configuration; adding a new language is one map entry, zero parser changes. <strong style="color:#34d399">Infinitely extensible without touching the interpreter core.</strong>
-        </li>
-        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
-          <span style="position:absolute;left:0;color:var(--green);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
-          <strong style="color:#f1f5f9">Fully Offline PWA</strong> — zero API calls, service-worker cached, runs entirely in the browser on a budget Android phone with no internet. <strong style="color:#34d399">Reaches students in tier-3 cities who are locked out of every other coding tool.</strong>
-        </li>
-        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
-          <span style="position:absolute;left:0;color:var(--green);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
-          <strong style="color:#f1f5f9">Open-source Community</strong> — led 10+ contributors through structured releases with clear contribution guidelines and staged reviews. <strong style="color:#34d399">500+ monthly active users on kalaamlang.in.</strong>
-        </li>
-        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
-          <span style="position:absolute;left:0;color:var(--green);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
-          <strong style="color:#f1f5f9">TEDx Bangalore</strong> — invited to speak on "Why we should be able to code in our own languages." <strong style="color:#34d399">Recognised as a meaningful intervention in CS access for non-English speakers in India.</strong>
-        </li>
-      </ul>
-      <div class="tech-row">
-        <span class="tag">Custom Lexer</span>
-        <span class="tag">Interpreter</span>
-        <span class="tag">npm · kalaam-core</span>
-        <span class="tag">Vue 2</span>
-        <span class="tag">Quasar PWA</span>
-        <span class="tag">CodeMirror</span>
-        <span class="tag">Service Worker</span>
-        <span class="tag">Jest</span>
-      </div>
-      <div class="project-links">
-        <a href="interpreter_animation.html" target="_blank" class="proj-btn primary">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          Interpreter Pipeline
-        </a>
-        <a href="kalaam_design.html" target="_blank" class="proj-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          System Design
-        </a>
-        <a href="https://kalaamlang.in" target="_blank" rel="noopener" class="proj-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-          kalaamlang.in
-        </a>
-        <a href="https://github.com/swanandapps/Kalaam-Core" target="_blank" rel="noopener" class="proj-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
-          GitHub
-        </a>
+      <div class="project-right">
+        <div class="project-tags-r">
+          <span class="project-tag-r">Custom Lexer</span>
+          <span class="project-tag-r">Interpreter</span>
+          <span class="project-tag-r">Vue 2</span>
+          <span class="project-tag-r">Quasar PWA</span>
+          <span class="project-tag-r">npm</span>
+        </div>
+        <div class="project-links-r">
+          <a href="interpreter_animation.html" class="proj-link">Pipeline</a>
+          <a href="kalaam_design.html" class="proj-link">Design Doc</a>
+          <a href="https://kalaamlang.in" target="_blank" class="proj-link">Live ↗</a>
+          <a href="https://github.com/swanandapps/Kalaam-Core" target="_blank" class="proj-link">GitHub ↗</a>
+        </div>
       </div>
     </div>
 
-    <!-- 0.1% DEV -->
-    <div class="project-card amber">
-      <div class="project-number">03 / 04</div>
-      <div class="project-header">
-        <div class="project-name">0.1% DEV</div>
-        <div class="project-status">Live · 8 courses</div>
+    <!-- Bharatvarsh -->
+    <div class="project-row">
+      <div class="project-idx">P.04</div>
+      <div class="project-main">
+        <div class="project-name">Bharatvarsh.art — D2C E-Commerce Platform</div>
+        <div class="project-tagline">Indian cultural wall art · Built and led engineering end-to-end</div>
+        <ul class="project-bullets">
+          <li>Architecture, payments, inventory, and delivery integrations from scratch.</li>
+          <li><span class="impact">₹2Cr+ in revenue.</span></li>
+        </ul>
       </div>
-      <div class="project-tagline">AI-powered ed-tech platform · Co-founder · Multi-agent pipeline · RAG · Adaptive practice</div>
-      <p class="project-desc">Co-founded and led engineering (2-person team, owned architecture end-to-end) for a deep CS fundamentals course platform.</p>
-      <ul style="list-style:none;margin-top:10px;display:flex;flex-direction:column;gap:9px">
-        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
-          <span style="position:absolute;left:0;color:var(--amber);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
-          <strong style="color:#f1f5f9">PDF-to-Lesson Multi-Agent Pipeline</strong> — LangChain + Mastra with Planner-Executor and Supervisor-Worker patterns; human-in-the-loop approval via suspend/resume keeps instructors in control of every generated lesson. <strong style="color:#fbbf24">~67% reduction in unnecessary LLM calls via on-demand generation.</strong>
-        </li>
-        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
-          <span style="position:absolute;left:0;color:var(--amber);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
-          <strong style="color:#f1f5f9">RAG Course Assistant</strong> — pgvector with HNSW indexing, hybrid cosine + BM25 retrieval, GPT-4.1-mini generation with source citations streamed via SSE; answers deep-link to the exact video timestamp. <strong style="color:#fbbf24">Zero hallucinations — grounded strictly in proprietary course transcripts.</strong>
-        </li>
-        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
-          <span style="position:absolute;left:0;color:var(--amber);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
-          <strong style="color:#f1f5f9">Adaptive Practice Engine</strong> — GPT-generated question banks, spaced repetition scheduling, and a concept knowledge graph in Postgres that tracks what each student has mastered. <strong style="color:#fbbf24">Personalised revision paths without any manual curation.</strong>
-        </li>
-        <li style="font-size:0.875rem;color:#94a3b8;padding-left:20px;position:relative;line-height:1.65">
-          <span style="position:absolute;left:0;color:var(--amber);font-family:'JetBrains Mono',monospace;font-size:0.72rem;top:3px">→</span>
-          <strong style="color:#f1f5f9">Payments &amp; Access</strong> — Razorpay order creation with atomic access provisioning (no race condition between payment confirmation and content unlock) + XOR-encoded video protection with Firebase App Check. <strong style="color:#fbbf24">Proprietary content protected end-to-end; zero payment disputes from access failures.</strong>
-        </li>
-      </ul>
-      <div class="tech-row">
-        <span class="tag">LangChain</span>
-        <span class="tag">Mastra</span>
-        <span class="tag">pgvector</span>
-        <span class="tag">Multi-agent</span>
-        <span class="tag">React 18</span>
-        <span class="tag">TypeScript</span>
-        <span class="tag">FastAPI</span>
-        <span class="tag">OpenAI</span>
-        <span class="tag">RAG</span>
-        <span class="tag">Razorpay</span>
-        <span class="tag">Firebase</span>
-        <span class="tag">SSE</span>
-      </div>
-      <div class="project-links">
-        <a href="platform_flow.html" target="_blank" class="proj-btn primary">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          Platform Flow
-        </a>
-        <a href="ask_ai_animation.html" target="_blank" class="proj-btn primary">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-          Ask AI — RAG Pipeline
-        </a>
-        <a href="01dev_design.html" target="_blank" class="proj-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          System Design
-        </a>
-        <a href="https://the01.dev" target="_blank" rel="noopener" class="proj-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-          the01.dev
-        </a>
-      </div>
-    </div>
-
-    <!-- Bharatvarsh.art -->
-    <div class="project-card" style="border-left-color:#e63946">
-      <div class="project-number">04 / 05</div>
-      <div class="project-header">
-        <div class="project-name" style="color:#f87171">Bharatvarsh.art</div>
-        <div class="project-status" style="color:#f87171;border-color:rgba(248,113,113,0.3);background:rgba(230,57,70,0.06)">₹2Cr+ Revenue</div>
-      </div>
-      <div class="project-tagline">D2C e-commerce platform for Indian cultural wall art — built and led engineering end-to-end</div>
-      <p class="project-desc">
-        Built and led the full engineering for a D2C e-commerce platform selling Indian cultural
-        wall art, scaled to ₹2Cr+ in revenue. Owned architecture, payments, inventory, and
-        delivery integrations from scratch — demonstrating that I can take a product from zero
-        to meaningful commercial scale, not just build features.
-      </p>
-      <div class="tech-row">
-        <span class="tag">E-commerce</span>
-        <span class="tag">Payments</span>
-        <span class="tag">D2C</span>
-        <span class="tag">Full-stack</span>
+      <div class="project-right">
+        <div class="project-tags-r">
+          <span class="project-tag-r">E-commerce</span>
+          <span class="project-tag-r">Payments</span>
+          <span class="project-tag-r">Full-stack</span>
+        </div>
       </div>
     </div>
 
     <!-- stringy-core -->
-    <div class="project-card" style="border-left-color:#f59e0b">
-      <div class="project-number">05 / 05</div>
-      <div class="project-header">
-        <div class="project-name" style="color:#f59e0b">stringy-core</div>
-        <div class="project-status">npm · 19 forks</div>
+    <div class="project-row">
+      <div class="project-idx">P.05</div>
+      <div class="project-main">
+        <div class="project-name">stringy-core — JavaScript String Utility Library</div>
+        <div class="project-tagline">npm · 50+ pure functions · 9 modules · 19 forks · zero dependencies</div>
+        <ul class="project-bullets">
+          <li>ESM with named tree-shakeable exports and a unified <code style="font-family:var(--mono);font-size:0.82em;background:#f0ebe0;padding:1px 5px;border-radius:2px">_s</code> namespace. Open-source contribution platform — stub functions invite community PRs.</li>
+          <li><span class="impact">19 forks. Published on npm.</span></li>
+        </ul>
       </div>
-      <div class="project-tagline">Zero-dependency JavaScript string utility library — 50+ functions · 9 modules · production contribution workflow</div>
-      <p class="project-desc">
-        50+ pure string functions across 9 modules: case manipulation, cleaning, formatting,
-        masking &amp; security (maskEmail, maskPhone, moderate), metadata extraction (URLs, emails,
-        IPs, hashtags, JSON), specialized operations (Levenshtein distance, balanced brackets),
-        and generation. Ships as ESM with both named tree-shakeable exports and a unified
-        <code style="font-family:monospace;font-size:0.85em">_s</code> namespace. 19 forks.
-        Built as an open-source contribution platform — stub functions with Contribution Station
-        comments invite community PRs.
-      </p>
-      <div class="tech-row">
-        <span class="tag">ESM Module</span>
-        <span class="tag">Zero Dependencies</span>
-        <span class="tag">Jest</span>
-        <span class="tag">Babel</span>
-        <span class="tag">Husky</span>
-        <span class="tag">lint-staged</span>
-        <span class="tag">Prettier</span>
-        <span class="tag">ESLint</span>
-      </div>
-      <div class="project-links">
-        <a href="stringy_animation.html" target="_blank" class="proj-btn primary">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          Architecture Flow
-        </a>
-        <a href="stringy_design.html" target="_blank" class="proj-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          System Design
-        </a>
-        <a href="https://github.com/swanandapps/stringy-core" target="_blank" rel="noopener" class="proj-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
-          GitHub
-        </a>
-        <a href="https://www.npmjs.com/package/stringy-core" target="_blank" rel="noopener" class="proj-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3z"/><path d="M9 9v9m6-9v6m-6 0h6"/></svg>
-          npm
-        </a>
+      <div class="project-right">
+        <div class="project-tags-r">
+          <span class="project-tag-r">ESM</span>
+          <span class="project-tag-r">Zero deps</span>
+          <span class="project-tag-r">Jest</span>
+          <span class="project-tag-r">9 modules</span>
+        </div>
+        <div class="project-links-r">
+          <a href="stringy_animation.html" class="proj-link">Architecture</a>
+          <a href="stringy_design.html" class="proj-link">Design Doc</a>
+          <a href="https://npmjs.com/package/stringy-core" target="_blank" class="proj-link">npm ↗</a>
+          <a href="https://github.com/swanandapps/stringy-core" target="_blank" class="proj-link">GitHub ↗</a>
+        </div>
       </div>
     </div>
 
   </div>
-</section>
+</div>
 
 <div class="divider"></div>
 
-<div class="divider"></div>
-
-<!-- WRITING & SPEAKING -->
-<section id="writing" style="max-width:1000px">
-  <div class="section-label">Writing &amp; Speaking</div>
-  <h2 class="section-heading">Beyond the code.</h2>
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
-
-    <a href="https://www.youtube.com/watch?v=_TEDx_Kalaam" target="_blank" rel="noopener" style="text-decoration:none">
-      <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:10px;padding:20px 22px;transition:border-color 0.2s,transform 0.2s" onmouseover="this.style.borderColor='var(--muted)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.borderLeftColor='var(--green)';this.style.transform=''">
-        <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--green);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">TEDx Bangalore</div>
-        <div style="font-size:0.9rem;font-weight:600;color:var(--text);margin-bottom:6px;line-height:1.4">Why we should be able to code in our own languages</div>
-        <div style="font-size:0.78rem;color:var(--muted);line-height:1.5">The story behind building Kalaam — India's first Hindi programming language — and why mother tongue matters in CS education.</div>
+<!-- NOTABLE MENTIONS -->
+<div class="notable">
+  <div class="section-tag">Honourable Mentions</div>
+  <div class="notable-grid">
+    <div class="notable-row">
+      <div>
+        <div class="notable-name">TEDx Bangalore Talk</div>
+        <div class="notable-desc">Why we should be able to code in our own languages — the story behind Kalaam</div>
       </div>
-    </a>
-
-    <a href="https://medium.com/better-programming/the-definitive-guide-to-boosting-your-web-application-performance-2b172574f37f" target="_blank" rel="noopener" style="text-decoration:none">
-      <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--indigo);border-radius:10px;padding:20px 22px;transition:border-color 0.2s,transform 0.2s" onmouseover="this.style.borderColor='var(--muted)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.borderLeftColor='var(--indigo)';this.style.transform=''">
-        <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--indigo);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Better Programming</div>
-        <div style="font-size:0.9rem;font-weight:600;color:var(--text);margin-bottom:6px;line-height:1.4">The Definitive Guide to Boosting Web Application Performance</div>
-        <div style="font-size:0.78rem;color:var(--muted);line-height:1.5">Published in Medium's Better Programming publication — a comprehensive guide to frontend and backend performance optimization.</div>
+      <div class="notable-metric">Speaker · 2023</div>
+    </div>
+    <div class="notable-row">
+      <div>
+        <div class="notable-name">Better Programming (Medium)</div>
+        <div class="notable-desc">The Definitive Guide to Boosting Web Application Performance</div>
       </div>
-    </a>
-
-    <a href="https://hackernoon.com/u/swanand" target="_blank" rel="noopener" style="text-decoration:none">
-      <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:10px;padding:20px 22px;transition:border-color 0.2s,transform 0.2s" onmouseover="this.style.borderColor='var(--muted)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.borderLeftColor='var(--amber)';this.style.transform=''">
-        <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--amber);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">HackerNoon · 3 articles</div>
-        <div style="font-size:0.9rem;font-weight:600;color:var(--text);margin-bottom:6px;line-height:1.4">Technical Writing on HackerNoon</div>
-        <div style="font-size:0.78rem;color:var(--muted);line-height:1.5">Three published articles on software engineering, open source, and building developer tools.</div>
+      <div class="notable-metric">Published</div>
+    </div>
+    <div class="notable-row">
+      <div>
+        <div class="notable-name">HackerNoon — 3 Articles</div>
+        <div class="notable-desc">Software engineering, open source, and developer tooling</div>
       </div>
-    </a>
-
-    <a href="https://www.infoq.com/profile/Swanand-Kadam/" target="_blank" rel="noopener" style="text-decoration:none">
-      <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--purple);border-radius:10px;padding:20px 22px;transition:border-color 0.2s,transform 0.2s" onmouseover="this.style.borderColor='var(--muted)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.borderLeftColor='var(--purple)';this.style.transform=''">
-        <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--purple);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">InfoQ</div>
-        <div style="font-size:0.9rem;font-weight:600;color:var(--text);margin-bottom:6px;line-height:1.4">InfoQ Author Profile</div>
-        <div style="font-size:0.78rem;color:var(--muted);line-height:1.5">Featured contributor on InfoQ — the software development community for senior engineers and architects.</div>
+      <div class="notable-metric">Author</div>
+    </div>
+    <div class="notable-row">
+      <div>
+        <div class="notable-name">InfoQ — Featured Contributor</div>
+        <div class="notable-desc">Senior engineering and architecture community</div>
       </div>
-    </a>
-
+      <div class="notable-metric">Contributor</div>
+    </div>
+    <div class="notable-row">
+      <div>
+        <div class="notable-name">Stringy — "Lodash for Strings"</div>
+        <div class="notable-desc">Medium article on building stringy-core as an open-source contribution platform</div>
+      </div>
+      <div class="notable-metric">19 forks</div>
+    </div>
   </div>
-</section>
+</div>
 
 <div class="divider"></div>
 
 <!-- CONTACT -->
-<section id="contact">
-  <div class="section-label">Contact</div>
-  <h2 class="contact-heading">Let's build<br><span>something.</span></h2>
-  <p class="contact-sub">
-    I'm open to senior full stack / AI engineering roles, consulting on LLM systems and
-    multi-agent pipelines, and products where the problem is genuinely hard.
-  </p>
-  <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
-    <a href="mailto:beingswanand@gmail.com" class="contact-email">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-        <polyline points="22,6 12,13 2,6"/>
-      </svg>
-      beingswanand@gmail.com
-    </a>
-    <a href="https://www.linkedin.com/in/swanandkadam" target="_blank" rel="noopener" class="contact-email">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-        <rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/>
-      </svg>
-      LinkedIn
-    </a>
-    <a href="https://github.com/swanandapps" target="_blank" rel="noopener" class="contact-email">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
-      </svg>
-      GitHub
-    </a>
+<div class="contact" id="contact">
+  <h2>Let's build<br>something<span class="period">.</span></h2>
+  <div class="contact-btns">
+    <a href="mailto:beingswanand@gmail.com" class="btn-primary">Email me →</a>
+    <a href="https://www.linkedin.com/in/swanandkadam" target="_blank" class="btn-ghost">LinkedIn ↗</a>
+    <a href="https://github.com/swanandapps" target="_blank" class="btn-ghost">GitHub ↗</a>
   </div>
-</section>
+</div>
 
-<!-- BACK TO TOP -->
-<a href="#home" class="back-to-top" id="backToTop" aria-label="Back to top">↑</a>
-
-<!-- FOOTER -->
 <footer>
-  <span class="footer-text">Swanand Kadam</span>
+  <span class="footer-text">Swanand Kadam · Pune, India</span>
   <span class="footer-text">Built with HTML · CSS · JS</span>
 </footer>
-
-<script>
-// Highlight active nav link on scroll
-const sections = document.querySelectorAll('section[id], div.hero');
-const navLinks = document.querySelectorAll('.nav-links a');
-
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      const id = entry.target.id || 'home';
-      navLinks.forEach(a => {
-        a.style.color = a.getAttribute('href') === `#${id}` ? '#f1f5f9' : '';
-      });
-    }
-  });
-}, { threshold: 0.4 });
-
-document.querySelectorAll('section[id]').forEach(s => observer.observe(s));
-
-// Back to top button
-const backToTop = document.getElementById('backToTop');
-window.addEventListener('scroll', () => {
-  backToTop.classList.toggle('visible', window.scrollY > 400);
-});
-
-// Terminal typing animation
-(function () {
-  const body = document.getElementById('termBody');
-  if (!body) return;
-
-  const LINES = [
-    { type: 'cmd',  text: 'whoami' },
-    { type: 'out',  text: '<span class="hi">Swanand Kadam</span> — Senior Full Stack / AI Engineer · Co-founder · 6+ yrs' },
-    { type: 'blank' },
-    { type: 'cmd',  text: 'cat ./ai_systems.json' },
-    { type: 'out',  text: '<span class="gr">multi_agent_pipeline</span>  → LangChain · Mastra · Planner-Executor' },
-    { type: 'out',  text: '<span class="gr">rag_assistant</span>         → pgvector · HNSW · BM25 hybrid' },
-    { type: 'out',  text: '<span class="gr">plagiarism_engine</span>     → 5% → 95% detection · 19× lift' },
-    { type: 'out',  text: '<span class="gr">exam_platform</span>         → 10K users · Lambda · SQS · SSE' },
-    { type: 'blank' },
-    { type: 'cmd',  text: 'cat ./stack.txt' },
-    { type: 'out',  text: '<span class="hi">LangChain · Mastra · pgvector · OpenAI · FastAPI · Django</span>' },
-    { type: 'out',  text: '<span class="hi">React 18 · TypeScript · AWS Lambda · SQS · Docker</span>' },
-    { type: 'blank' },
-    { type: 'cmd',  text: 'git log --oneline' },
-    { type: 'out',  text: '<span class="gr">✦</span> <span class="hi">co-founded the01.dev — multi-agent ed-tech platform</span>' },
-    { type: 'out',  text: '<span class="gr">✦</span> <span class="hi">built CodeMas at Masai School — first engineer</span>' },
-    { type: 'out',  text: '<span class="gr">✦</span> <span class="hi">TEDx Bangalore — India\'s first Hindi language</span>' },
-    { type: 'out',  text: '<span class="gr">✦</span> <span class="hi">bharatvarsh.art — ₹2Cr+ D2C revenue</span>' },
-  ];
-
-  let lineIdx = 0;
-  let charIdx = 0;
-  let currentEl = null;
-  let currentText = '';
-
-  function addLine(type) {
-    if (type === 'blank') {
-      const br = document.createElement('div');
-      br.style.height = '6px';
-      body.appendChild(br);
-      return null;
-    }
-    const div = document.createElement('div');
-    div.className = 't-line';
-    if (type === 'cmd') {
-      const prompt = document.createElement('span');
-      prompt.className = 't-prompt';
-      prompt.textContent = '$';
-      div.appendChild(prompt);
-    }
-    const content = document.createElement('span');
-    content.className = type === 'cmd' ? 't-cmd' : 't-out';
-    div.appendChild(content);
-    body.appendChild(div);
-    return content;
-  }
-
-  const cursor = document.createElement('span');
-  cursor.className = 't-cursor';
-
-  function tick() {
-    if (lineIdx >= LINES.length) {
-      body.appendChild(cursor);
-      return;
-    }
-
-    const line = LINES[lineIdx];
-
-    if (line.type === 'blank') {
-      addLine('blank');
-      lineIdx++;
-      setTimeout(tick, 120);
-      return;
-    }
-
-    if (line.type === 'out') {
-      // Output lines appear instantly
-      const el = addLine('out');
-      el.innerHTML = line.text;
-      lineIdx++;
-      setTimeout(tick, 80);
-      return;
-    }
-
-    // cmd — type character by character
-    if (!currentEl) {
-      currentEl = addLine('cmd');
-      currentText = line.text;
-      charIdx = 0;
-      currentEl.appendChild(cursor);
-    }
-
-    if (charIdx < currentText.length) {
-      currentEl.textContent = currentText.slice(0, charIdx + 1);
-      currentEl.appendChild(cursor);
-      charIdx++;
-      setTimeout(tick, 55);
-    } else {
-      cursor.remove();
-      currentEl = null;
-      lineIdx++;
-      setTimeout(tick, 300);
-    }
-  }
-
-  // Start after a short delay so the page has settled
-  setTimeout(tick, 800);
-})();
-</script>
 
 </body>
 </html>

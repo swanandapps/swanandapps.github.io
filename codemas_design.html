@@ -4,234 +4,505 @@
 <meta charset="UTF-8">
 <link rel="icon" type="image/jpeg" href="E09EB739-7DA5-43EE-AA6D-868C79A0F082_1_105_c.jpeg">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CodeMas — System Design</title>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<title>CodeMas — System Architecture</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
-:root {
-  --bg: #0f1117;
-  --surface: #1a1f2e;
-  --border: #2a3045;
-  --green: #10b981;
-  --text: #f1f5f9;
-  --muted: #64748b;
-  --indigo: #6366f1;
-}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
+
+:root {
+  --bg: #f0ebe0;
+  --surface: #fff;
+  --border: #ddd8cc;
+  --accent: #c4573a;
+  --text: #1a1a18;
+  --muted: #888;
+  --mono: 'JetBrains Mono', monospace;
+}
 
 body {
   background: var(--bg);
   color: var(--text);
   font-family: 'Inter', sans-serif;
-  line-height: 1.7;
+  min-height: 100vh;
 }
 
-header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 40px;
-  background: rgba(15,17,23,0.92);
-  backdrop-filter: blur(12px);
+.back-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  height: 44px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px;
+  background: rgba(240,235,224,0.97);
+  backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
 }
-
-.back-link {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.82rem;
-  color: var(--muted);
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: color 0.2s;
+.back-nav-link {
+  font-family: var(--mono); font-size: 11px; color: var(--muted);
+  text-decoration: none; transition: color 0.2s;
 }
-.back-link:hover { color: var(--green); }
-
-.doc-badge {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  color: var(--indigo);
-  background: rgba(99,102,241,0.1);
-  border: 1px solid rgba(99,102,241,0.25);
-  padding: 4px 12px;
-  border-radius: 20px;
+.back-nav-link:hover { color: var(--accent); }
+.back-nav-badge {
+  font-family: var(--mono); font-size: 10px; color: var(--accent);
+  background: rgba(196,87,58,0.08); border: 1px solid rgba(196,87,58,0.25);
+  padding: 3px 12px; border-radius: 20px;
 }
 
-main {
-  max-width: 860px;
+.page-header {
+  padding: 72px 48px 32px;
+  max-width: 1040px;
   margin: 0 auto;
-  padding: 48px 32px 96px;
 }
 
-#content h1 {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 8px;
-  line-height: 1.3;
+.page-eyebrow {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 10px;
 }
 
-#content h2 {
-  font-size: 1.35rem;
-  font-weight: 600;
-  color: var(--text);
-  margin-top: 48px;
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
+.page-title {
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  font-weight: 900; letter-spacing: -0.04em; line-height: 1.0;
+  color: var(--text); margin-bottom: 12px;
 }
 
-#content h3 {
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: var(--green);
-  margin-top: 28px;
-  margin-bottom: 10px;
+.page-title .period { color: var(--accent); }
+
+.page-sub {
+  font-size: 1rem; color: var(--muted); max-width: 620px; line-height: 1.7;
+  margin-bottom: 28px;
 }
 
-#content h4 {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--muted);
-  margin-top: 20px;
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+.stats-row {
+  display: flex; gap: 12px; flex-wrap: wrap;
+}
+.stat-chip {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; padding: 10px 16px;
+}
+.stat-chip-num {
+  font-family: var(--mono); font-size: 1.15rem; font-weight: 700;
+  color: var(--text); letter-spacing: -0.02em; line-height: 1;
+}
+.stat-chip-num .accent { color: var(--accent); }
+.stat-chip-label {
+  font-size: 0.73rem; color: var(--muted); line-height: 1.4;
 }
 
-#content p {
-  color: #cbd5e1;
-  margin-bottom: 14px;
-  font-size: 0.95rem;
+.diagram-wrap {
+  max-width: 1040px;
+  margin: 28px auto 0;
+  padding: 0 48px;
 }
 
-#content strong { color: var(--text); }
-
-#content a { color: var(--green); text-decoration: none; }
-#content a:hover { text-decoration: underline; }
-
-#content ul, #content ol {
-  padding-left: 24px;
-  margin-bottom: 14px;
-}
-
-#content li {
-  color: #cbd5e1;
-  font-size: 0.95rem;
-  margin-bottom: 6px;
-}
-
-#content pre {
+.diagram-section {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 20px 24px;
-  overflow-x: auto;
-  margin: 20px 0;
+  overflow: hidden;
+  margin-bottom: 16px;
 }
 
-#content code {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.82rem;
-  color: #a5f3d0;
+.diagram-section-label {
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 4px;
+}
+.diagram-section-label .path-label {
+  font-size: 0.6rem; color: var(--accent);
 }
 
-#content p code, #content li code {
-  background: rgba(16,185,129,0.08);
-  border: 1px solid rgba(16,185,129,0.15);
-  border-radius: 4px;
-  padding: 1px 6px;
-  font-size: 0.82rem;
-  color: #6ee7b7;
-}
-
-#content blockquote {
-  border-left: 3px solid var(--green);
-  padding: 12px 20px;
-  margin: 20px 0;
-  background: rgba(16,185,129,0.05);
-  border-radius: 0 6px 6px 0;
-  color: var(--muted);
-  font-style: italic;
-}
-
-#content table {
+.arch-svg {
+  display: block;
   width: 100%;
-  border-collapse: collapse;
-  margin: 20px 0;
-  font-size: 0.88rem;
+  height: auto;
 }
 
-#content th {
+.section-eyebrow {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--muted);
+  max-width: 1040px; margin: 32px auto 14px; padding: 0 48px;
+}
+
+.comp-grid {
+  max-width: 1040px;
+  margin: 0 auto 60px;
+  padding: 0 48px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.comp-card {
   background: var(--surface);
-  color: var(--text);
-  font-weight: 600;
-  padding: 10px 16px;
-  text-align: left;
   border: 1px solid var(--border);
+  border-left: 3px solid;
+  border-radius: 4px;
+  padding: 18px 18px;
 }
 
-#content td {
-  padding: 9px 16px;
-  border: 1px solid var(--border);
-  color: #cbd5e1;
-  vertical-align: top;
+.comp-card-layer {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em;
+  text-transform: uppercase; margin-bottom: 8px;
 }
 
-#content tr:nth-child(even) td { background: rgba(26,31,46,0.4); }
-
-hr {
-  border: none;
-  border-top: 1px solid var(--border);
-  margin: 36px 0;
+.comp-card-name {
+  font-size: 0.9rem; font-weight: 700; color: var(--text);
+  margin-bottom: 6px; letter-spacing: -0.01em;
 }
 
-.loading {
-  color: var(--muted);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.85rem;
-  padding: 80px 0;
-  text-align: center;
+.comp-card-desc {
+  font-size: 0.8rem; color: #555; line-height: 1.65;
 }
 
-@media (max-width: 640px) {
-  header { padding: 14px 20px; }
-  main { padding: 32px 20px 64px; }
-  #content h1 { font-size: 1.5rem; }
-  #content h2 { font-size: 1.15rem; }
-  #content pre { font-size: 0.75rem; padding: 14px; }
-  #content table { font-size: 0.78rem; }
-  #content th, #content td { padding: 7px 10px; }
+.comp-card-tags {
+  display: flex; gap: 5px; flex-wrap: wrap; margin-top: 12px;
+}
+.comp-tag {
+  font-family: var(--mono); font-size: 0.55rem; padding: 2px 7px;
+  border: 1px solid var(--border); border-radius: 2px; color: var(--muted);
+  background: var(--bg);
+}
+
+@media (max-width: 720px) {
+  .page-header, .diagram-wrap, .comp-grid, .section-eyebrow { padding-left: 20px; padding-right: 20px; }
+  .comp-grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
 <body>
 
-<header>
-  <a href="index.html" class="back-link" onclick="if(history.length<=1){return true;}window.close();return false;">← Back to Portfolio</a>
-  <span class="doc-badge">System Design</span>
-</header>
+<div class="back-nav">
+  <a href="index.html" class="back-nav-link">← Portfolio</a>
+  <span class="back-nav-badge">CodeMas — Architecture</span>
+</div>
 
-<main>
-  <div id="content"><div class="loading">Loading document…</div></div>
-</main>
+<div class="page-header">
+  <div class="page-eyebrow">System Design</div>
+  <h1 class="page-title">CodeMas<span class="period">.</span></h1>
+  <p class="page-sub">
+    Real-time coding assessment platform — 10,000 concurrent students, ~10K submissions/sec at deadline bursts,
+    5 production AI agents, sub-10s execution results. Built at Masai School.
+  </p>
+  <div class="stats-row">
+    <div class="stat-chip">
+      <div class="stat-chip-num">10K<span class="accent">/s</span></div>
+      <div class="stat-chip-label">Peak submission<br>throughput</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-chip-num">&lt;10<span class="accent">s</span></div>
+      <div class="stat-chip-label">Code execute<br>+ result push</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-chip-num">5<span class="accent"> AI</span></div>
+      <div class="stat-chip-label">Agents in<br>production</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-chip-num">19<span class="accent">×</span></div>
+      <div class="stat-chip-label">Plagiarism<br>detection lift</div>
+    </div>
+  </div>
+</div>
 
-<script>
-fetch('codemas_design.md')
-  .then(r => r.text())
-  .then(md => {
-    document.getElementById('content').innerHTML = marked.parse(md);
-  })
-  .catch(() => {
-    document.getElementById('content').innerHTML = '<p style="color:#ef4444">Failed to load document.</p>';
-  });
-</script>
+<div class="diagram-wrap">
+
+  <!-- ── DIAGRAM 1: Submission Pipeline ── -->
+  <div class="diagram-section">
+    <div class="diagram-section-label">
+      <span>Submission Pipeline — real-time path on every code submit</span>
+      <span class="path-label">Student → Django API → SQS → Docker → Redis pub/sub → SSE → Student</span>
+    </div>
+    <svg class="arch-svg" viewBox="0 0 940 368" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ah"   markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#888"/></marker>
+        <marker id="ah-i" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker>
+        <marker id="ah-a" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#d97706"/></marker>
+        <marker id="ah-g" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#059669"/></marker>
+        <marker id="ah-p" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#7c3aed"/></marker>
+      </defs>
+
+      <!-- ── Layer bands ── -->
+      <rect x="0" y="0"   width="940" height="110" fill="#faf8f4"/>
+      <rect x="0" y="110" width="940" height="100" fill="#fff"/>
+      <rect x="0" y="210" width="940" height="158" fill="#faf8f4"/>
+      <line x1="0" y1="110" x2="940" y2="110" stroke="#e8e4dc" stroke-width="1"/>
+      <line x1="0" y1="210" x2="940" y2="210" stroke="#e8e4dc" stroke-width="1"/>
+
+      <!-- Layer labels -->
+      <text x="14" y="22" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="#bbb" letter-spacing="2.5">ACTORS</text>
+      <text x="14" y="126" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="#bbb" letter-spacing="2.5">API LAYER</text>
+      <text x="14" y="226" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="#bbb" letter-spacing="2.5">EXECUTION</text>
+
+      <!-- ── Actors ── -->
+      <circle cx="82"  cy="60" r="26" fill="rgba(99,102,241,0.08)" stroke="#6366f1" stroke-width="1.5"/>
+      <text x="82"  y="55" font-size="14" text-anchor="middle" dominant-baseline="middle">👨‍💻</text>
+      <text x="82"  y="74" font-size="8.5" font-weight="700" fill="#6366f1" text-anchor="middle">Student</text>
+      <text x="82"  y="86" font-size="7"   fill="#999" text-anchor="middle">Browser</text>
+
+      <circle cx="858" cy="60" r="26" fill="rgba(217,119,6,0.08)" stroke="#d97706" stroke-width="1.5"/>
+      <text x="858" y="55" font-size="14" text-anchor="middle" dominant-baseline="middle">👨‍🏫</text>
+      <text x="858" y="74" font-size="8.5" font-weight="700" fill="#d97706" text-anchor="middle">Trainer</text>
+      <text x="858" y="86" font-size="7"   fill="#999" text-anchor="middle">Dashboard</text>
+
+      <!-- ── Django REST API ── -->
+      <rect x="154" y="110" width="588" height="88" rx="6" fill="white" stroke="#c4573a" stroke-width="1.5"/>
+      <text x="448" y="136" font-size="11"  font-weight="700" fill="#c4573a" text-anchor="middle">Django REST API</text>
+      <text x="448" y="154" font-size="8"   fill="#888" text-anchor="middle">DRF · Simple JWT · Gunicorn · AWS Lambda</text>
+      <text x="448" y="170" font-size="7.5" fill="#aaa" text-anchor="middle">POST /submit → attempt check (SELECT FOR UPDATE) → INSERT submission → 201</text>
+      <!-- Lambda pill -->
+      <rect x="596" y="116" width="138" height="16" rx="3" fill="rgba(196,87,58,0.07)" stroke="rgba(196,87,58,0.28)" stroke-width="0.8"/>
+      <text x="665" y="127" font-size="7" fill="#c4573a" text-anchor="middle" font-family="'JetBrains Mono',monospace">AWS Lambda · Gunicorn</text>
+
+      <!-- ── Execution components ── -->
+      <rect x="78"  y="226" width="152" height="78" rx="6" fill="white" stroke="#64748b" stroke-width="1.5"/>
+      <text x="154" y="250" font-size="9.5" font-weight="700" fill="#475569" text-anchor="middle">AWS SQS</text>
+      <text x="154" y="265" font-size="7.5" fill="#888" text-anchor="middle">execute_submission queue</text>
+      <text x="154" y="279" font-size="7"   fill="#aaa" text-anchor="middle">FIFO · per-exam · Celery BRPOP</text>
+
+      <rect x="274" y="226" width="152" height="78" rx="6" fill="white" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="350" y="250" font-size="9.5" font-weight="700" fill="#2563eb" text-anchor="middle">Docker Sandbox</text>
+      <text x="350" y="265" font-size="7.5" fill="#888" text-anchor="middle">Isolated execution</text>
+      <text x="350" y="279" font-size="7"   fill="#aaa" text-anchor="middle">CPU · mem · time limits · cgroups</text>
+
+      <rect x="470" y="226" width="152" height="78" rx="6" fill="white" stroke="#059669" stroke-width="1.5"/>
+      <text x="546" y="250" font-size="9.5" font-weight="700" fill="#059669" text-anchor="middle">PostgreSQL</text>
+      <text x="546" y="265" font-size="7.5" fill="#888" text-anchor="middle">Submissions · Results</text>
+      <text x="546" y="279" font-size="7"   fill="#aaa" text-anchor="middle">Attempts · Exam state</text>
+
+      <rect x="666" y="226" width="152" height="78" rx="6" fill="white" stroke="#7c3aed" stroke-width="1.5"/>
+      <text x="742" y="250" font-size="9.5" font-weight="700" fill="#7c3aed" text-anchor="middle">SSE Stream</text>
+      <text x="742" y="265" font-size="7.5" fill="#888" text-anchor="middle">EventSource API</text>
+      <text x="742" y="279" font-size="7"   fill="#aaa" text-anchor="middle">one connection per student</text>
+
+      <!-- ══════════════════════════════════════════════════════ -->
+      <!--  ARROWS — all orthogonal, no diagonal crossings        -->
+      <!-- ══════════════════════════════════════════════════════ -->
+
+      <!-- ① Student → API: down then right -->
+      <path d="M 82,86 L 82,148 L 154,148" stroke="#6366f1" stroke-width="1.5" fill="none" marker-end="url(#ah-i)"/>
+      <text x="96" y="122" font-size="7.5" fill="#6366f1" transform="rotate(90,96,122)" text-anchor="middle">POST /submit</text>
+
+      <!-- ② Trainer → API: down then left -->
+      <path d="M 858,86 L 858,148 L 742,148" stroke="#d97706" stroke-width="1.5" fill="none" marker-end="url(#ah-a)"/>
+      <text x="870" y="122" font-size="7.5" fill="#d97706" transform="rotate(90,870,122)" text-anchor="middle">exam CRUD</text>
+
+      <!-- ③ 201 + SSE open — up left margin back to Student (dashed) -->
+      <path d="M 154,156 L 36,156 L 36,60 L 56,60" stroke="#bbb" stroke-width="1.2" fill="none" stroke-dasharray="5 3" marker-end="url(#ah)"/>
+      <text x="28" y="110" font-size="7" fill="#aaa" text-anchor="middle" transform="rotate(-90,28,110)">201 + SSE open</text>
+
+      <!-- ④ API → SQS: straight down -->
+      <path d="M 154,198 L 154,226" stroke="#64748b" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+      <text x="168" y="215" font-size="7" fill="#888">LPUSH</text>
+
+      <!-- ⑤ API → Postgres: straight down -->
+      <path d="M 546,198 L 546,226" stroke="#059669" stroke-width="1.5" fill="none" marker-end="url(#ah-g)"/>
+      <text x="556" y="215" font-size="7" fill="#888">check + INSERT</text>
+
+      <!-- ⑥ SQS → Docker: horizontal -->
+      <path d="M 230,265 L 274,265" stroke="#64748b" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+      <text x="252" y="259" font-size="7" fill="#888" text-anchor="middle">BRPOP</text>
+
+      <!-- ⑦ Docker → Postgres: horizontal -->
+      <path d="M 426,265 L 470,265" stroke="#059669" stroke-width="1.5" fill="none" marker-end="url(#ah-g)"/>
+      <text x="448" y="259" font-size="7" fill="#888" text-anchor="middle">write result</text>
+
+      <!-- ⑧ Docker result → SSE via Redis pub/sub: below boxes -->
+      <path d="M 350,304 L 350,344 L 742,344 L 742,304" stroke="#7c3aed" stroke-width="1.2" fill="none" stroke-dasharray="4 3" marker-end="url(#ah-p)"/>
+      <text x="546" y="358" font-size="7.5" fill="#7c3aed" text-anchor="middle">Redis pub/sub</text>
+
+      <!-- ⑨ SSE → Student result push: along top margin (purple dashed) -->
+      <path d="M 742,226 L 742,12 L 82,12 L 82,34" stroke="#7c3aed" stroke-width="1.2" fill="none" stroke-dasharray="4 3" marker-end="url(#ah-p)"/>
+      <text x="412" y="8" font-size="7.5" fill="#7c3aed" text-anchor="middle">result pushed to browser</text>
+    </svg>
+  </div>
+
+  <!-- ── DIAGRAM 2: AI Agent Layer ── -->
+  <div class="diagram-section">
+    <div class="diagram-section-label">
+      <span>AI Agent Layer — 5 async agents, zero latency impact on submission path</span>
+      <span class="path-label">Event trigger → Agent → shared GPT-4o-mini endpoint → PostgreSQL</span>
+    </div>
+    <svg class="arch-svg" viewBox="0 0 940 292" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ah2"   markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#888"/></marker>
+        <marker id="ah2-a" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#d97706"/></marker>
+        <marker id="ah2-i" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker>
+        <marker id="ah2-r" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#e63946"/></marker>
+        <marker id="ah2-s" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#475569"/></marker>
+        <marker id="ah2-d" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#dc2626"/></marker>
+        <marker id="ah2-p" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#7c3aed"/></marker>
+        <marker id="ah2-g" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#059669"/></marker>
+      </defs>
+
+      <!-- ── Layer bands ── -->
+      <rect x="0" y="0"   width="940" height="80"  fill="#faf8f4"/>
+      <rect x="0" y="80"  width="940" height="102" fill="#fff"/>
+      <rect x="0" y="182" width="940" height="110" fill="#faf8f4"/>
+      <line x1="0" y1="80"  x2="940" y2="80"  stroke="#e8e4dc" stroke-width="1"/>
+      <line x1="0" y1="182" x2="940" y2="182" stroke="#e8e4dc" stroke-width="1"/>
+
+      <text x="14" y="16"  font-family="'JetBrains Mono',monospace" font-size="7.5" fill="#bbb" letter-spacing="2.5">TRIGGERS</text>
+      <text x="14" y="98"  font-family="'JetBrains Mono',monospace" font-size="7.5" fill="#bbb" letter-spacing="2.5">AI AGENTS</text>
+      <text x="14" y="200" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="#bbb" letter-spacing="2.5">SERVICES</text>
+
+      <!-- ── Trigger events (5 evenly spaced, centers at 94, 282, 470, 658, 846) ── -->
+      <rect x="28"  y="18" width="132" height="46" rx="4" fill="white" stroke="#d97706" stroke-width="1" stroke-dasharray="4 2"/>
+      <text x="94"  y="38" font-size="8.5" font-weight="600" fill="#d97706" text-anchor="middle">Trainer: Exam Create</text>
+      <text x="94"  y="52" font-size="7"   fill="#aaa" text-anchor="middle">topic · difficulty · count</text>
+
+      <rect x="216" y="18" width="132" height="46" rx="4" fill="white" stroke="#6366f1" stroke-width="1" stroke-dasharray="4 2"/>
+      <text x="282" y="38" font-size="8.5" font-weight="600" fill="#6366f1" text-anchor="middle">Submission Result</text>
+      <text x="282" y="52" font-size="7"   fill="#aaa" text-anchor="middle">pass or fail scored</text>
+
+      <rect x="404" y="18" width="132" height="46" rx="4" fill="white" stroke="#e63946" stroke-width="1" stroke-dasharray="4 2"/>
+      <text x="470" y="38" font-size="8.5" font-weight="600" fill="#e63946" text-anchor="middle">Submit Failed</text>
+      <text x="470" y="52" font-size="7"   fill="#aaa" text-anchor="middle">test cases didn't pass</text>
+
+      <rect x="592" y="18" width="132" height="46" rx="4" fill="white" stroke="#475569" stroke-width="1" stroke-dasharray="4 2"/>
+      <text x="658" y="38" font-size="8.5" font-weight="600" fill="#475569" text-anchor="middle">Exam Closed</text>
+      <text x="658" y="52" font-size="7"   fill="#aaa" text-anchor="middle">is_active → False</text>
+
+      <rect x="780" y="18" width="132" height="46" rx="4" fill="white" stroke="#dc2626" stroke-width="1" stroke-dasharray="4 2"/>
+      <text x="846" y="38" font-size="8.5" font-weight="600" fill="#dc2626" text-anchor="middle">Similarity Flagged</text>
+      <text x="846" y="52" font-size="7"   fill="#aaa" text-anchor="middle">cosine &gt; 0.80</text>
+
+      <!-- ── AI Agent boxes ── -->
+      <rect x="24"  y="92" width="140" height="74" rx="6" fill="white" stroke="#d97706" stroke-width="1.5"/>
+      <text x="94"  y="113" font-size="9.5" font-weight="700" fill="#d97706" text-anchor="middle">Exam Generator</text>
+      <text x="94"  y="128" font-size="7.5" fill="#888" text-anchor="middle">Questions + test cases</text>
+      <text x="94"  y="142" font-size="7"   fill="#aaa" text-anchor="middle">HITL: review before persist</text>
+      <text x="94"  y="156" font-size="6.5" fill="#aaa" text-anchor="middle" font-style="italic">human-in-the-loop gate</text>
+
+      <rect x="212" y="92" width="140" height="74" rx="6" fill="white" stroke="#d97706" stroke-width="1.5"/>
+      <text x="282" y="113" font-size="9.5" font-weight="700" fill="#d97706" text-anchor="middle">Rubric Scorer</text>
+      <text x="282" y="128" font-size="7.5" fill="#888" text-anchor="middle">4 dimensions · 0–2 each</text>
+      <text x="282" y="142" font-size="7"   fill="#aaa" text-anchor="middle">per-dim justification</text>
+      <text x="282" y="156" font-size="6.5" fill="#aaa" text-anchor="middle" font-style="italic">async after result</text>
+
+      <rect x="400" y="92" width="140" height="74" rx="6" fill="white" stroke="#e63946" stroke-width="1.5"/>
+      <text x="470" y="113" font-size="9.5" font-weight="700" fill="#e63946" text-anchor="middle">Hint Agent</text>
+      <text x="470" y="128" font-size="7.5" fill="#888" text-anchor="middle">Socratic nudge only</text>
+      <text x="470" y="142" font-size="7"   fill="#aaa" text-anchor="middle">concept hint · no answer</text>
+      <text x="470" y="156" font-size="6.5" fill="#aaa" text-anchor="middle" font-style="italic">on 3rd failed attempt</text>
+
+      <rect x="588" y="92" width="140" height="74" rx="6" fill="white" stroke="#475569" stroke-width="1.5"/>
+      <text x="658" y="113" font-size="9.5" font-weight="700" fill="#475569" text-anchor="middle">Dashboard Agent</text>
+      <text x="658" y="128" font-size="7.5" fill="#888" text-anchor="middle">Cohort narrative</text>
+      <text x="658" y="142" font-size="7"   fill="#aaa" text-anchor="middle">per-student summaries</text>
+      <text x="658" y="156" font-size="6.5" fill="#aaa" text-anchor="middle" font-style="italic">polls every 10s</text>
+
+      <rect x="776" y="92" width="140" height="74" rx="6" fill="white" stroke="#dc2626" stroke-width="1.5"/>
+      <text x="846" y="110" font-size="9.5" font-weight="700" fill="#dc2626" text-anchor="middle">Plagiarism Engine</text>
+      <text x="846" y="125" font-size="7.5" fill="#888" text-anchor="middle">Behavioural + TF-IDF</text>
+      <text x="846" y="139" font-size="7"   fill="#aaa" text-anchor="middle">5% → 95% · 19× lift</text>
+      <text x="846" y="153" font-size="6.5" fill="#aaa" text-anchor="middle" font-style="italic">GPT evidence brief</text>
+
+      <!-- ── Service boxes ── -->
+      <rect x="330" y="198" width="192" height="72" rx="6" fill="white" stroke="#7c3aed" stroke-width="2"/>
+      <text x="426" y="222" font-size="10.5" font-weight="700" fill="#7c3aed" text-anchor="middle">GPT-4o-mini</text>
+      <text x="426" y="238" font-size="8"   fill="#888" text-anchor="middle">OpenAI API · async calls</text>
+      <text x="426" y="252" font-size="7"   fill="#aaa" text-anchor="middle">all agents share this endpoint</text>
+
+      <rect x="582" y="198" width="188" height="72" rx="6" fill="white" stroke="#059669" stroke-width="1.5"/>
+      <text x="676" y="222" font-size="10.5" font-weight="700" fill="#059669" text-anchor="middle">PostgreSQL</text>
+      <text x="676" y="238" font-size="8"   fill="#888" text-anchor="middle">ExamDraft · RubricScore</text>
+      <text x="676" y="252" font-size="7"   fill="#aaa" text-anchor="middle">AIHint · PlagiarismFlag</text>
+
+      <!-- ══════════════════════════════════════════════════════════ -->
+      <!--  ARROWS                                                    -->
+      <!-- ══════════════════════════════════════════════════════════ -->
+
+      <!-- Trigger → Agent: straight vertical (28px gap, y=64 to y=92) -->
+      <path d="M 94,64  L 94,92"  stroke="#d97706" stroke-width="1.5" fill="none" marker-end="url(#ah2-a)"/>
+      <path d="M 282,64 L 282,92" stroke="#6366f1" stroke-width="1.5" fill="none" marker-end="url(#ah2-i)"/>
+      <path d="M 470,64 L 470,92" stroke="#e63946" stroke-width="1.5" fill="none" marker-end="url(#ah2-r)"/>
+      <path d="M 658,64 L 658,92" stroke="#475569" stroke-width="1.5" fill="none" marker-end="url(#ah2-s)"/>
+      <path d="M 846,64 L 846,92" stroke="#dc2626" stroke-width="1.5" fill="none" marker-end="url(#ah2-d)"/>
+
+      <!-- Agent stubs down to bus rail at y=174 (no arrowhead — feeders) -->
+      <line x1="94"  y1="166" x2="94"  y2="174" stroke="#bbb" stroke-width="1.2"/>
+      <line x1="282" y1="166" x2="282" y2="174" stroke="#bbb" stroke-width="1.2"/>
+      <line x1="470" y1="166" x2="470" y2="174" stroke="#bbb" stroke-width="1.2"/>
+      <line x1="658" y1="166" x2="658" y2="174" stroke="#bbb" stroke-width="1.2"/>
+      <line x1="846" y1="166" x2="846" y2="174" stroke="#bbb" stroke-width="1.2"/>
+
+      <!-- Bus rail (horizontal aggregation bar) -->
+      <line x1="94" y1="174" x2="846" y2="174" stroke="#bbb" stroke-width="1.5"/>
+
+      <!-- Trunk: bus → GPT (with arrowhead) -->
+      <path d="M 426,174 L 426,198" stroke="#7c3aed" stroke-width="1.5" fill="none" marker-end="url(#ah2-p)"/>
+      <text x="442" y="190" font-size="7" fill="#7c3aed">shared endpoint</text>
+
+      <!-- GPT → Postgres -->
+      <path d="M 522,234 L 582,234" stroke="#059669" stroke-width="1.5" fill="none" marker-end="url(#ah2-g)"/>
+      <text x="552" y="228" font-size="7" fill="#888" text-anchor="middle">scores · hints · flags</text>
+    </svg>
+  </div>
+
+</div>
+
+<!-- KEY DECISIONS -->
+<div class="section-eyebrow">Key Design Decisions</div>
+<div class="comp-grid">
+
+  <div class="comp-card" style="border-left-color:#c4573a">
+    <div class="comp-card-layer" style="color:#c4573a">Core Architecture</div>
+    <div class="comp-card-name">Lambda + SQS decoupling</div>
+    <div class="comp-card-desc">Code submission returns 201 immediately and opens an SSE stream. Execution is queued to SQS — deadline bursts queue up without stalling the API. The Lambda worker dequeues and runs the Docker sandbox independently.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">AWS Lambda</span><span class="comp-tag">SQS FIFO</span><span class="comp-tag">SSE</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#dc2626">
+    <div class="comp-card-layer" style="color:#dc2626">Plagiarism Detection</div>
+    <div class="comp-card-name">Reframing the problem</div>
+    <div class="comp-card-desc">"Are two submissions similar?" → "Did this student write this?" Layer 1 scores behavioural signals (paste ratio, speed vs difficulty, tab switches) at exam close. Layer 2 runs TF-IDF cosine only on suspects — O(K×N) not O(N²).</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">TF-IDF</span><span class="comp-tag">Behavioural signals</span><span class="comp-tag">pre_save signal</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#d97706">
+    <div class="comp-card-layer" style="color:#d97706">AI Agent Design</div>
+    <div class="comp-card-name">Async, never on delivery path</div>
+    <div class="comp-card-desc">All 5 agents are triggered by events but execute fully async — none sit between submission and result. Rubric scoring, hints, and narratives appear after the result is already delivered. Zero latency added to the student experience.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">Async queue</span><span class="comp-tag">GPT-4o-mini</span><span class="comp-tag">Idempotent</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#3b82f6">
+    <div class="comp-card-layer" style="color:#3b82f6">Code Execution Safety</div>
+    <div class="comp-card-name">Docker sandbox isolation</div>
+    <div class="comp-card-desc">Every submission runs in an isolated Docker container with strict CPU, memory, and time limits enforced by cgroups. No student code can affect another execution or the host. Container killed after the time limit regardless of state.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">Docker</span><span class="comp-tag">cgroups</span><span class="comp-tag">time-limit kill</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#059669">
+    <div class="comp-card-layer" style="color:#059669">Concurrency Safety</div>
+    <div class="comp-card-name">Attempt gating with row lock</div>
+    <div class="comp-card-desc">Before accepting a submission, the API checks attempt count using SELECT FOR UPDATE. Prevents race conditions when two tab submissions arrive within milliseconds — common at exam end when every student submits at the same deadline.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">PostgreSQL</span><span class="comp-tag">SELECT FOR UPDATE</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#7c3aed">
+    <div class="comp-card-layer" style="color:#7c3aed">Real-time Delivery</div>
+    <div class="comp-card-name">SSE over WebSocket</div>
+    <div class="comp-card-desc">Code execution results are unidirectional — server pushes once. SSE chosen over WebSockets for native browser reconnection, HTTP/1.1 proxy compatibility, and simpler Lambda scaling. Redis pub/sub bridges the worker result to the SSE endpoint.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">SSE</span><span class="comp-tag">EventSource API</span><span class="comp-tag">Redis pub/sub</span>
+    </div>
+  </div>
+
+</div>
+
 </body>
 </html>

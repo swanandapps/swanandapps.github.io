@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>0.1% DEV — Multi-Agent Pipeline</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #f0ebe0; --surface: #fff; --border: #ddd8cc;
+  --green: #10b981; --text: #1a1a18; --muted: #888;
+  --indigo: #6366f1; --amber: #f59e0b; --purple: #8b5cf6;
+  --blue: #3b82f6; --red: #e63946;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; line-height:1.6; min-height:100vh; }
+
+.back-nav {
+  position:fixed; top:0; left:0; right:0; z-index:200;
+  height:40px; display:flex; align-items:center; justify-content:space-between;
+  padding:0 28px; background:rgba(240,235,224,0.96);
+  backdrop-filter:blur(10px); border-bottom:1px solid #ddd8cc;
+}
+.back-nav-link { font-family:'JetBrains Mono',monospace; font-size:11px; color:#64748b; text-decoration:none; transition:color 0.2s; }
+.back-nav-link:hover { color:#10b981; }
+.back-nav-badge { font-family:'JetBrains Mono',monospace; font-size:10px; color:#6366f1; background:rgba(99,102,241,0.1); border:1px solid rgba(99,102,241,0.25); padding:3px 10px; border-radius:20px; }
+
+.page-header { padding:60px 40px 16px; text-align:center; }
+.page-title { font-size:1.6rem; font-weight:700; letter-spacing:-0.02em; margin-bottom:6px; }
+.page-sub { font-size:0.85rem; color:var(--muted); }
+
+.phase-banner { max-width:800px; margin:20px auto 0; padding:0 24px; }
+.phase-pill { display:inline-block; font-family:'JetBrains Mono',monospace; font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase; padding:4px 14px; border-radius:20px; background:rgba(99,102,241,0.12); border:1px solid rgba(99,102,241,0.3); color:var(--indigo); margin-bottom:10px; }
+.phase-name { font-size:1.25rem; font-weight:700; letter-spacing:-0.02em; margin-bottom:4px; }
+.phase-sep { height:1px; background:linear-gradient(90deg,transparent,var(--border),transparent); margin:8px 0; }
+.phase-tagline { font-size:0.8rem; color:var(--muted); font-style:italic; }
+
+.stage-wrap { max-width:900px; margin:20px auto; padding:0 24px; }
+.stage {
+  background:var(--surface); border:1px solid var(--border); border-radius:14px;
+  position:relative; height:320px; overflow:hidden;
+}
+.stage-grid {
+  position:absolute; inset:0;
+  background-image: linear-gradient(rgba(42,48,69,0.25) 1px,transparent 1px), linear-gradient(90deg,rgba(42,48,69,0.25) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+
+.node {
+  position:absolute; display:flex; flex-direction:column; align-items:center;
+  gap:6px; cursor:default; transition:opacity 0.4s;
+}
+.node-circle {
+  width:52px; height:52px; border-radius:50%; display:flex; align-items:center;
+  justify-content:center; font-size:1.2rem; border:2px solid transparent;
+  box-shadow:0 4px 16px rgba(0,0,0,0.4); transition:all 0.3s;
+}
+.node-label { font-family:'JetBrains Mono',monospace; font-size:0.6rem; color:var(--muted); text-align:center; letter-spacing:0.04em; white-space:nowrap; }
+.node.active .node-circle { transform:scale(1.15); }
+.node.dim { opacity:0.3; }
+
+.connections { position:absolute; inset:0; pointer-events:none; }
+
+.packet {
+  position:absolute; width:10px; height:10px; border-radius:50%;
+  display:none; pointer-events:none;
+  box-shadow:0 0 8px currentColor;
+  transform:translate(-50%,-50%);
+}
+.packet.active { display:block; }
+
+.step-desc { max-width:800px; margin:16px auto; padding:0 24px; }
+.step-box {
+  background:var(--surface); border:1px solid var(--border); border-radius:10px;
+  padding:18px 22px; min-height:72px; display:flex; align-items:center; gap:16px;
+}
+.step-num { font-family:'JetBrains Mono',monospace; font-size:0.68rem; color:var(--indigo); flex-shrink:0; letter-spacing:0.1em; }
+.step-text { font-size:0.88rem; color:#cbd5e1; line-height:1.65; }
+.step-text strong { color:var(--text); }
+.step-text em { color:var(--indigo); font-style:normal; font-weight:600; }
+
+.controls { max-width:800px; margin:14px auto 0; padding:0 24px; display:flex; align-items:center; gap:12px; }
+.ctrl-btn {
+  padding:7px 20px; border-radius:6px; font-size:0.78rem; font-weight:600;
+  border:1px solid var(--border); background:var(--surface); color:var(--muted);
+  cursor:pointer; transition:all 0.2s;
+}
+.ctrl-btn:hover { color:var(--text); border-color:var(--muted); }
+.ctrl-btn.play { background:var(--indigo); border-color:var(--indigo); color:#fff; }
+.ctrl-btn.play:hover { background:#4f46e5; }
+.progress-wrap { flex:1; height:3px; background:var(--border); border-radius:2px; overflow:hidden; }
+.progress-bar { height:100%; background:var(--indigo); transition:width 0.3s; border-radius:2px; }
+.step-counter { font-family:'JetBrains Mono',monospace; font-size:0.68rem; color:var(--muted); white-space:nowrap; }
+
+.dots-wrap { max-width:800px; margin:18px auto 40px; padding:0 24px; display:flex; flex-direction:column; gap:10px; }
+.dot-group {}
+.dot-group-label { font-family:'JetBrains Mono',monospace; font-size:0.6rem; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:6px; }
+.dot-row { display:flex; gap:6px; flex-wrap:wrap; }
+.dot {
+  width:8px; height:8px; border-radius:50%; background:var(--border);
+  cursor:pointer; transition:all 0.2s; flex-shrink:0;
+}
+.dot.done { background:var(--indigo); opacity:0.5; }
+.dot.current { background:var(--indigo); transform:scale(1.4); }
+</style>
+</head>
+<body>
+
+<div class="back-nav">
+  <a href="index.html" class="back-nav-link">← Back to Portfolio</a>
+  <span class="back-nav-badge">0.1% DEV — Multi-Agent Pipeline</span>
+</div>
+
+<div class="page-header">
+  <div class="page-title">0.1% DEV Multi-Agent Pipeline</div>
+  <div class="page-sub">LangChain + Mastra · Planner-Executor · Supervisor-Worker · HITL suspend/resume · ~67% fewer LLM calls</div>
+</div>
+
+<div class="phase-banner">
+  <div class="phase-pill" id="phasePill">Phase 1 of 4 — PDF Ingestion</div>
+  <div class="phase-name" id="phaseName">PDF Ingestion</div>
+  <div class="phase-sep"></div>
+  <div class="phase-tagline" id="phaseTagline">Instructor uploads course PDF — parsed, chunked, and dispatched to the Planner Agent</div>
+</div>
+
+<div class="stage-wrap">
+  <div class="stage">
+    <div class="stage-grid"></div>
+    <svg class="connections" id="connSvg"></svg>
+
+    <!-- Nodes -->
+    <div class="node" id="nInstructor" style="left:3%;top:38%">
+      <div class="node-circle" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.5)">👨‍💼</div>
+      <div class="node-label">Instructor</div>
+    </div>
+    <div class="node" id="nStudent" style="left:3%;top:68%">
+      <div class="node-circle" style="background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.5)">👨‍🎓</div>
+      <div class="node-label">Student</div>
+    </div>
+    <div class="node" id="nParser" style="left:22%;top:15%">
+      <div class="node-circle" style="background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.5)">📄</div>
+      <div class="node-label">PDF Parser</div>
+    </div>
+    <div class="node" id="nPlanner" style="left:40%;top:8%">
+      <div class="node-circle" style="background:rgba(245,158,11,0.15);border-color:rgba(245,158,11,0.5)">🗺️</div>
+      <div class="node-label">Planner Agent</div>
+    </div>
+    <div class="node" id="nSupervisor" style="left:58%;top:35%">
+      <div class="node-circle" style="background:rgba(230,57,70,0.15);border-color:rgba(230,57,70,0.5)">🧑‍✈️</div>
+      <div class="node-label">Supervisor</div>
+    </div>
+    <div class="node" id="nWorker1" style="left:38%;top:55%">
+      <div class="node-circle" style="background:rgba(16,185,129,0.15);border-color:rgba(16,185,129,0.5)">⚙️</div>
+      <div class="node-label">Worker 1</div>
+    </div>
+    <div class="node" id="nWorker2" style="left:38%;top:80%">
+      <div class="node-circle" style="background:rgba(16,185,129,0.15);border-color:rgba(16,185,129,0.45)">⚙️</div>
+      <div class="node-label">Worker 2</div>
+    </div>
+    <div class="node" id="nLLM" style="left:76%;top:10%">
+      <div class="node-circle" style="background:rgba(139,92,246,0.15);border-color:rgba(139,92,246,0.5)">🤖</div>
+      <div class="node-label">GPT-4.1-mini</div>
+    </div>
+    <div class="node" id="nDB" style="left:76%;top:62%">
+      <div class="node-circle" style="background:rgba(16,185,129,0.15);border-color:rgba(16,185,129,0.5)">🗄️</div>
+      <div class="node-label">Postgres +<br>pgvector</div>
+    </div>
+
+    <div class="packet" id="packet" style="background:#6366f1;color:#6366f1"></div>
+  </div>
+</div>
+
+<div class="step-desc">
+  <div class="step-box">
+    <div class="step-num" id="stepNum">01 / 21</div>
+    <div class="step-text" id="stepText">Instructor uploads a course PDF — <strong>"Build a Real-Time System: Architecture to Deployment."</strong> File received and queued for ingestion.</div>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="ctrl-btn" id="btnPrev" onclick="prevStep()">← Prev</button>
+  <button class="ctrl-btn play" id="btnPlay" onclick="togglePlay()">▶ Play</button>
+  <button class="ctrl-btn" onclick="nextStep()">Next →</button>
+  <div class="progress-wrap"><div class="progress-bar" id="progressBar" style="width:4.76%"></div></div>
+  <div class="step-counter" id="stepCounter">1 / 21</div>
+</div>
+
+<div class="dots-wrap" id="dotsWrap"></div>
+
+<script>
+const PHASES = [
+  { name:'PDF Ingestion', pill:'Phase 1 of 4 — PDF Ingestion', tagline:'Instructor uploads course PDF — parsed, chunked, and dispatched to the Planner Agent', steps:5 },
+  { name:'Planning & Routing', pill:'Phase 2 of 4 — Planning & Routing', tagline:'Planner creates a task graph — Supervisor-Worker pattern distributes lessons intelligently', steps:5 },
+  { name:'Execution & HITL', pill:'Phase 3 of 4 — Execution & HITL', tagline:'Workers generate content on demand — instructor approves via suspend/resume before persistence', steps:6 },
+  { name:'Output & Serving', pill:'Phase 4 of 4 — Output & Serving', tagline:'Approved lessons stored — pgvector indexes content, RAG assistant goes live for students', steps:5 },
+];
+
+const STEPS = [
+  // Phase 1: PDF Ingestion
+  { phase:0, from:'nInstructor', to:'nParser', text:'Instructor uploads a course PDF: <strong>"Build a Real-Time System: Architecture to Deployment."</strong> File received and queued for parsing.', active:['nInstructor','nParser'] },
+  { phase:0, from:'nParser', to:'nParser', text:'PDF Parser extracts text, preserves structure: <strong>title, section headings, paragraphs, code blocks.</strong> Output: 42 chunks with metadata (section, position, length).', active:['nParser'] },
+  { phase:0, from:'nParser', to:'nPlanner', text:'Parsed document chunks sent to <strong>Planner Agent</strong>. The agent receives the full document structure — not raw text — so it can reason about the course outline.', active:['nParser','nPlanner'] },
+  { phase:0, from:'nPlanner', to:'nLLM', text:'Planner calls <strong>GPT-4.1-mini</strong> with the document structure and a prompt to identify logical lesson boundaries and generate a task graph.', active:['nPlanner','nLLM'] },
+  { phase:0, from:'nLLM', to:'nPlanner', text:'GPT returns a <strong>task graph</strong>: 8 lessons identified with titles, scope, source chunk ranges, and dependencies. Planner validates and packages the graph.', active:['nLLM','nPlanner'] },
+
+  // Phase 2: Planning & Routing
+  { phase:1, from:'nPlanner', to:'nSupervisor', text:'Task graph dispatched to <strong>Supervisor</strong>. Supervisor is the orchestration layer — it validates, prioritises, and routes tasks without doing generation itself.', active:['nPlanner','nSupervisor'] },
+  { phase:1, from:'nSupervisor', to:'nWorker1', text:'Supervisor assigns <strong>Lessons 1–4</strong> to Worker 1 and Lessons 5–8 to Worker 2. <strong>Supervisor-Worker pattern</strong> — each worker is isolated, stateless, retryable.', active:['nSupervisor','nWorker1'] },
+  { phase:1, from:'nSupervisor', to:'nWorker2', text:'Worker 2 receives its task batch. Workers are <strong>on-demand</strong> — they do not pre-generate all content at ingestion time. Generation is deferred until a student requests it.', active:['nSupervisor','nWorker2'] },
+  { phase:1, from:'nWorker1', to:'nLLM', text:'Planner-Executor in action: Planner decided what to build, Workers are the Executors. Worker 1 fires a <strong>generation request for Lesson 1</strong> only when its turn arrives.', active:['nWorker1','nLLM'] },
+  { phase:1, from:'nWorker2', to:'nLLM', text:'<strong>~67% reduction in LLM calls</strong> versus eager generation — no lesson is generated twice or in advance. Each call is exactly as large as needed, no more.', active:['nWorker2','nLLM'] },
+
+  // Phase 3: Execution & HITL
+  { phase:2, from:'nWorker1', to:'nLLM', text:'Worker 1 sends the <strong>Lesson 1 prompt</strong> to GPT: source chunks + lesson scope + formatting instructions. This is the actual generation call.', active:['nWorker1','nLLM'] },
+  { phase:2, from:'nLLM', to:'nWorker1', text:'GPT returns a <strong>structured lesson draft</strong>: concept explanation, code example, exercises, and a one-paragraph summary. Markdown-formatted.', active:['nLLM','nWorker1'] },
+  { phase:2, from:'nWorker1', to:'nInstructor', text:'Lesson 1 enters a <strong>suspend state</strong> — HITL via Mastra\'s suspend/resume API. Worker pauses execution and sends the draft to the instructor for review. Nothing is persisted yet.', active:['nWorker1','nInstructor'] },
+  { phase:2, from:'nInstructor', to:'nInstructor', text:'Instructor reviews the draft in the admin panel. Edits the exercise section, approves the explanation. <strong>Human-in-the-loop by design</strong> — content quality gated by a domain expert, not just the LLM.', active:['nInstructor'] },
+  { phase:2, from:'nInstructor', to:'nWorker1', text:'Instructor approves. <strong>Resume signal</strong> sent — Worker 1 wakes up, receives the approved (possibly edited) content, and proceeds to persist it.', active:['nInstructor','nWorker1'] },
+  { phase:2, from:'nWorker2', to:'nLLM', text:'While Lesson 1 was awaiting review, <strong>Worker 2 generated Lessons 5–6 in parallel.</strong> The Supervisor-Worker pattern ensures no idle time — unblocked tasks proceed concurrently.', active:['nWorker2','nLLM'] },
+
+  // Phase 4: Output & Serving
+  { phase:3, from:'nWorker1', to:'nDB', text:'Approved Lesson 1 content stored in <strong>Postgres</strong>. Metadata (lesson ID, course ID, section order, instructor edit flag) persisted alongside the content.', active:['nWorker1','nDB'] },
+  { phase:3, from:'nDB', to:'nDB', text:'<strong>pgvector HNSW index</strong> updated: lesson content chunked (180-word windows, 35-word overlap), embedded via text-embedding-3-small, and indexed for semantic search.', active:['nDB'] },
+  { phase:3, from:'nStudent', to:'nDB', text:'Student requests the course. Content served directly from <strong>Postgres</strong> — no LLM call at read time. Video streams from Firebase Storage. Lesson is available immediately.', active:['nStudent','nDB'] },
+  { phase:3, from:'nStudent', to:'nLLM', text:'Student asks the <strong>RAG AI assistant</strong> a question about Lesson 1. Query embedded → cosine + BM25 hybrid retrieval from pgvector → top chunks fetched.', active:['nStudent','nLLM'] },
+  { phase:3, from:'nLLM', to:'nStudent', text:'GPT-4.1-mini answers with <strong>source citations</strong> deep-linked to exact video timestamps. <em>The entire pipeline — from PDF upload to student Q&A — runs without a single manual step.</em>', active:['nLLM','nStudent'] },
+];
+
+let current = 0;
+let playing = false;
+let playTimer = null;
+
+function getNodeCenter(id) {
+  const el = document.getElementById(id);
+  const stage = document.querySelector('.stage');
+  const sR = stage.getBoundingClientRect();
+  const eR = el.getBoundingClientRect();
+  return {
+    x: ((eR.left + eR.width/2) - sR.left) / sR.width * 100,
+    y: ((eR.top + eR.height/2) - sR.top) / sR.height * 100
+  };
+}
+
+function buildConnections() {
+  const svg = document.getElementById('connSvg');
+  svg.innerHTML = '';
+  const pairs = [
+    ['nInstructor','nParser'],['nParser','nPlanner'],['nPlanner','nLLM'],
+    ['nPlanner','nSupervisor'],['nSupervisor','nWorker1'],['nSupervisor','nWorker2'],
+    ['nWorker1','nLLM'],['nWorker2','nLLM'],['nWorker1','nDB'],['nWorker2','nDB'],
+    ['nWorker1','nInstructor'],['nStudent','nDB'],['nStudent','nLLM'],['nLLM','nDB'],
+  ];
+  pairs.forEach(([a,b]) => {
+    const p1 = getNodeCenter(a);
+    const p2 = getNodeCenter(b);
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',p1.x+'%'); line.setAttribute('y1',p1.y+'%');
+    line.setAttribute('x2',p2.x+'%'); line.setAttribute('y2',p2.y+'%');
+    line.setAttribute('stroke','#ddd8cc'); line.setAttribute('stroke-width','1.5');
+    line.setAttribute('stroke-dasharray','4 4');
+    svg.appendChild(line);
+  });
+}
+
+function animatePacket(fromId, toId) {
+  if (fromId === toId) return;
+  const packet = document.getElementById('packet');
+  const stage = document.querySelector('.stage');
+  const sR = stage.getBoundingClientRect();
+  const f = document.getElementById(fromId).getBoundingClientRect();
+  const t = document.getElementById(toId).getBoundingClientRect();
+  const x1 = ((f.left+f.width/2)-sR.left)/sR.width*100;
+  const y1 = ((f.top+f.height/2)-sR.top)/sR.height*100;
+  const x2 = ((t.left+t.width/2)-sR.left)/sR.width*100;
+  const y2 = ((t.top+t.height/2)-sR.top)/sR.height*100;
+
+  packet.style.left = x1+'%'; packet.style.top = y1+'%';
+  packet.classList.add('active');
+
+  let start = null;
+  const dur = 700;
+  function frame(ts) {
+    if (!start) start = ts;
+    const p = Math.min((ts-start)/dur, 1);
+    const ease = p<0.5 ? 2*p*p : -1+(4-2*p)*p;
+    packet.style.left = (x1+(x2-x1)*ease)+'%';
+    packet.style.top = (y1+(y2-y1)*ease)+'%';
+    if (p < 1) requestAnimationFrame(frame);
+    else packet.classList.remove('active');
+  }
+  requestAnimationFrame(frame);
+}
+
+function render() {
+  const step = STEPS[current];
+  const phase = PHASES[step.phase];
+
+  document.getElementById('phasePill').textContent = phase.pill;
+  document.getElementById('phaseName').textContent = phase.name;
+  document.getElementById('phaseTagline').textContent = phase.tagline;
+  document.getElementById('stepNum').textContent = String(current+1).padStart(2,'0') + ' / 21';
+  document.getElementById('stepText').innerHTML = step.text;
+  document.getElementById('progressBar').style.width = ((current+1)/21*100)+'%';
+  document.getElementById('stepCounter').textContent = (current+1)+' / 21';
+
+  document.querySelectorAll('.node').forEach(n => {
+    n.classList.remove('active','dim');
+    if (step.active && step.active.includes(n.id)) n.classList.add('active');
+    else n.classList.add('dim');
+  });
+
+  if (step.from && step.to && step.from !== step.to) animatePacket(step.from, step.to);
+
+  document.querySelectorAll('.dot').forEach((d,i) => {
+    d.classList.remove('done','current');
+    if (i < current) d.classList.add('done');
+    else if (i === current) d.classList.add('current');
+  });
+}
+
+function buildDots() {
+  const wrap = document.getElementById('dotsWrap');
+  wrap.innerHTML = '';
+  let idx = 0;
+  PHASES.forEach((ph) => {
+    const grp = document.createElement('div'); grp.className='dot-group';
+    const lbl = document.createElement('div'); lbl.className='dot-group-label'; lbl.textContent=ph.name;
+    const row = document.createElement('div'); row.className='dot-row';
+    for (let i=0;i<ph.steps;i++) {
+      const d = document.createElement('div'); d.className='dot';
+      const ci = idx;
+      d.onclick = () => { current=ci; render(); };
+      row.appendChild(d);
+      idx++;
+    }
+    grp.appendChild(lbl); grp.appendChild(row); wrap.appendChild(grp);
+  });
+}
+
+function nextStep() { if (current < 20) { current++; render(); } else stopPlay(); }
+function prevStep() { if (current > 0) { current--; render(); } }
+function togglePlay() {
+  playing = !playing;
+  document.getElementById('btnPlay').textContent = playing ? '⏸ Pause' : '▶ Play';
+  if (playing) { playTimer = setInterval(() => { if(current<20) nextStep(); else stopPlay(); }, 1800); }
+  else clearInterval(playTimer);
+}
+function stopPlay() { playing=false; clearInterval(playTimer); document.getElementById('btnPlay').textContent='▶ Play'; }
+
+document.addEventListener('keydown', e => {
+  if (e.key==='ArrowRight') nextStep();
+  if (e.key==='ArrowLeft') prevStep();
+  if (e.key===' ') { e.preventDefault(); togglePlay(); }
+});
+
+window.addEventListener('load', () => { buildDots(); buildConnections(); render(); });
+window.addEventListener('resize', buildConnections);
+</script>
+</body>
+</html>
