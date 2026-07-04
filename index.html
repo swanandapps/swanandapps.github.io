@@ -452,9 +452,9 @@ nav {
   font-size: 0.6rem;
   padding: 3px 8px;
   border-radius: 2px;
-  border: 1px solid var(--border);
-  color: var(--muted);
-  background: var(--bg);
+  border: 1px solid #b8b2a8;
+  color: #555;
+  background: #eae6de;
 }
 
 .project-links-r {
@@ -466,17 +466,18 @@ nav {
 .proj-link {
   font-family: var(--mono);
   font-size: 0.62rem;
-  color: var(--accent);
+  color: #fff;
   text-decoration: none;
-  border: 1px solid var(--accent-light);
+  background: var(--accent);
+  border: 1px solid var(--accent);
   padding: 4px 10px;
   border-radius: 2px;
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s;
   display: inline-flex;
   align-items: center;
   gap: 5px;
 }
-.proj-link:hover { background: var(--accent-light); }
+.proj-link:hover { background: #a84530; border-color: #a84530; }
 .proj-link svg { flex-shrink: 0; }
 
 /* ── NOTABLE ── */
