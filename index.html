@@ -405,13 +405,33 @@ nav {
   grid-template-columns: 56px 1fr 180px;
   align-items: start;
   gap: 20px;
-  padding: 28px 28px;
+  padding: 28px 28px 28px 25px;
   border-bottom: 1px solid var(--border);
-  transition: background 0.15s;
+  border-left: 3px solid transparent;
+  transition: background 0.15s, border-left-color 0.15s;
   cursor: pointer;
+  position: relative;
 }
 .project-row:last-child { border-bottom: none; }
-.project-row:hover { background: #faf8f4; }
+.project-row:hover {
+  background: #ede8dc;
+  border-left-color: var(--accent);
+}
+.project-row[onclick]::after {
+  content: '→';
+  position: absolute;
+  top: 28px; right: 28px;
+  font-size: 0.9rem;
+  color: var(--accent);
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.15s, transform 0.15s;
+  pointer-events: none;
+}
+.project-row[onclick]:hover::after {
+  opacity: 1;
+  transform: translateX(0);
+}
 
 .project-idx {
   font-family: var(--mono);
