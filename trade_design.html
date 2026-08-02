@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/jpeg" href="E09EB739-7DA5-43EE-AA6D-868C79A0F082_1_105_c.jpeg">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trade Compliance Researcher — System Architecture</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+:root {
+  --bg: #f0ebe0;
+  --surface: #fff;
+  --border: #ddd8cc;
+  --accent: #c4573a;
+  --text: #1a1a18;
+  --muted: #888;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+}
+
+.back-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  height: 44px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px;
+  background: rgba(240,235,224,0.97);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+.back-nav-link {
+  font-family: var(--mono); font-size: 11px; color: var(--muted);
+  text-decoration: none; transition: color 0.2s;
+}
+.back-nav-link:hover { color: var(--accent); }
+.back-nav-badge {
+  font-family: var(--mono); font-size: 10px; color: var(--accent);
+  background: rgba(196,87,58,0.08); border: 1px solid rgba(196,87,58,0.25);
+  padding: 3px 12px; border-radius: 20px;
+}
+
+.page-header {
+  padding: 72px 48px 32px;
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+.page-eyebrow {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 10px;
+}
+
+.page-title {
+  font-size: clamp(1.8rem, 4.5vw, 3.2rem);
+  font-weight: 900; letter-spacing: -0.04em; line-height: 1.0;
+  color: var(--text); margin-bottom: 12px;
+}
+
+.page-title .period { color: var(--accent); }
+
+.page-sub {
+  font-size: 1rem; color: var(--muted); max-width: 620px; line-height: 1.7;
+  margin-bottom: 28px;
+}
+
+.stats-row {
+  display: flex; gap: 12px; flex-wrap: wrap;
+}
+.stat-chip {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; padding: 10px 16px;
+}
+.stat-chip-num {
+  font-family: var(--mono); font-size: 1.15rem; font-weight: 700;
+  color: var(--text); letter-spacing: -0.02em; line-height: 1;
+}
+.stat-chip-num .accent { color: var(--accent); }
+.stat-chip-label {
+  font-size: 0.73rem; color: var(--muted); line-height: 1.4;
+}
+
+.diagram-wrap {
+  max-width: 1040px;
+  margin: 28px auto 0;
+  padding: 0 48px;
+}
+
+.diagram-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.diagram-section-label {
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 4px;
+}
+.diagram-section-label .path-label {
+  font-size: 0.6rem; color: var(--accent);
+}
+
+.arch-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.section-eyebrow {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--muted);
+  max-width: 1040px; margin: 32px auto 14px; padding: 0 48px;
+}
+
+.comp-grid {
+  max-width: 1040px;
+  margin: 0 auto 60px;
+  padding: 0 48px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.comp-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid;
+  border-radius: 4px;
+  padding: 18px 18px;
+}
+
+.comp-card-layer {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em;
+  text-transform: uppercase; margin-bottom: 8px;
+}
+
+.comp-card-name {
+  font-size: 0.9rem; font-weight: 700; color: var(--text);
+  margin-bottom: 6px; letter-spacing: -0.01em;
+}
+
+.comp-card-desc {
+  font-size: 0.8rem; color: #555; line-height: 1.65;
+}
+
+.comp-card-tags {
+  display: flex; gap: 5px; flex-wrap: wrap; margin-top: 12px;
+}
+.comp-tag {
+  font-family: var(--mono); font-size: 0.55rem; padding: 2px 7px;
+  border: 1px solid var(--border); border-radius: 2px; color: var(--muted);
+  background: var(--bg);
+}
+
+@media (max-width: 720px) {
+  .page-header, .diagram-wrap, .comp-grid, .section-eyebrow { padding-left: 20px; padding-right: 20px; }
+  .comp-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="back-nav">
+  <a href="index.html" class="back-nav-link">← Portfolio</a>
+  <span class="back-nav-badge">Trade Compliance — Architecture</span>
+</div>
+
+<div class="page-header">
+  <div class="page-eyebrow">System Design</div>
+  <h1 class="page-title">Trade Compliance<br>Researcher<span class="period">.</span></h1>
+  <p class="page-sub">
+    A Researcher → Writer two-agent workflow built on the Hermes runtime. Gathers trade-compliance data via MCP tools,
+    synthesises it into structured reports. Model-agnostic — swap Ollama for any cloud endpoint with one config line.
+  </p>
+  <div class="stats-row">
+    <div class="stat-chip">
+      <div class="stat-chip-num">2<span class="accent"> agents</span></div>
+      <div class="stat-chip-label">Researcher → Writer<br>collaborative pipeline</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-chip-num">1<span class="accent"> line</span></div>
+      <div class="stat-chip-label">Model swap<br>Ollama ↔ cloud</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-chip-num">0<span class="accent"> plumbing</span></div>
+      <div class="stat-chip-label">Hermes handles<br>tool loops + memory</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-chip-num">MCP</div>
+      <div class="stat-chip-label">Typed tool protocol<br>extensible</div>
+    </div>
+  </div>
+</div>
+
+<div class="diagram-wrap">
+
+  <!-- ── DIAGRAM 1: Two-Agent Pipeline ── -->
+  <div class="diagram-section">
+    <div class="diagram-section-label">
+      <span>Two-agent pipeline — Researcher gathers, Writer synthesises, memory persists across turns</span>
+      <span class="path-label">Query → Researcher Agent → MCP Tools → findings → Writer Agent → Structured Report</span>
+    </div>
+    <svg class="arch-svg" viewBox="0 0 940 240" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ch"   markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#888"/></marker>
+        <marker id="ch-g" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#059669"/></marker>
+        <marker id="ch-c" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#c4573a"/></marker>
+        <marker id="ch-b" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#3b82f6"/></marker>
+      </defs>
+
+      <!-- User Query -->
+      <rect x="14" y="70" width="106" height="80" rx="6" fill="white" stroke="#64748b" stroke-width="1.5"/>
+      <text x="67" y="96" font-size="9" font-weight="700" fill="#475569" text-anchor="middle">Compliance</text>
+      <text x="67" y="110" font-size="9" font-weight="700" fill="#475569" text-anchor="middle">Query</text>
+      <text x="67" y="128" font-size="7" fill="#888" text-anchor="middle">natural language</text>
+      <text x="67" y="141" font-size="7" fill="#aaa" text-anchor="middle">trade regulation</text>
+
+      <!-- Arrow: Query → Researcher -->
+      <path d="M 120,110 L 160,110" stroke="#64748b" stroke-width="1.5" fill="none" marker-end="url(#ch)"/>
+
+      <!-- Researcher Agent -->
+      <rect x="160" y="52" width="168" height="116" rx="6" fill="white" stroke="#c4573a" stroke-width="2"/>
+      <text x="244" y="76" font-size="7.5" font-weight="600" fill="#c4573a" text-anchor="middle" font-family="'JetBrains Mono',monospace">AGENT 1</text>
+      <text x="244" y="95" font-size="11" font-weight="700" fill="#c4573a" text-anchor="middle">Researcher</text>
+      <text x="244" y="113" font-size="7.5" fill="#888" text-anchor="middle">SOUL.md identity</text>
+      <text x="244" y="127" font-size="7" fill="#aaa" text-anchor="middle">gathers regulatory data</text>
+      <text x="244" y="141" font-size="7" fill="#aaa" text-anchor="middle">calls MCP tools</text>
+      <text x="244" y="155" font-size="7" fill="#aaa" text-anchor="middle">memory persists</text>
+
+      <!-- Arrow: Researcher → MCP Tools -->
+      <path d="M 328,110 L 368,110" stroke="#c4573a" stroke-width="1.5" fill="none" marker-end="url(#ch)"/>
+      <text x="348" y="103" font-size="6.5" fill="#999" text-anchor="middle">tool calls</text>
+
+      <!-- MCP Tools cluster -->
+      <rect x="368" y="52" width="148" height="116" rx="6" fill="white" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="442" y="76" font-size="10" font-weight="700" fill="#3b82f6" text-anchor="middle">MCP Tools</text>
+      <rect x="384" y="86" width="116" height="18" rx="3" fill="rgba(59,130,246,0.07)" stroke="rgba(59,130,246,0.25)" stroke-width="0.8"/>
+      <text x="442" y="99" font-size="7" fill="#3b82f6" text-anchor="middle">Regulation Search</text>
+      <rect x="384" y="110" width="116" height="18" rx="3" fill="rgba(59,130,246,0.07)" stroke="rgba(59,130,246,0.25)" stroke-width="0.8"/>
+      <text x="442" y="123" font-size="7" fill="#3b82f6" text-anchor="middle">Tariff DB Lookup</text>
+      <rect x="384" y="134" width="116" height="18" rx="3" fill="rgba(59,130,246,0.07)" stroke="rgba(59,130,246,0.25)" stroke-width="0.8"/>
+      <text x="442" y="147" font-size="7" fill="#3b82f6" text-anchor="middle">Document Fetcher</text>
+      <text x="442" y="162" font-size="7" fill="#aaa" text-anchor="middle">typed MCP protocol</text>
+
+      <!-- Arrow: MCP → back to Researcher (loop) -->
+      <path d="M 442,52 Q 442,28 360,28 Q 280,28 244,52" stroke="#3b82f6" stroke-width="1.2" fill="none" stroke-dasharray="5 3" marker-end="url(#ch-b)"/>
+      <text x="342" y="20" font-size="7" fill="#3b82f6" text-anchor="middle">tool results</text>
+
+      <!-- Arrow: Researcher → Writer (findings hand-off) -->
+      <path d="M 516,110 L 556,110" stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#ch)"/>
+      <text x="536" y="103" font-size="6.5" fill="#999" text-anchor="middle">findings</text>
+
+      <!-- Writer Agent -->
+      <rect x="556" y="52" width="168" height="116" rx="6" fill="white" stroke="#059669" stroke-width="2"/>
+      <text x="640" y="76" font-size="7.5" font-weight="600" fill="#059669" text-anchor="middle" font-family="'JetBrains Mono',monospace">AGENT 2</text>
+      <text x="640" y="95" font-size="11" font-weight="700" fill="#059669" text-anchor="middle">Writer</text>
+      <text x="640" y="113" font-size="7.5" fill="#888" text-anchor="middle">SOUL.md identity</text>
+      <text x="640" y="127" font-size="7" fill="#aaa" text-anchor="middle">synthesises findings</text>
+      <text x="640" y="141" font-size="7" fill="#aaa" text-anchor="middle">structures report</text>
+      <text x="640" y="155" font-size="7" fill="#aaa" text-anchor="middle">citations + sources</text>
+
+      <!-- Arrow: Writer → Report -->
+      <path d="M 724,110 L 764,110" stroke="#059669" stroke-width="1.5" fill="none" marker-end="url(#ch-g)"/>
+
+      <!-- Report output -->
+      <rect x="764" y="70" width="160" height="80" rx="6" fill="white" stroke="#7c3aed" stroke-width="2"/>
+      <text x="844" y="95" font-size="10" font-weight="700" fill="#7c3aed" text-anchor="middle">Structured</text>
+      <text x="844" y="111" font-size="10" font-weight="700" fill="#7c3aed" text-anchor="middle">Report</text>
+      <text x="844" y="128" font-size="7" fill="#888" text-anchor="middle">regulatory summary</text>
+      <text x="844" y="141" font-size="7" fill="#aaa" text-anchor="middle">tariff analysis · sources</text>
+
+      <!-- Memory bar at bottom -->
+      <rect x="160" y="188" width="564" height="32" rx="4" fill="rgba(196,87,58,0.04)" stroke="rgba(196,87,58,0.2)" stroke-width="1" stroke-dasharray="5 3"/>
+      <text x="442" y="204" font-size="8" font-weight="600" fill="#c4573a" text-anchor="middle">Hermes Runtime — shared memory persists across turns · both agents share conversation context</text>
+      <text x="442" y="216" font-size="7" fill="#888" text-anchor="middle">tool-call loop handled by runtime · no agent plumbing written from scratch</text>
+    </svg>
+  </div>
+
+  <!-- ── DIAGRAM 2: Model-agnostic Architecture ── -->
+  <div class="diagram-section">
+    <div class="diagram-section-label">
+      <span>Model-agnostic config — swap providers by changing one line in config.yaml</span>
+      <span class="path-label">SOUL.md identity · config.yaml capabilities · Docker isolation · zero code changes to swap model</span>
+    </div>
+    <svg class="arch-svg" viewBox="0 0 940 240" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="dh"   markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#888"/></marker>
+        <marker id="dh-g" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#059669"/></marker>
+      </defs>
+
+      <!-- SOUL.md -->
+      <rect x="30" y="50" width="160" height="140" rx="6" fill="white" stroke="#c4573a" stroke-width="1.5"/>
+      <text x="110" y="76" font-size="10" font-weight="700" fill="#c4573a" text-anchor="middle" font-family="'JetBrains Mono',monospace">SOUL.md</text>
+      <text x="110" y="94" font-size="7.5" fill="#888" text-anchor="middle">Agent identity file</text>
+      <rect x="46" y="104" width="128" height="15" rx="2" fill="#f0ebe0" stroke="#ddd8cc" stroke-width="0.8"/>
+      <text x="110" y="115" font-size="6.5" fill="#555" text-anchor="middle" font-family="'JetBrains Mono',monospace">name: Researcher</text>
+      <rect x="46" y="124" width="128" height="15" rx="2" fill="#f0ebe0" stroke="#ddd8cc" stroke-width="0.8"/>
+      <text x="110" y="135" font-size="6.5" fill="#555" text-anchor="middle" font-family="'JetBrains Mono',monospace">role: trade analyst</text>
+      <rect x="46" y="144" width="128" height="15" rx="2" fill="#f0ebe0" stroke="#ddd8cc" stroke-width="0.8"/>
+      <text x="110" y="155" font-size="6.5" fill="#555" text-anchor="middle" font-family="'JetBrains Mono',monospace">style: factual</text>
+      <text x="110" y="180" font-size="7" fill="#aaa" text-anchor="middle">persona · tone</text>
+
+      <!-- config.yaml -->
+      <rect x="218" y="50" width="178" height="140" rx="6" fill="white" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="307" y="76" font-size="10" font-weight="700" fill="#3b82f6" text-anchor="middle" font-family="'JetBrains Mono',monospace">config.yaml</text>
+      <text x="307" y="94" font-size="7.5" fill="#888" text-anchor="middle">Agent capabilities</text>
+      <rect x="234" y="104" width="145" height="15" rx="2" fill="#f0ebe0" stroke="#ddd8cc" stroke-width="0.8"/>
+      <text x="307" y="115" font-size="6.5" fill="#555" text-anchor="middle" font-family="'JetBrains Mono',monospace">model: ollama/qwen</text>
+      <rect x="234" y="124" width="145" height="15" rx="2" fill="#f0ebe0" stroke="#ddd8cc" stroke-width="0.8"/>
+      <text x="307" y="135" font-size="6.5" fill="#555" text-anchor="middle" font-family="'JetBrains Mono',monospace">tools: [search, fetch]</text>
+      <rect x="234" y="144" width="145" height="15" rx="2" fill="#f0ebe0" stroke="#ddd8cc" stroke-width="0.8"/>
+      <text x="307" y="155" font-size="6.5" fill="#555" text-anchor="middle" font-family="'JetBrains Mono',monospace">memory: true</text>
+      <text x="307" y="180" font-size="7" fill="#c4573a" text-anchor="middle" font-weight="600">← swap model here</text>
+
+      <!-- Arrow: configs → Hermes -->
+      <path d="M 396,120 L 434,120" stroke="#888" stroke-width="1.5" fill="none" marker-end="url(#dh)"/>
+
+      <!-- Hermes Runtime -->
+      <rect x="434" y="50" width="160" height="140" rx="6" fill="white" stroke="#c4573a" stroke-width="2"/>
+      <text x="514" y="80" font-size="11" font-weight="700" fill="#c4573a" text-anchor="middle">Hermes</text>
+      <text x="514" y="97" font-size="7.5" fill="#888" text-anchor="middle">Agent Runtime</text>
+      <text x="514" y="114" font-size="7" fill="#aaa" text-anchor="middle">tool-call loop</text>
+      <text x="514" y="128" font-size="7" fill="#aaa" text-anchor="middle">memory management</text>
+      <text x="514" y="142" font-size="7" fill="#aaa" text-anchor="middle">multi-agent coordination</text>
+      <text x="514" y="156" font-size="7" fill="#aaa" text-anchor="middle">Nous Research · MIT</text>
+      <text x="514" y="176" font-size="7" fill="#aaa" text-anchor="middle">Docker container</text>
+
+      <!-- Arrow: Hermes → Model options -->
+      <path d="M 594,90 L 632,70" stroke="#f59e0b" stroke-width="1.5" fill="none" marker-end="url(#dh)"/>
+      <path d="M 594,120 L 632,120" stroke="#888" stroke-width="1.5" fill="none" marker-end="url(#dh)"/>
+      <path d="M 594,150 L 632,170" stroke="#059669" stroke-width="1.5" fill="none" marker-end="url(#dh)"/>
+
+      <!-- Model options -->
+      <rect x="632" y="42" width="130" height="54" rx="6" fill="white" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="697" y="63" font-size="9" font-weight="700" fill="#f59e0b" text-anchor="middle">Ollama (local)</text>
+      <text x="697" y="79" font-size="7" fill="#888" text-anchor="middle">Qwen · Llama · Mistral</text>
+      <text x="697" y="92" font-size="7" fill="#aaa" text-anchor="middle">fully offline · free</text>
+
+      <rect x="632" y="103" width="130" height="54" rx="6" fill="white" stroke="#888" stroke-width="1.5" stroke-dasharray="5 3"/>
+      <text x="697" y="124" font-size="9" font-weight="700" fill="#888" text-anchor="middle">OpenAI / Anthropic</text>
+      <text x="697" y="140" font-size="7" fill="#888" text-anchor="middle">cloud endpoint</text>
+      <text x="697" y="153" font-size="7" fill="#aaa" text-anchor="middle">one config line swap</text>
+
+      <rect x="632" y="164" width="130" height="54" rx="6" fill="white" stroke="#059669" stroke-width="1.5" stroke-dasharray="5 3"/>
+      <text x="697" y="185" font-size="9" font-weight="700" fill="#059669" text-anchor="middle">Any OpenAI-compat</text>
+      <text x="697" y="201" font-size="7" fill="#888" text-anchor="middle">Groq · Together · etc.</text>
+      <text x="697" y="214" font-size="7" fill="#aaa" text-anchor="middle">zero code changes</text>
+
+      <!-- Docker badge -->
+      <rect x="810" y="100" width="112" height="40" rx="6" fill="rgba(59,130,246,0.06)" stroke="rgba(59,130,246,0.3)" stroke-width="1"/>
+      <text x="866" y="116" font-size="9" font-weight="700" fill="#3b82f6" text-anchor="middle">Docker</text>
+      <text x="866" y="131" font-size="7" fill="#888" text-anchor="middle">fully containerised</text>
+      <path d="M 762,120 L 810,120" stroke="#3b82f6" stroke-width="1" stroke-dasharray="4 3" fill="none" marker-end="url(#dh)"/>
+    </svg>
+  </div>
+
+</div>
+
+<!-- KEY DECISIONS -->
+<div class="section-eyebrow">Key Design Decisions</div>
+<div class="comp-grid">
+
+  <div class="comp-card" style="border-left-color:#c4573a">
+    <div class="comp-card-layer" style="color:#c4573a">Architecture Pattern</div>
+    <div class="comp-card-name">Researcher → Writer — separation of concerns</div>
+    <div class="comp-card-desc">The pipeline splits gathering from synthesis. The Researcher agent focuses on finding accurate regulatory data and calling the right MCP tools. The Writer agent focuses on structure, clarity, and citations. Each has its own SOUL.md identity — they cannot drift into each other's roles.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">two agents</span><span class="comp-tag">SOUL.md</span><span class="comp-tag">separation</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#f59e0b">
+    <div class="comp-card-layer" style="color:#f59e0b">Model Strategy</div>
+    <div class="comp-card-name">Model-agnostic — one config line to swap providers</div>
+    <div class="comp-card-desc">The model endpoint is a single key in <code style="font-family:monospace;font-size:0.85em;background:#f0ebe0;padding:1px 4px;border-radius:2px">config.yaml</code>. Switching from Ollama/Qwen to OpenAI or Groq requires changing that one line — no code changes. This means the same workflow can run fully offline on a local machine or use a hosted model without touching agent logic.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">config.yaml</span><span class="comp-tag">Ollama</span><span class="comp-tag">cloud-ready</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#3b82f6">
+    <div class="comp-card-layer" style="color:#3b82f6">Tool Protocol</div>
+    <div class="comp-card-name">MCP — typed, extensible tool protocol</div>
+    <div class="comp-card-desc">Tools are exposed via the Model Context Protocol (MCP), giving the agents a typed, discoverable interface to external data sources. Adding a new data source — a tariff database, a sanctions list, a government portal — is a new MCP tool registration, not a prompt change or code rewrite.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">MCP</span><span class="comp-tag">typed tools</span><span class="comp-tag">extensible</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#059669">
+    <div class="comp-card-layer" style="color:#059669">Runtime</div>
+    <div class="comp-card-name">Hermes handles the hard parts — memory, loops, coordination</div>
+    <div class="comp-card-desc">The Hermes agent runtime (Nous Research, MIT licensed) manages the tool-call loop, conversation memory, and multi-agent turn coordination. No agent lifecycle plumbing was written from scratch. Agent identity, capabilities, and persona are declared in declarative files — engineering effort went to domain logic, not infrastructure.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">Hermes</span><span class="comp-tag">MIT</span><span class="comp-tag">zero plumbing</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#7c3aed">
+    <div class="comp-card-layer" style="color:#7c3aed">Memory</div>
+    <div class="comp-card-name">Persistent memory — context survives across turns</div>
+    <div class="comp-card-desc">Both agents share a conversation memory that persists across turns within a session. The Researcher can build context across multiple tool calls, and the Writer can reference earlier findings without them being re-fetched. This makes multi-step compliance research tractable — regulations often require chaining lookups across sources.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">persistent memory</span><span class="comp-tag">multi-turn</span><span class="comp-tag">shared context</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#64748b">
+    <div class="comp-card-layer" style="color:#64748b">Deployment</div>
+    <div class="comp-card-name">Fully Dockerised — reproducible anywhere</div>
+    <div class="comp-card-desc">The entire system — Hermes runtime, both agents, MCP tools, and the Ollama model server — runs in Docker. A single <code style="font-family:monospace;font-size:0.85em;background:#f0ebe0;padding:1px 4px;border-radius:2px">docker compose up</code> starts the full stack. This means the workflow runs identically on a developer laptop, a trade analyst's workstation, or a cloud VM without environment configuration.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">Docker</span><span class="comp-tag">compose</span><span class="comp-tag">reproducible</span>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

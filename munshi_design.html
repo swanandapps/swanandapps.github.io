@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/jpeg" href="E09EB739-7DA5-43EE-AA6D-868C79A0F082_1_105_c.jpeg">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Munshi — System Architecture</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+:root {
+  --bg: #f0ebe0;
+  --surface: #fff;
+  --border: #ddd8cc;
+  --accent: #c4573a;
+  --text: #1a1a18;
+  --muted: #888;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+}
+
+.back-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  height: 44px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px;
+  background: rgba(240,235,224,0.97);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+.back-nav-link {
+  font-family: var(--mono); font-size: 11px; color: var(--muted);
+  text-decoration: none; transition: color 0.2s;
+}
+.back-nav-link:hover { color: var(--accent); }
+.back-nav-badge {
+  font-family: var(--mono); font-size: 10px; color: var(--accent);
+  background: rgba(196,87,58,0.08); border: 1px solid rgba(196,87,58,0.25);
+  padding: 3px 12px; border-radius: 20px;
+}
+
+.page-header {
+  padding: 72px 48px 32px;
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+.page-eyebrow {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 10px;
+}
+
+.page-title {
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  font-weight: 900; letter-spacing: -0.04em; line-height: 1.0;
+  color: var(--text); margin-bottom: 12px;
+}
+
+.page-title .period { color: var(--accent); }
+
+.page-sub {
+  font-size: 1rem; color: var(--muted); max-width: 620px; line-height: 1.7;
+  margin-bottom: 28px;
+}
+
+.stats-row {
+  display: flex; gap: 12px; flex-wrap: wrap;
+}
+.stat-chip {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; padding: 10px 16px;
+}
+.stat-chip-num {
+  font-family: var(--mono); font-size: 1.15rem; font-weight: 700;
+  color: var(--text); letter-spacing: -0.02em; line-height: 1;
+}
+.stat-chip-num .accent { color: var(--accent); }
+.stat-chip-label {
+  font-size: 0.73rem; color: var(--muted); line-height: 1.4;
+}
+
+.diagram-wrap {
+  max-width: 1040px;
+  margin: 28px auto 0;
+  padding: 0 48px;
+}
+
+.diagram-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.diagram-section-label {
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 4px;
+}
+.diagram-section-label .path-label {
+  font-size: 0.6rem; color: var(--accent);
+}
+
+.arch-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.section-eyebrow {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--muted);
+  max-width: 1040px; margin: 32px auto 14px; padding: 0 48px;
+}
+
+.comp-grid {
+  max-width: 1040px;
+  margin: 0 auto 60px;
+  padding: 0 48px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.comp-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid;
+  border-radius: 4px;
+  padding: 18px 18px;
+}
+
+.comp-card-layer {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em;
+  text-transform: uppercase; margin-bottom: 8px;
+}
+
+.comp-card-name {
+  font-size: 0.9rem; font-weight: 700; color: var(--text);
+  margin-bottom: 6px; letter-spacing: -0.01em;
+}
+
+.comp-card-desc {
+  font-size: 0.8rem; color: #555; line-height: 1.65;
+}
+
+.comp-card-tags {
+  display: flex; gap: 5px; flex-wrap: wrap; margin-top: 12px;
+}
+.comp-tag {
+  font-family: var(--mono); font-size: 0.55rem; padding: 2px 7px;
+  border: 1px solid var(--border); border-radius: 2px; color: var(--muted);
+  background: var(--bg);
+}
+
+@media (max-width: 720px) {
+  .page-header, .diagram-wrap, .comp-grid, .section-eyebrow { padding-left: 20px; padding-right: 20px; }
+  .comp-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="back-nav">
+  <a href="index.html" class="back-nav-link">← Portfolio</a>
+  <span class="back-nav-badge">Munshi — Architecture</span>
+</div>
+
+<div class="page-header">
+  <div class="page-eyebrow">System Design</div>
+  <h1 class="page-title">Munshi<span class="period">.</span></h1>
+  <p class="page-sub">
+    Sovereign local-first GST reconciliation agent built for Bharatvarsh Arts. AI adjudicates fuzzy invoice matches;
+    deterministic Python computes every rupee. Nothing ever leaves the machine.
+  </p>
+  <div class="stats-row">
+    <div class="stat-chip">
+      <div class="stat-chip-num">₹5<span class="accent">Cr</span></div>
+      <div class="stat-chip-label">Revenue scale<br>fully automated</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-chip-num">100<span class="accent">%</span></div>
+      <div class="stat-chip-label">Local-first<br>nothing leaves machine</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-chip-num">0<span class="accent"> drift</span></div>
+      <div class="stat-chip-label">Decimal arithmetic<br>no float errors</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-chip-num">HITL</div>
+      <div class="stat-chip-label">Human-in-the-loop<br>every filing</div>
+    </div>
+  </div>
+</div>
+
+<div class="diagram-wrap">
+
+  <!-- ── DIAGRAM 1: Reconciliation Pipeline ── -->
+  <div class="diagram-section">
+    <div class="diagram-section-label">
+      <span>Invoice Reconciliation Pipeline — AI adjudicates, Python computes every rupee</span>
+      <span class="path-label">Purchase Invoices → Fuzzy Match → Model Judges Ambiguous → Decimal Compute → Audit Trail → Human Approve</span>
+    </div>
+    <svg class="arch-svg" viewBox="0 0 940 260" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ah"   markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#888"/></marker>
+        <marker id="ah-g" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#059669"/></marker>
+        <marker id="ah-c" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#c4573a"/></marker>
+        <marker id="ah-b" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#3b82f6"/></marker>
+        <marker id="ah-a" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#f59e0b"/></marker>
+      </defs>
+
+      <!-- Step 1: Purchase Invoices -->
+      <rect x="14" y="50" width="118" height="90" rx="6" fill="white" stroke="#64748b" stroke-width="1.5"/>
+      <text x="73" y="74" font-size="9" font-weight="700" fill="#475569" text-anchor="middle">Purchase</text>
+      <text x="73" y="88" font-size="9" font-weight="700" fill="#475569" text-anchor="middle">Invoices</text>
+      <text x="73" y="104" font-size="7" fill="#888" text-anchor="middle">messy vendor data</text>
+      <text x="73" y="117" font-size="7" fill="#aaa" text-anchor="middle">OCR'd · manual entry</text>
+      <text x="73" y="130" font-size="7" fill="#aaa" text-anchor="middle">PDFs · Excel exports</text>
+
+      <!-- Step 2: GSTR-2B Gov Data -->
+      <rect x="14" y="166" width="118" height="72" rx="6" fill="white" stroke="#6366f1" stroke-width="1.5"/>
+      <text x="73" y="186" font-size="9" font-weight="700" fill="#6366f1" text-anchor="middle">GSTR-2B</text>
+      <text x="73" y="201" font-size="7" fill="#888" text-anchor="middle">Govt portal data</text>
+      <text x="73" y="215" font-size="7" fill="#aaa" text-anchor="middle">supplier-filed GST</text>
+      <text x="73" y="228" font-size="7" fill="#aaa" text-anchor="middle">MCP tool fetches</text>
+
+      <!-- Arrow: Invoices + GSTR2B → Fuzzy Matcher -->
+      <path d="M 132,95 L 168,120" stroke="#64748b" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+      <path d="M 132,202 L 168,148" stroke="#6366f1" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+
+      <!-- Step 3: Fuzzy Matcher -->
+      <rect x="168" y="90" width="134" height="90" rx="6" fill="white" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="235" y="110" font-size="7" font-weight="600" fill="#f59e0b" text-anchor="middle" font-family="'JetBrains Mono',monospace">STEP 1</text>
+      <text x="235" y="126" font-size="9.5" font-weight="700" fill="#f59e0b" text-anchor="middle">Fuzzy Match</text>
+      <text x="235" y="142" font-size="7.5" fill="#888" text-anchor="middle">normalize vendor names</text>
+      <text x="235" y="156" font-size="7" fill="#aaa" text-anchor="middle">GSTIN prefix · date window</text>
+      <text x="235" y="169" font-size="7" fill="#aaa" text-anchor="middle">amount tolerance ±2%</text>
+
+      <!-- Arrow: Fuzzy → Model Judge -->
+      <path d="M 302,135 L 336,135" stroke="#f59e0b" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+      <text x="319" y="129" font-size="6.5" fill="#999" text-anchor="middle">ambiguous</text>
+
+      <!-- Step 4: Hermes Agent / Model Judge -->
+      <rect x="336" y="90" width="148" height="90" rx="6" fill="white" stroke="#c4573a" stroke-width="2"/>
+      <text x="410" y="110" font-size="7" font-weight="600" fill="#c4573a" text-anchor="middle" font-family="'JetBrains Mono',monospace">STEP 2</text>
+      <text x="410" y="126" font-size="9.5" font-weight="700" fill="#c4573a" text-anchor="middle">Hermes Agent</text>
+      <text x="410" y="142" font-size="7.5" fill="#888" text-anchor="middle">model judges ambiguous</text>
+      <text x="410" y="156" font-size="7" fill="#aaa" text-anchor="middle">tool calls → MCP</text>
+      <text x="410" y="169" font-size="7" fill="#aaa" text-anchor="middle">plain-English reasoning</text>
+
+      <!-- Arrow: Model → Decimal Compute -->
+      <path d="M 484,135 L 518,135" stroke="#c4573a" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+      <text x="501" y="129" font-size="6.5" fill="#999" text-anchor="middle">verdict</text>
+
+      <!-- Step 5: Decimal Compute -->
+      <rect x="518" y="90" width="134" height="90" rx="6" fill="white" stroke="#059669" stroke-width="1.5"/>
+      <text x="585" y="110" font-size="7" font-weight="600" fill="#059669" text-anchor="middle" font-family="'JetBrains Mono',monospace">STEP 3</text>
+      <text x="585" y="126" font-size="9.5" font-weight="700" fill="#059669" text-anchor="middle">Tax Compute</text>
+      <text x="585" y="142" font-size="7.5" fill="#888" text-anchor="middle">deterministic Python</text>
+      <text x="585" y="156" font-size="7" fill="#aaa" text-anchor="middle">Decimal — exact rupees</text>
+      <text x="585" y="169" font-size="7" fill="#aaa" text-anchor="middle">ITC calc · discrepancy</text>
+
+      <!-- Arrow: Compute → Audit Trail -->
+      <path d="M 652,135 L 686,135" stroke="#059669" stroke-width="1.5" fill="none" marker-end="url(#ah-g)"/>
+
+      <!-- Step 6: Audit Trail -->
+      <rect x="686" y="90" width="120" height="90" rx="6" fill="white" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="746" y="110" font-size="7" font-weight="600" fill="#3b82f6" text-anchor="middle" font-family="'JetBrains Mono',monospace">STEP 4</text>
+      <text x="746" y="126" font-size="9.5" font-weight="700" fill="#3b82f6" text-anchor="middle">Audit Trail</text>
+      <text x="746" y="142" font-size="7.5" fill="#888" text-anchor="middle">every tool call logged</text>
+      <text x="746" y="156" font-size="7" fill="#aaa" text-anchor="middle">model reasoning saved</text>
+      <text x="746" y="169" font-size="7" fill="#aaa" text-anchor="middle">plain English report</text>
+
+      <!-- Arrow: Audit → Human Approve -->
+      <path d="M 806,135 L 838,135" stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#ah-b)"/>
+
+      <!-- Step 7: Human Approve -->
+      <rect x="838" y="90" width="88" height="90" rx="6" fill="white" stroke="#7c3aed" stroke-width="2"/>
+      <text x="882" y="112" font-size="7" font-weight="600" fill="#7c3aed" text-anchor="middle" font-family="'JetBrains Mono',monospace">HITL</text>
+      <text x="882" y="128" font-size="9" font-weight="700" fill="#7c3aed" text-anchor="middle">Human</text>
+      <text x="882" y="143" font-size="9" font-weight="700" fill="#7c3aed" text-anchor="middle">Approval</text>
+      <text x="882" y="159" font-size="7" fill="#aaa" text-anchor="middle">explicit confirm</text>
+      <text x="882" y="172" font-size="7" fill="#aaa" text-anchor="middle">before filing</text>
+
+      <!-- Bottom note: sovereign guarantee -->
+      <rect x="14" y="254" width="912" height="0" rx="4" fill="none"/>
+    </svg>
+  </div>
+
+  <!-- ── DIAGRAM 2: Sovereign Architecture ── -->
+  <div class="diagram-section">
+    <div class="diagram-section-label">
+      <span>Sovereign Architecture — everything runs on-device, nothing leaves the machine</span>
+      <span class="path-label">Model is a tool, not a service · financial data never transmitted · privacy by design</span>
+    </div>
+    <svg class="arch-svg" viewBox="0 0 940 280" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="bh"   markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#888"/></marker>
+        <marker id="bh-g" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#059669"/></marker>
+        <marker id="bh-r" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#e63946"/></marker>
+      </defs>
+
+      <!-- Outer machine boundary -->
+      <rect x="14" y="20" width="776" height="238" rx="10" fill="rgba(5,150,105,0.03)" stroke="#059669" stroke-width="1.5" stroke-dasharray="8 4"/>
+      <text x="402" y="40" font-size="9" font-weight="700" fill="#059669" text-anchor="middle" font-family="'JetBrains Mono',monospace">LOCAL MACHINE — SOVEREIGN BOUNDARY</text>
+
+      <!-- Owner / User -->
+      <rect x="36" y="58" width="100" height="70" rx="6" fill="white" stroke="#64748b" stroke-width="1.5"/>
+      <text x="86" y="82" font-size="9" font-weight="700" fill="#475569" text-anchor="middle">Business</text>
+      <text x="86" y="97" font-size="9" font-weight="700" fill="#475569" text-anchor="middle">Owner</text>
+      <text x="86" y="113" font-size="7" fill="#888" text-anchor="middle">plain-English</text>
+      <text x="86" y="124" font-size="7" fill="#aaa" text-anchor="middle">queries</text>
+
+      <!-- Arrow: Owner → Hermes -->
+      <path d="M 136,93 L 176,93" stroke="#64748b" stroke-width="1.5" fill="none" marker-end="url(#bh)"/>
+
+      <!-- Hermes Runtime -->
+      <rect x="176" y="52" width="148" height="82" rx="6" fill="white" stroke="#c4573a" stroke-width="2"/>
+      <text x="250" y="76" font-size="10" font-weight="700" fill="#c4573a" text-anchor="middle">Hermes Runtime</text>
+      <text x="250" y="93" font-size="7.5" fill="#888" text-anchor="middle">SOUL.md identity</text>
+      <text x="250" y="107" font-size="7" fill="#aaa" text-anchor="middle">config.yaml capabilities</text>
+      <text x="250" y="121" font-size="7" fill="#aaa" text-anchor="middle">tool-call loop · memory</text>
+
+      <!-- Arrow: Hermes → MCP Tools -->
+      <path d="M 324,93 L 364,93" stroke="#c4573a" stroke-width="1.5" fill="none" marker-end="url(#bh)"/>
+
+      <!-- MCP Tools (stacked) -->
+      <rect x="364" y="52" width="140" height="82" rx="6" fill="white" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="434" y="76" font-size="10" font-weight="700" fill="#3b82f6" text-anchor="middle">MCP Tools</text>
+      <text x="434" y="92" font-size="7" fill="#aaa" text-anchor="middle">GSTR-2B fetcher</text>
+      <text x="434" y="105" font-size="7" fill="#aaa" text-anchor="middle">Invoice reader</text>
+      <text x="434" y="118" font-size="7" fill="#aaa" text-anchor="middle">Decimal calculator</text>
+      <text x="434" y="130" font-size="7" fill="#aaa" text-anchor="middle">Audit writer</text>
+
+      <!-- Arrow: MCP → Ollama -->
+      <path d="M 504,93 L 544,93" stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#bh)"/>
+
+      <!-- Ollama (local model) -->
+      <rect x="544" y="52" width="130" height="82" rx="6" fill="white" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="609" y="76" font-size="10" font-weight="700" fill="#f59e0b" text-anchor="middle">Ollama</text>
+      <text x="609" y="92" font-size="7.5" fill="#888" text-anchor="middle">local model inference</text>
+      <text x="609" y="107" font-size="7" fill="#aaa" text-anchor="middle">Qwen · Llama · etc.</text>
+      <text x="609" y="121" font-size="7" fill="#aaa" text-anchor="middle">model is a tool</text>
+      <text x="609" y="134" font-size="7" fill="#aaa" text-anchor="middle">not a service</text>
+
+      <!-- Arrow: Ollama → FastAPI -->
+      <path d="M 674,93 L 714,93" stroke="#f59e0b" stroke-width="1.5" fill="none" marker-end="url(#bh)"/>
+
+      <!-- FastAPI backend -->
+      <rect x="714" y="52" width="64" height="82" rx="6" fill="white" stroke="#059669" stroke-width="1.5"/>
+      <text x="746" y="76" font-size="9" font-weight="700" fill="#059669" text-anchor="middle">FastAPI</text>
+      <text x="746" y="92" font-size="7" fill="#888" text-anchor="middle">REST API</text>
+      <text x="746" y="106" font-size="7" fill="#aaa" text-anchor="middle">audit log</text>
+      <text x="746" y="119" font-size="7" fill="#aaa" text-anchor="middle">persistence</text>
+      <text x="746" y="132" font-size="7" fill="#aaa" text-anchor="middle">Docker</text>
+
+      <!-- Data stores row -->
+      <!-- SQLite / local files -->
+      <rect x="176" y="172" width="130" height="60" rx="6" fill="white" stroke="#7c3aed" stroke-width="1.5"/>
+      <text x="241" y="194" font-size="9" font-weight="700" fill="#7c3aed" text-anchor="middle">Local DB</text>
+      <text x="241" y="210" font-size="7" fill="#888" text-anchor="middle">SQLite · CSV · JSON</text>
+      <text x="241" y="224" font-size="7" fill="#aaa" text-anchor="middle">all data on disk</text>
+
+      <!-- Invoice files -->
+      <rect x="330" y="172" width="130" height="60" rx="6" fill="white" stroke="#64748b" stroke-width="1.5"/>
+      <text x="395" y="194" font-size="9" font-weight="700" fill="#475569" text-anchor="middle">Invoice Files</text>
+      <text x="395" y="210" font-size="7" fill="#888" text-anchor="middle">PDF · Excel · CSV</text>
+      <text x="395" y="224" font-size="7" fill="#aaa" text-anchor="middle">local filesystem</text>
+
+      <!-- Audit trail -->
+      <rect x="484" y="172" width="130" height="60" rx="6" fill="white" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="549" y="194" font-size="9" font-weight="700" fill="#3b82f6" text-anchor="middle">Audit Trail</text>
+      <text x="549" y="210" font-size="7" fill="#888" text-anchor="middle">JSONL · plain text</text>
+      <text x="549" y="224" font-size="7" fill="#aaa" text-anchor="middle">every decision logged</text>
+
+      <!-- Connector lines: tools → stores -->
+      <path d="M 250,134 L 250,172" stroke="#7c3aed" stroke-width="1" stroke-dasharray="4 3" fill="none"/>
+      <path d="M 395,134 L 395,172" stroke="#64748b" stroke-width="1" stroke-dasharray="4 3" fill="none"/>
+      <path d="M 549,134 L 549,172" stroke="#3b82f6" stroke-width="1" stroke-dasharray="4 3" fill="none"/>
+
+      <!-- Outside boundary: Internet / Cloud (red, outside) -->
+      <rect x="814" y="20" width="112" height="238" rx="10" fill="rgba(230,57,70,0.03)" stroke="#e63946" stroke-width="1.5" stroke-dasharray="5 3"/>
+      <text x="870" y="42" font-size="8" font-weight="700" fill="#e63946" text-anchor="middle" font-family="'JetBrains Mono',monospace">INTERNET</text>
+      <text x="870" y="120" font-size="9" fill="#e63946" text-anchor="middle">✗</text>
+      <text x="870" y="140" font-size="7.5" fill="#e63946" text-anchor="middle" font-weight="600">No data</text>
+      <text x="870" y="156" font-size="7.5" fill="#e63946" text-anchor="middle" font-weight="600">leaves here</text>
+      <text x="870" y="176" font-size="7" fill="#aaa" text-anchor="middle">financial data</text>
+      <text x="870" y="190" font-size="7" fill="#aaa" text-anchor="middle">stays local</text>
+    </svg>
+  </div>
+
+</div>
+
+<!-- KEY DECISIONS -->
+<div class="section-eyebrow">Key Design Decisions</div>
+<div class="comp-grid">
+
+  <div class="comp-card" style="border-left-color:#059669">
+    <div class="comp-card-layer" style="color:#059669">Core Architecture</div>
+    <div class="comp-card-name">Sovereign local-first — nothing leaves the machine</div>
+    <div class="comp-card-desc">All financial data, invoice PDFs, and reconciliation results stay on the local machine. Ollama runs the model inference locally. The model is a tool that judges ambiguous matches — it never receives raw financials over the network. Privacy is structural, not a policy.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">Ollama</span><span class="comp-tag">local-first</span><span class="comp-tag">sovereign</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#f59e0b">
+    <div class="comp-card-layer" style="color:#f59e0b">Reconciliation Design</div>
+    <div class="comp-card-name">Fuzzy match + model judge — recover ITC exact-matching forfeits</div>
+    <div class="comp-card-desc">Exact string matching between purchase invoices and GSTR-2B misses legitimate credits due to typos, name variations, and date mismatches. Munshi normalises vendor names, applies GSTIN prefix matching and a ±2% amount tolerance, then routes only ambiguous cases to the model for a plain-English judgment call.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">fuzzy match</span><span class="comp-tag">GSTIN</span><span class="comp-tag">ITC recovery</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#e63946">
+    <div class="comp-card-layer" style="color:#e63946">Financial Safety</div>
+    <div class="comp-card-name">Decimal arithmetic — every rupee is exact</div>
+    <div class="comp-card-desc">All tax arithmetic uses Python's <code style="font-family:monospace;font-size:0.85em;background:#f0ebe0;padding:1px 4px;border-radius:2px">Decimal</code> type, never floats. GST computations involve sums across thousands of invoices — IEEE 754 floating-point accumulates errors that compound into incorrect tax filings. Decimal eliminates this class of bug entirely.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">Python Decimal</span><span class="comp-tag">no float</span><span class="comp-tag">exact</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#7c3aed">
+    <div class="comp-card-layer" style="color:#7c3aed">Human-in-the-loop</div>
+    <div class="comp-card-name">Consequential actions require explicit approval</div>
+    <div class="comp-card-desc">Munshi never files, submits, or commits tax data autonomously. Every consequential action — a reconciliation verdict, an ITC claim, a filing — is staged and requires the business owner to explicitly approve. The audit trail makes every model decision, tool call, and computation legible to a non-technical reviewer.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">HITL</span><span class="comp-tag">audit trail</span><span class="comp-tag">explicit approval</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#3b82f6">
+    <div class="comp-card-layer" style="color:#3b82f6">Agent Runtime</div>
+    <div class="comp-card-name">Hermes runtime — agent identity in SOUL.md</div>
+    <div class="comp-card-desc">The Hermes agent runtime (Nous Research, MIT licensed) handles the tool-call loop, memory, and agent lifecycle. Agent identity, persona, and capabilities are declared in a <code style="font-family:monospace;font-size:0.85em;background:#f0ebe0;padding:1px 4px;border-radius:2px">SOUL.md</code> file and <code style="font-family:monospace;font-size:0.85em;background:#f0ebe0;padding:1px 4px;border-radius:2px">config.yaml</code> — no agent plumbing written from scratch.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">Hermes</span><span class="comp-tag">SOUL.md</span><span class="comp-tag">MCP tools</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#c4573a">
+    <div class="comp-card-layer" style="color:#c4573a">Business Impact</div>
+    <div class="comp-card-name">₹5Cr business — spreadsheets replaced end-to-end</div>
+    <div class="comp-card-desc">Bharatvarsh Arts ran GST, invoicing, and reconciliation on manual Excel workflows. Munshi replaced the entire stack with plain-English queries. The business owner interacts in natural language; Munshi handles fetching, matching, computing, and generating the audit report for review before any filing.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">₹5Cr scale</span><span class="comp-tag">Excel replacement</span><span class="comp-tag">natural language</span>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
