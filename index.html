@@ -729,7 +729,7 @@ footer {
 <!-- PROJECTS -->
 <div class="projects" id="projects">
   <div class="section-tag">Selected Work</div>
-  <h2 class="section-heading">Five projects<span class="period">.</span> Real outcomes<span class="period">.</span></h2>
+  <h2 class="section-heading">Seven projects<span class="period">.</span> Real outcomes<span class="period">.</span></h2>
 
   <div class="project-table">
 
@@ -862,6 +862,54 @@ footer {
         </div>
         <div class="project-links-r">
           <a href="stringy_design.html" class="proj-link" onclick="event.stopPropagation()">System Design</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Munshi — GST Agent -->
+    <div class="project-row">
+      <div class="project-idx">P.06</div>
+      <div class="project-main">
+        <div class="project-name">Munshi — Sovereign GST &amp; Trade Compliance Agent</div>
+        <div class="project-tagline">Bharatvarsh Arts · Local-first · Hermes runtime · Human-in-the-loop · ₹5Cr revenue scale</div>
+        <ul class="project-bullets">
+          <li><strong>Fuzzy Invoice Reconciliation</strong> — AI adjudicates messy purchase invoices against government GSTR-2B records; deterministic Python computes every rupee. <span class="impact">Recovers input tax credit (ITC) that exact-matching forfeits.</span></li>
+          <li><strong>Sovereign Architecture</strong> — fully local-first, nothing leaves the machine. Model only judges ambiguous matches; all tax arithmetic is exact <code style="font-family:var(--mono);font-size:0.82em;background:#f0ebe0;padding:1px 5px;border-radius:2px">Decimal</code> computation. <span class="impact">Privacy-safe for sensitive financial data.</span></li>
+          <li><strong>Human-in-the-loop</strong> — consequential actions require explicit approval; every model decision, tool call, and outcome is captured in a plain-English audit trail. <span class="impact">Non-technical owners can verify every filing before submission.</span></li>
+          <li><strong>Replaced spreadsheet workflows</strong> — GST, invoicing, and reconciliation moved from manual Excel to plain-English queries. <span class="impact">₹5Cr ($500K+) revenue business fully automated.</span></li>
+        </ul>
+      </div>
+      <div class="project-right">
+        <div class="project-tags-r">
+          <span class="project-tag-r">Hermes</span>
+          <span class="project-tag-r">MCP</span>
+          <span class="project-tag-r">FastAPI</span>
+          <span class="project-tag-r">Ollama</span>
+          <span class="project-tag-r">Python</span>
+          <span class="project-tag-r">Docker</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trade Compliance Researcher -->
+    <div class="project-row">
+      <div class="project-idx">P.07</div>
+      <div class="project-main">
+        <div class="project-name">Trade Compliance Researcher — Multi-Agent Hermes System</div>
+        <div class="project-tagline">Nous Research Hermes runtime · Researcher → Writer workflow · Open-weight &amp; hosted models</div>
+        <ul class="project-bullets">
+          <li><strong>Two-agent pipeline</strong> — Researcher agent gathers trade-compliance data via MCP tools; Writer agent synthesises findings into structured reports. Memory persists across turns. <span class="impact">Collaborative multi-agent workflow on a single runtime.</span></li>
+          <li><strong>Model-agnostic</strong> — switches between Ollama open-weight models (Qwen, Llama) and hosted cloud endpoints by changing one config line. <span class="impact">Zero code changes to swap model providers.</span></li>
+          <li><strong>SOUL + config architecture</strong> — agent identity and capabilities declared in <code style="font-family:var(--mono);font-size:0.82em;background:#f0ebe0;padding:1px 5px;border-radius:2px">SOUL.md</code> + <code style="font-family:var(--mono);font-size:0.82em;background:#f0ebe0;padding:1px 5px;border-radius:2px">config.yaml</code>; no agent plumbing written from scratch. Fully Dockerised.</li>
+        </ul>
+      </div>
+      <div class="project-right">
+        <div class="project-tags-r">
+          <span class="project-tag-r">Hermes</span>
+          <span class="project-tag-r">MCP</span>
+          <span class="project-tag-r">Ollama</span>
+          <span class="project-tag-r">Docker</span>
+          <span class="project-tag-r">Python</span>
         </div>
       </div>
     </div>
