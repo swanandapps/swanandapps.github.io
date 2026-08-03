@@ -213,7 +213,7 @@ body {
   <div class="diagram-section">
     <div class="diagram-section-label">
       <span>Submission Pipeline — real-time path on every code submit</span>
-      <span class="path-label">Student → Django API → SQS → Lambda Worker → Docker Sandbox → Postgres → SSE → Student</span>
+      <span class="path-label">Student → Django API → SQS → Lambda Sandbox (executes code) → Postgres → SSE → Student</span>
     </div>
     <svg class="arch-svg" viewBox="0 0 940 368" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -262,10 +262,10 @@ body {
       <text x="154" y="265" font-size="7.5" fill="#888" text-anchor="middle">execute_submission queue</text>
       <text x="154" y="279" font-size="7"   fill="#aaa" text-anchor="middle">FIFO · per-exam · Lambda dequeues</text>
 
-      <rect x="274" y="226" width="152" height="78" rx="6" fill="white" stroke="#3b82f6" stroke-width="1.5"/>
-      <text x="350" y="250" font-size="9.5" font-weight="700" fill="#2563eb" text-anchor="middle">Docker Sandbox</text>
-      <text x="350" y="265" font-size="7.5" fill="#888" text-anchor="middle">Isolated execution</text>
-      <text x="350" y="279" font-size="7"   fill="#aaa" text-anchor="middle">CPU · mem · time limits · cgroups</text>
+      <rect x="274" y="226" width="152" height="78" rx="6" fill="white" stroke="#c4573a" stroke-width="2"/>
+      <text x="350" y="250" font-size="9.5" font-weight="700" fill="#c4573a" text-anchor="middle">Lambda Sandbox</text>
+      <text x="350" y="265" font-size="7.5" fill="#888" text-anchor="middle">Sandboxed execution</text>
+      <text x="350" y="279" font-size="7"   fill="#aaa" text-anchor="middle">512MB · 15s timeout · ephemeral</text>
 
       <rect x="470" y="226" width="152" height="78" rx="6" fill="white" stroke="#059669" stroke-width="1.5"/>
       <text x="546" y="250" font-size="9.5" font-weight="700" fill="#059669" text-anchor="middle">PostgreSQL</text>
@@ -301,15 +301,15 @@ body {
       <path d="M 546,198 L 546,226" stroke="#059669" stroke-width="1.5" fill="none" marker-end="url(#ah-g)"/>
       <text x="556" y="215" font-size="7" fill="#888">check + INSERT</text>
 
-      <!-- ⑥ SQS → Docker: horizontal -->
-      <path d="M 230,265 L 274,265" stroke="#64748b" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
-      <text x="252" y="259" font-size="7" fill="#888" text-anchor="middle">Lambda</text>
+      <!-- ⑥ SQS → Lambda Sandbox: horizontal -->
+      <path d="M 230,265 L 274,265" stroke="#c4573a" stroke-width="1.5" fill="none" marker-end="url(#ah-c)"/>
+      <text x="252" y="259" font-size="7" fill="#c4573a" text-anchor="middle">dequeue</text>
 
-      <!-- ⑦ Docker → Postgres: horizontal -->
+      <!-- ⑦ Lambda → Postgres: horizontal -->
       <path d="M 426,265 L 470,265" stroke="#059669" stroke-width="1.5" fill="none" marker-end="url(#ah-g)"/>
       <text x="448" y="259" font-size="7" fill="#888" text-anchor="middle">write result</text>
 
-      <!-- ⑧ Docker result → SSE via Redis pub/sub: below boxes -->
+      <!-- ⑧ Lambda result → SSE via Postgres poll: below boxes -->
       <path d="M 350,304 L 350,344 L 742,344 L 742,304" stroke="#7c3aed" stroke-width="1.2" fill="none" stroke-dasharray="4 3" marker-end="url(#ah-p)"/>
       <text x="546" y="358" font-size="7.5" fill="#7c3aed" text-anchor="middle">Postgres poll (500ms)</text>
 
@@ -475,12 +475,12 @@ body {
     </div>
   </div>
 
-  <div class="comp-card" style="border-left-color:#3b82f6">
-    <div class="comp-card-layer" style="color:#3b82f6">Code Execution Safety</div>
-    <div class="comp-card-name">Docker sandbox isolation</div>
-    <div class="comp-card-desc">Every submission runs in an isolated Docker container with strict CPU, memory, and time limits enforced by cgroups. No student code can affect another execution or the host. Container killed after the time limit regardless of state.</div>
+  <div class="comp-card" style="border-left-color:#c4573a">
+    <div class="comp-card-layer" style="color:#c4573a">Code Execution Safety</div>
+    <div class="comp-card-name">Lambda as the sandbox</div>
+    <div class="comp-card-desc">Every submission executes in its own Lambda invocation — fully isolated, ephemeral, with a hard 15-second timeout. No shared state between executions. Lambda's per-invocation isolation gives sandboxing without the overhead of running Docker on a persistent host.</div>
     <div class="comp-card-tags">
-      <span class="comp-tag">Docker</span><span class="comp-tag">cgroups</span><span class="comp-tag">time-limit kill</span>
+      <span class="comp-tag">AWS Lambda</span><span class="comp-tag">ephemeral</span><span class="comp-tag">15s timeout</span>
     </div>
   </div>
 
