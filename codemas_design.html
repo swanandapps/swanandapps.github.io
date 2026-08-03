@@ -213,7 +213,7 @@ body {
   <div class="diagram-section">
     <div class="diagram-section-label">
       <span>Submission Pipeline — real-time path on every code submit</span>
-      <span class="path-label">Student → Django API → SQS → Docker → Redis pub/sub → SSE → Student</span>
+      <span class="path-label">Student → Django API → SQS → Lambda Worker → Docker Sandbox → Postgres → SSE → Student</span>
     </div>
     <svg class="arch-svg" viewBox="0 0 940 368" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -260,7 +260,7 @@ body {
       <rect x="78"  y="226" width="152" height="78" rx="6" fill="white" stroke="#64748b" stroke-width="1.5"/>
       <text x="154" y="250" font-size="9.5" font-weight="700" fill="#475569" text-anchor="middle">AWS SQS</text>
       <text x="154" y="265" font-size="7.5" fill="#888" text-anchor="middle">execute_submission queue</text>
-      <text x="154" y="279" font-size="7"   fill="#aaa" text-anchor="middle">FIFO · per-exam · Celery BRPOP</text>
+      <text x="154" y="279" font-size="7"   fill="#aaa" text-anchor="middle">FIFO · per-exam · Lambda dequeues</text>
 
       <rect x="274" y="226" width="152" height="78" rx="6" fill="white" stroke="#3b82f6" stroke-width="1.5"/>
       <text x="350" y="250" font-size="9.5" font-weight="700" fill="#2563eb" text-anchor="middle">Docker Sandbox</text>
@@ -295,7 +295,7 @@ body {
 
       <!-- ④ API → SQS: straight down -->
       <path d="M 154,198 L 154,226" stroke="#64748b" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
-      <text x="168" y="215" font-size="7" fill="#888">LPUSH</text>
+      <text x="168" y="215" font-size="7" fill="#888">enqueue</text>
 
       <!-- ⑤ API → Postgres: straight down -->
       <path d="M 546,198 L 546,226" stroke="#059669" stroke-width="1.5" fill="none" marker-end="url(#ah-g)"/>
@@ -303,7 +303,7 @@ body {
 
       <!-- ⑥ SQS → Docker: horizontal -->
       <path d="M 230,265 L 274,265" stroke="#64748b" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
-      <text x="252" y="259" font-size="7" fill="#888" text-anchor="middle">BRPOP</text>
+      <text x="252" y="259" font-size="7" fill="#888" text-anchor="middle">Lambda</text>
 
       <!-- ⑦ Docker → Postgres: horizontal -->
       <path d="M 426,265 L 470,265" stroke="#059669" stroke-width="1.5" fill="none" marker-end="url(#ah-g)"/>
@@ -311,7 +311,7 @@ body {
 
       <!-- ⑧ Docker result → SSE via Redis pub/sub: below boxes -->
       <path d="M 350,304 L 350,344 L 742,344 L 742,304" stroke="#7c3aed" stroke-width="1.2" fill="none" stroke-dasharray="4 3" marker-end="url(#ah-p)"/>
-      <text x="546" y="358" font-size="7.5" fill="#7c3aed" text-anchor="middle">Redis pub/sub</text>
+      <text x="546" y="358" font-size="7.5" fill="#7c3aed" text-anchor="middle">Postgres poll (500ms)</text>
 
       <!-- ⑨ SSE → Student result push: along top margin (purple dashed) -->
       <path d="M 742,226 L 742,12 L 82,12 L 82,34" stroke="#7c3aed" stroke-width="1.2" fill="none" stroke-dasharray="4 3" marker-end="url(#ah-p)"/>
@@ -496,9 +496,9 @@ body {
   <div class="comp-card" style="border-left-color:#7c3aed">
     <div class="comp-card-layer" style="color:#7c3aed">Real-time Delivery</div>
     <div class="comp-card-name">SSE over WebSocket</div>
-    <div class="comp-card-desc">Code execution results are unidirectional — server pushes once. SSE chosen over WebSockets for native browser reconnection, HTTP/1.1 proxy compatibility, and simpler Lambda scaling. Redis pub/sub bridges the worker result to the SSE endpoint.</div>
+    <div class="comp-card-desc">Code execution results are unidirectional — server pushes once. SSE chosen over WebSockets for native browser reconnection, HTTP/1.1 proxy compatibility, and simpler Lambda scaling. The SSE endpoint polls Postgres every 500ms for status change, then pushes the result and closes the stream.</div>
     <div class="comp-card-tags">
-      <span class="comp-tag">SSE</span><span class="comp-tag">EventSource API</span><span class="comp-tag">Redis pub/sub</span>
+      <span class="comp-tag">SSE</span><span class="comp-tag">EventSource API</span><span class="comp-tag">Postgres poll</span>
     </div>
   </div>
 
