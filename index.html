@@ -760,10 +760,11 @@ footer {
         <div class="project-name">CodeMas — AI Coding Assessment Platform</div>
         <div class="project-tagline">Masai School · First engineer reporting to CTO · 10K concurrent users · ~10K submissions/sec</div>
         <ul class="project-bullets">
+          <li><strong>Architecture Migration</strong> — migrated execution layer from Redis + Celery + Docker to AWS Lambda + SQS FIFO. Trade-off: lost persistent pub/sub but gained per-invocation isolation, zero host management, and elastic scale at exam deadline bursts. <span class="impact">Deterministic isolation without running Docker on a persistent host.</span></li>
           <li><strong>Exam Generator</strong> — GPT drafts complete exams (questions + test cases) from topic and difficulty; human reviews before any persistence. <span class="impact">~80% faster exam creation.</span></li>
-          <li><strong>Rubric Scoring Agent</strong> — async GPT grades every submission on correctness, code quality, approach, and edge cases (0–2 each) with per-dimension justifications. <span class="impact">Consistent feedback at scale across 10K+ submissions — zero trainer overhead.</span></li>
-          <li><strong>Socratic Hint Agent</strong> — for failed submissions, generates a pedagogical nudge pointing at the concept without revealing the answer. <span class="impact">Students self-correct without trainer intervention.</span></li>
-          <li><strong>Trainer Dashboard Agent</strong> — AI-generated cohort summaries and per-student performance narratives. <span class="impact">Replaced manual spreadsheet reporting entirely.</span></li>
+          <li><strong>Rubric Scoring</strong> — async GPT grades every submission on correctness, code quality, approach, and edge cases (0–2 each) with per-dimension justifications. <span class="impact">Consistent feedback at scale across 10K+ submissions — zero trainer overhead.</span></li>
+          <li><strong>Socratic Hint</strong> — for failed submissions, generates a pedagogical nudge pointing at the concept without revealing the answer. <span class="impact">Students self-correct without trainer intervention.</span></li>
+          <li><strong>Trainer Dashboard</strong> — AI-generated cohort summaries and per-student performance narratives. <span class="impact">Replaced manual spreadsheet reporting entirely.</span></li>
           <li><strong>Plagiarism Engine</strong> — behavioural signals (paste ratio, speed anomaly, tab switches) + TF-IDF cosine similarity. Reframed from "are submissions similar" to "did this student write this." <span class="impact">Detection: 5% → 95% — a 19× lift.</span></li>
           <li><strong>Business Impact</strong> — automation eliminated manual exam oversight, making multi-cohort scale operationally viable. Each cohort = 400 students × ₹3L = <span class="impact">$2M+ in revenue per cohort unlocked for Masai.</span></li>
         </ul>
@@ -779,7 +780,7 @@ footer {
         </div>
         <div class="project-links-r">
           <a href="codemas_design.html" class="proj-link" onclick="event.stopPropagation()">System Design</a>
-          <a href="codemas_ai_agents.html" class="proj-link" onclick="event.stopPropagation()">AI Agents</a>
+          <a href="codemas_ai_agents.html" class="proj-link" onclick="event.stopPropagation()">AI Features</a>
         </div>
       </div>
     </div>
@@ -791,7 +792,7 @@ footer {
         <div class="project-name">the01.dev — AI-Powered Ed-Tech Platform</div>
         <div class="project-tagline">Co-founder · Led engineering (2-person team) · Architecture owned end-to-end · 8 deep CS courses</div>
         <ul class="project-bullets">
-          <li><strong>PDF-to-Lesson Multi-Agent Pipeline</strong> — LangChain + Mastra with Planner-Executor and Supervisor-Worker patterns; human-in-the-loop approval via suspend/resume. <span class="impact">~67% reduction in unnecessary LLM calls via on-demand generation.</span></li>
+          <li><strong>PDF-to-Lesson Multi-Agent Pipeline</strong> — LangGraph with Planner-Executor and Supervisor-Worker patterns; human-in-the-loop approval via suspend/resume. <span class="impact">~67% reduction in unnecessary LLM calls via on-demand generation.</span></li>
           <li><strong>RAG Course Assistant</strong> — pgvector with HNSW indexing, hybrid cosine + BM25 retrieval, GPT-4.1-mini with source citations streamed via SSE; answers deep-link to the exact video timestamp. <span class="impact">Zero hallucinations — grounded strictly in proprietary transcripts.</span></li>
           <li><strong>Adaptive Practice Engine</strong> — GPT-generated question banks, spaced repetition scheduling, and a concept knowledge graph in Postgres. <span class="impact">Personalised revision paths with zero manual curation.</span></li>
           <li><strong>Payments &amp; Access</strong> — Razorpay with atomic access provisioning + XOR-encoded video protection with Firebase App Check. <span class="impact">Zero payment-access race conditions; proprietary content protected end-to-end.</span></li>
@@ -799,8 +800,7 @@ footer {
       </div>
       <div class="project-right">
         <div class="project-tags-r">
-          <span class="project-tag-r">LangChain</span>
-          <span class="project-tag-r">Mastra</span>
+          <span class="project-tag-r">LangGraph</span>
           <span class="project-tag-r">pgvector</span>
           <span class="project-tag-r">React 18</span>
           <span class="project-tag-r">FastAPI</span>
@@ -954,6 +954,13 @@ footer {
         <div class="notable-desc">Why we should be able to code in our own languages — the story behind Kalaam</div>
       </div>
       <div class="notable-metric">Speaker · 2023</div>
+    </a>
+    <a class="notable-row" href="#" target="_blank">
+      <div>
+        <div class="notable-name">IEEE Nagpur Talk</div>
+        <div class="notable-desc">Building a Programming Language from Scratch — compiler architecture and design decisions behind Kalaam</div>
+      </div>
+      <div class="notable-metric">Speaker</div>
     </a>
     <a class="notable-row" href="https://medium.com/better-programming/the-definitive-guide-to-boosting-your-web-application-performance-2b172574f37f" target="_blank">
       <div>

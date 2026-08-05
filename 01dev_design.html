@@ -360,9 +360,9 @@ body {
 
       <!-- VectorStore.index() -->
       <rect x="598" y="22" width="192" height="72" rx="6" fill="white" stroke="#059669" stroke-width="2"/>
-      <text x="694" y="43"  font-size="9.5" font-weight="700" fill="#059669" text-anchor="middle">VectorStore.index()</text>
-      <text x="694" y="58"  font-size="7.5" fill="#888" text-anchor="middle">InMemoryVectorStore</text>
-      <text x="694" y="72"  font-size="7"   fill="#aaa" text-anchor="middle">persists in process · O(1) insert</text>
+      <text x="694" y="43"  font-size="9.5" font-weight="700" fill="#059669" text-anchor="middle">pgvector.index()</text>
+      <text x="694" y="58"  font-size="7.5" fill="#888" text-anchor="middle">pgvector · HNSW</text>
+      <text x="694" y="72"  font-size="7"   fill="#aaa" text-anchor="middle">PostgreSQL · ANN · O(log N) query</text>
       <text x="694" y="84"  font-size="6.5" fill="#059669" text-anchor="middle" font-family="'JetBrains Mono',monospace">shared with query path ↓</text>
 
       <!-- Startup arrows (horizontal) -->
@@ -384,9 +384,9 @@ body {
 
       <!-- cosine_similarity() -->
       <rect x="250" y="148" width="168" height="72" rx="6" fill="white" stroke="#059669" stroke-width="1.5"/>
-      <text x="334" y="168" font-size="9.5" font-weight="700" fill="#059669" text-anchor="middle">cosine_similarity()</text>
-      <text x="334" y="184" font-size="7.5" fill="#888" text-anchor="middle">InMemoryVectorStore</text>
-      <text x="334" y="199" font-size="7"   fill="#aaa" text-anchor="middle">O(N×D) scan · top 8 returned</text>
+      <text x="334" y="168" font-size="9.5" font-weight="700" fill="#059669" text-anchor="middle">HNSW ANN search</text>
+      <text x="334" y="184" font-size="7.5" fill="#888" text-anchor="middle">pgvector · PostgreSQL</text>
+      <text x="334" y="199" font-size="7"   fill="#aaa" text-anchor="middle">O(log N) · top 8 candidates</text>
 
       <!-- _rank_matches() -->
       <rect x="446" y="148" width="168" height="72" rx="6" fill="white" stroke="#d97706" stroke-width="1.5"/>
@@ -437,8 +437,8 @@ body {
 
   <div class="comp-card" style="border-left-color:#7c3aed">
     <div class="comp-card-layer" style="color:#7c3aed">RAG Design</div>
-    <div class="comp-card-name">In-memory vector store, FAISS-swappable</div>
-    <div class="comp-card-desc">InMemoryVectorStore is pure Python with O(N×D) cosine scan — no NumPy, no external deps. For the seed transcript size it's fast enough. The entire store is one file (vector_store.py) with a clean interface — swap to FAISS or Pinecone in one file change.</div>
+    <div class="comp-card-name">pgvector with HNSW indexing</div>
+    <div class="comp-card-desc">Vectors stored in PostgreSQL via pgvector extension with HNSW index — O(log N) approximate nearest neighbour search. Hybrid retrieval combines HNSW semantic search with BM25 lexical scoring. Score gate at 0.15 — below threshold the LLM is never called, preventing hallucination and saving cost.</div>
     <div class="comp-card-tags">
       <span class="comp-tag">pure Python</span><span class="comp-tag">cosine similarity</span><span class="comp-tag">FAISS-ready</span>
     </div>
