@@ -198,7 +198,7 @@ body {
     </div>
     <div class="stat-chip">
       <div class="stat-chip-num">0.15<span class="accent"> gate</span></div>
-      <div class="stat-chip-label">RAG relevance<br>no hallucination</div>
+      <div class="stat-chip-label">RAG relevance<br>grounded or silent</div>
     </div>
     <div class="stat-chip">
       <div class="stat-chip-num">₹2Cr<span class="accent">+</span></div>
@@ -458,7 +458,7 @@ body {
     <div class="comp-card-name">Gate at 0.15 — no LLM call below threshold</div>
     <div class="comp-card-desc">If no chunk scores ≥ 0.15, the system returns a canned "I don't have enough context" message without touching GPT-4.1-mini. This prevents hallucination on out-of-domain questions, saves API cost, and keeps the assistant honest about what it knows.</div>
     <div class="comp-card-tags">
-      <span class="comp-tag">threshold gate</span><span class="comp-tag">no hallucination</span><span class="comp-tag">cost control</span>
+      <span class="comp-tag">threshold gate</span><span class="comp-tag">retrieval-gated</span><span class="comp-tag">cost control</span>
     </div>
   </div>
 

@@ -595,7 +595,7 @@ insufficient_context = (
 
   { from:"n-openai", to:"n-generator",    label:"answer text",            phase:4,
     title:"GPT-4.1-mini returns grounded answer",
-    desc:"GPT-4.1-mini returns the answer text, grounded strictly in the provided context blocks. No hallucination — the model only has the chunk content to draw from. The answer cites lecture names and timestamps per the system prompt.",
+    desc:"GPT-4.1-mini returns the answer text, grounded strictly in the provided context blocks. The model only has the chunk content to draw from — hallucination risk is constrained to the retrieved material, not the full training set. The answer cites lecture names and timestamps per the system prompt.",
     payload:`# Returned by gpt-4.1-mini:
 "npm link creates a symbolic link in your global
  node_modules directory that points to your local

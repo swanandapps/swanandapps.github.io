@@ -720,7 +720,7 @@ footer {
       <div class="exp-num">02</div>
       <div class="exp-title">Digital Detection<br>Engine</div>
       <div class="exp-org">CodeMas · Masai School</div>
-      <div class="exp-desc">Reframed plagiarism from "are submissions similar" to "did this student write this." Behavioural signals + TF-IDF cosine similarity. Detection: 5% → 95% — a 19× lift.</div>
+      <div class="exp-desc">Reframed plagiarism from "are submissions similar" to "did this student write this." Behavioural signals + TF-IDF cosine similarity. 19× improvement in catching cases.</div>
       <div class="exp-tags">
         <span class="exp-tag">Django</span>
         <span class="exp-tag">AWS Lambda</span>
@@ -764,7 +764,7 @@ footer {
           <li><strong>Rubric Scoring</strong> — async GPT grades every submission on correctness, code quality, approach, and edge cases (0–2 each) with per-dimension justifications. <span class="impact">Consistent feedback at scale across 10K+ submissions — zero trainer overhead.</span></li>
           <li><strong>Socratic Hint</strong> — for failed submissions, generates a pedagogical nudge pointing at the concept without revealing the answer. <span class="impact">Students self-correct without trainer intervention.</span></li>
           <li><strong>Trainer Dashboard</strong> — AI-generated cohort summaries and per-student performance narratives. <span class="impact">Replaced manual spreadsheet reporting entirely.</span></li>
-          <li><strong>Plagiarism Engine</strong> — behavioural signals (paste ratio, speed anomaly, tab switches) + TF-IDF cosine similarity. Reframed from "are submissions similar" to "did this student write this." <span class="impact">Detection: 5% → 95% — a 19× lift.</span></li>
+          <li><strong>Plagiarism Engine</strong> — behavioural signals (paste ratio, speed anomaly, tab switches) + TF-IDF cosine similarity. Reframed from "are submissions similar" to "did this student write this." <span class="impact">19× improvement in catching cases.</span></li>
           <li><strong>Business Impact</strong> — automation eliminated manual exam oversight, making multi-cohort scale operationally viable. Each cohort = 400 students × ₹3L = <span class="impact">$2M+ in revenue per cohort unlocked for Masai.</span></li>
         </ul>
       </div>
@@ -792,7 +792,7 @@ footer {
         <div class="project-tagline">Co-founder · Led engineering (2-person team) · Architecture owned end-to-end · 8 deep CS courses</div>
         <ul class="project-bullets">
           <li><strong>GEPA — Self-Evolving Tutor</strong> — reflective prompt evolution: eval SOUL on test set → reflect on weakest cases → propose improved SOUL → re-eval with Pareto gate (avg improves AND no case regresses) → human approves → apply with rollback backup. Every SOUL version is fingerprinted via SHA hash in the audit log. <span class="impact">Agent improves from its own runs without unbounded self-modification.</span></li>
-          <li><strong>Sovereign RAG Tutor — Hermes runtime</strong> — grounding enforced in code, not by model trust: relevance threshold 0.45; below it the model is never called and a deterministic decline fires. Hermes agent with SOUL.md identity, MCP tools, HindSight session memory, EU-AI-Act audit log written before every inference. RAGAS (faithfulness + context precision) evaluates quality using the local sovereign model. <span class="impact">Zero hallucinations by design.</span></li>
+          <li><strong>Sovereign RAG Tutor — Hermes runtime</strong> — grounding enforced in code, not by model trust: relevance threshold 0.45; below it the model is never called and a deterministic decline fires. Hermes agent with SOUL.md identity, MCP tools, HindSight session memory, EU-AI-Act audit log written before every inference. RAGAS (faithfulness + context precision) evaluates quality using the local sovereign model. <span class="impact">Gate prevents generation when retrieval is weak — grounded or silent.</span></li>
           <li><strong>Two-Engine AI Architecture</strong> — Hermes (ReAct agent loop) for the open-ended tutor; LangGraph (deterministic workflow with HITL interrupt/resume + MemorySaver checkpointer) for QuizMe and artifact generation. Design rule: agent when the AI decides its next move; workflow when every step is known in advance. <span class="impact">No single framework forced on every problem.</span></li>
           <li><strong>Sovereign Inference + GDPR</strong> — generation runs on Ollama/vLLM; nothing leaves the machine. Memory transparency endpoint + DELETE erasure. SOUL hash in every audit row makes self-improvement tamper-evident. <span class="impact">Compliance-ready — sovereignty, audit, and erasure from day one.</span></li>
         </ul>
