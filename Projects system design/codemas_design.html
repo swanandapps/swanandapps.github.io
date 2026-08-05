@@ -167,8 +167,51 @@ body {
   background: var(--bg);
 }
 
+.trade-section {
+  max-width: 1040px; margin: 0 auto 48px; padding: 0 48px;
+}
+.trade-heading {
+  font-size: 1.05rem; font-weight: 800; letter-spacing: -0.02em;
+  color: var(--text); margin-bottom: 4px;
+}
+.trade-sub {
+  font-size: 0.8rem; color: var(--muted); line-height: 1.6; margin-bottom: 16px;
+}
+.trade-table-wrap { overflow-x: auto; }
+.trade-table {
+  width: 100%; border-collapse: collapse; font-size: 0.79rem;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+}
+.trade-table th {
+  font-family: var(--mono); font-size: 0.57rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted);
+  padding: 9px 14px; text-align: left;
+  border-bottom: 1px solid var(--border); background: var(--bg);
+  white-space: nowrap;
+}
+.trade-table td {
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  color: var(--text); line-height: 1.5; vertical-align: top;
+}
+.trade-table tr:last-child td { border-bottom: none; }
+.trade-table tbody tr:hover td { background: rgba(196,87,58,0.03); }
+.td-dim { font-weight: 600; color: var(--text); white-space: nowrap; }
+.win-new  { color: #059669; font-weight: 600; font-family: var(--mono); font-size: 0.72rem; white-space: nowrap; }
+.win-old  { color: #7c3aed; font-weight: 600; font-family: var(--mono); font-size: 0.72rem; white-space: nowrap; }
+.win-draw { color: var(--muted); font-weight: 500; font-family: var(--mono); font-size: 0.72rem; white-space: nowrap; }
+.insight-box {
+  margin-top: 14px; padding: 14px 18px;
+  background: rgba(196,87,58,0.05); border: 1px solid rgba(196,87,58,0.18);
+  border-left: 3px solid var(--accent); border-radius: 4px;
+  font-size: 0.8rem; line-height: 1.7; color: #555;
+}
+.insight-label {
+  font-family: var(--mono); font-size: 0.57rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 6px;
+}
+
 @media (max-width: 720px) {
-  .page-header, .diagram-wrap, .comp-grid, .section-eyebrow { padding-left: 20px; padding-right: 20px; }
+  .page-header, .diagram-wrap, .comp-grid, .section-eyebrow, .trade-section { padding-left: 20px; padding-right: 20px; }
   .comp-grid { grid-template-columns: 1fr; }
 }
 </style>
@@ -176,7 +219,7 @@ body {
 <body>
 
 <div class="back-nav">
-  <a href="index.html" class="back-nav-link">← Portfolio</a>
+  <a href="../index.html" class="back-nav-link">← Portfolio</a>
   <span class="back-nav-badge">CodeMas — Architecture</span>
 </div>
 
@@ -502,6 +545,146 @@ body {
     </div>
   </div>
 
+</div>
+
+<!-- ── TRADE-OFF TABLES ── -->
+
+<div class="section-eyebrow" style="margin-top:48px">Architecture Trade-Offs — Quick Revision</div>
+
+<!-- Table 1: Migration -->
+<div class="trade-section">
+  <div class="trade-heading">Migration — Redis + Celery + Docker → SQS + Lambda</div>
+  <div class="trade-sub">What we traded when moving the execution layer to Lambda. Each row is a talking point.</div>
+  <div class="trade-table-wrap">
+    <table class="trade-table">
+      <thead>
+        <tr>
+          <th>Dimension</th>
+          <th>Redis + Celery + Docker</th>
+          <th>SQS + Lambda</th>
+          <th>Winner</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="td-dim">Cost at low traffic</td>
+          <td>Redis + workers running 24/7, paying for idle</td>
+          <td>Pay per invocation — zero idle cost</td>
+          <td class="win-new">Lambda</td>
+        </tr>
+        <tr>
+          <td class="td-dim">Cost at peak</td>
+          <td>Pre-provisioned workers, fixed capacity</td>
+          <td>Scales elastically, per-invocation cost adds up</td>
+          <td class="win-draw">Draw</td>
+        </tr>
+        <tr>
+          <td class="td-dim">Burst scaling</td>
+          <td>Manual — provision more Celery workers</td>
+          <td>Automatic — Lambda scales to account concurrency limit</td>
+          <td class="win-new">Lambda</td>
+        </tr>
+        <tr>
+          <td class="td-dim">Execution isolation</td>
+          <td>Docker container, shared host kernel</td>
+          <td>Fully ephemeral per invocation, complete isolation</td>
+          <td class="win-new">Lambda</td>
+        </tr>
+        <tr>
+          <td class="td-dim">Ops overhead</td>
+          <td>Manage Redis, Celery, Docker daemon, worker fleet</td>
+          <td>SQS + Lambda fully managed, zero infra to operate</td>
+          <td class="win-new">Lambda</td>
+        </tr>
+        <tr>
+          <td class="td-dim">Result delivery</td>
+          <td>Redis pub/sub → true push, near-instant</td>
+          <td>Postgres poll every 500ms → up to 500ms added delay</td>
+          <td class="win-old">Redis/Celery</td>
+        </tr>
+        <tr>
+          <td class="td-dim">Cold start latency</td>
+          <td>Always warm (persistent workers)</td>
+          <td>1–3s cold start (provisioned concurrency mitigates)</td>
+          <td class="win-old">Redis/Celery</td>
+        </tr>
+        <tr>
+          <td class="td-dim">Max execution time</td>
+          <td>Configurable, no hard ceiling</td>
+          <td>15-minute Lambda hard cap</td>
+          <td class="win-old">Docker</td>
+        </tr>
+        <tr>
+          <td class="td-dim">Real-time feel</td>
+          <td>Truly event-driven end-to-end</td>
+          <td>Event-driven execution, polling last mile</td>
+          <td class="win-old">Redis/Celery</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="insight-box">
+    <div class="insight-label">Migration rationale</div>
+    We traded true event-driven push and always-warm workers for pay-per-use cost, automatic burst scaling, and per-invocation sandbox isolation. The cost is 500ms of polling latency on result delivery — acceptable for an exam platform, not acceptable for a live coding game. Lambda's ephemeral model means one student's rogue process literally cannot affect another's.
+  </div>
+</div>
+
+<!-- Table 2: SSE vs Client Polling -->
+<div class="trade-section">
+  <div class="trade-heading">Real-Time Delivery — SSE vs Client Polling after Lambda</div>
+  <div class="trade-sub">SSE was right when result delivery was Redis pub/sub. After Lambda, Django polls Postgres and forwards the result. The tables have turned.</div>
+  <div class="trade-table-wrap">
+    <table class="trade-table">
+      <thead>
+        <tr>
+          <th>Aspect</th>
+          <th>SSE — current</th>
+          <th>Client Polling — alternative</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="td-dim">HTTP overhead</td>
+          <td>1 persistent connection per user</td>
+          <td>1 new request per poll tick (~500ms)</td>
+        </tr>
+        <tr>
+          <td class="td-dim">Result latency</td>
+          <td>Same — both wait on Postgres poll</td>
+          <td>Same — both wait on Postgres poll</td>
+        </tr>
+        <tr>
+          <td class="td-dim">Progressive updates</td>
+          <td>Natural — stream queued → running → done as separate events</td>
+          <td>Endpoint must return current state per request</td>
+        </tr>
+        <tr>
+          <td class="td-dim">Proxy / infra compat</td>
+          <td>Sometimes breaks — buffering proxies drop events</td>
+          <td>Always works — standard HTTP request-response</td>
+        </tr>
+        <tr>
+          <td class="td-dim">Stateless server</td>
+          <td>No — Django holds the connection open until result arrives</td>
+          <td>Yes — each request is independent</td>
+        </tr>
+        <tr>
+          <td class="td-dim">Works fully serverless</td>
+          <td>No — needs persistent Django (Lambda can't hold SSE)</td>
+          <td>Yes — any server including Lambda</td>
+        </tr>
+        <tr>
+          <td class="td-dim">Architectural honesty</td>
+          <td><em>Polling theater</em> — SSE without true push underneath</td>
+          <td>Clean match to what's actually happening</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="insight-box">
+    <div class="insight-label">Honest architectural reflection</div>
+    SSE was the right last-mile when the architecture was Redis pub/sub — truly event-driven end-to-end. After migrating to Lambda, result delivery became Postgres polling. SSE now holds a connection open just to forward poll results. <strong>Client polling is architecturally equivalent with less infrastructure complexity.</strong> The honest next step: either drop SSE for client polling, or invest in a real push layer (API Gateway WebSocket, Pusher, Ably) to restore true event-driven delivery.
+  </div>
 </div>
 
 </body>
