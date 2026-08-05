@@ -788,22 +788,24 @@ footer {
     <div class="project-row" onclick="window.location.href='Projects system design/01dev_design.html'">
       <div class="project-idx">P.02</div>
       <div class="project-main">
-        <div class="project-name">the01.dev — AI-Powered Ed-Tech Platform</div>
+        <div class="project-name">the01.dev — Sovereign AI Tutor Platform</div>
         <div class="project-tagline">Co-founder · Led engineering (2-person team) · Architecture owned end-to-end · 8 deep CS courses</div>
         <ul class="project-bullets">
-          <li><strong>PDF-to-Lesson Multi-Agent Pipeline</strong> — LangGraph with Planner-Executor and Supervisor-Worker patterns; human-in-the-loop approval via suspend/resume. <span class="impact">~67% reduction in unnecessary LLM calls via on-demand generation.</span></li>
-          <li><strong>RAG Course Assistant</strong> — pgvector with HNSW indexing, hybrid cosine + BM25 retrieval, GPT-4.1-mini with source citations streamed via SSE; answers deep-link to the exact video timestamp. <span class="impact">Zero hallucinations — grounded strictly in proprietary transcripts.</span></li>
-          <li><strong>Adaptive Practice Engine</strong> — GPT-generated question banks, spaced repetition scheduling, and a concept knowledge graph in Postgres. <span class="impact">Personalised revision paths with zero manual curation.</span></li>
-          <li><strong>Payments &amp; Access</strong> — Razorpay with atomic access provisioning + XOR-encoded video protection with Firebase App Check. <span class="impact">Zero payment-access race conditions; proprietary content protected end-to-end.</span></li>
+          <li><strong>GEPA — Self-Evolving Tutor</strong> — reflective prompt evolution: eval SOUL on test set → reflect on weakest cases → propose improved SOUL → re-eval with Pareto gate (avg improves AND no case regresses) → human approves → apply with rollback backup. Every SOUL version is fingerprinted via SHA hash in the audit log. <span class="impact">Agent improves from its own runs without unbounded self-modification.</span></li>
+          <li><strong>Sovereign RAG Tutor — Hermes runtime</strong> — grounding enforced in code, not by model trust: relevance threshold 0.45; below it the model is never called and a deterministic decline fires. Hermes agent with SOUL.md identity, MCP tools, HindSight session memory, EU-AI-Act audit log written before every inference. RAGAS (faithfulness + context precision) evaluates quality using the local sovereign model. <span class="impact">Zero hallucinations by design.</span></li>
+          <li><strong>Two-Engine AI Architecture</strong> — Hermes (ReAct agent loop) for the open-ended tutor; LangGraph (deterministic workflow with HITL interrupt/resume + MemorySaver checkpointer) for QuizMe and artifact generation. Design rule: agent when the AI decides its next move; workflow when every step is known in advance. <span class="impact">No single framework forced on every problem.</span></li>
+          <li><strong>Sovereign Inference + GDPR</strong> — generation runs on Ollama/vLLM; nothing leaves the machine. Memory transparency endpoint + DELETE erasure. SOUL hash in every audit row makes self-improvement tamper-evident. <span class="impact">Compliance-ready — sovereignty, audit, and erasure from day one.</span></li>
         </ul>
       </div>
       <div class="project-right">
         <div class="project-tags-r">
+          <span class="project-tag-r">Hermes</span>
           <span class="project-tag-r">LangGraph</span>
-          <span class="project-tag-r">pgvector</span>
-          <span class="project-tag-r">React 18</span>
+          <span class="project-tag-r">GEPA</span>
+          <span class="project-tag-r">RAGAS</span>
+          <span class="project-tag-r">React 19</span>
           <span class="project-tag-r">FastAPI</span>
-          <span class="project-tag-r">OpenAI</span>
+          <span class="project-tag-r">Ollama / vLLM</span>
         </div>
         <div class="project-links-r">
           <a href="Projects system design/01dev_design.html" class="proj-link" onclick="event.stopPropagation()">System Design</a>

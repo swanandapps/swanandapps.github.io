@@ -473,5 +473,66 @@ body {
 
 </div>
 
+<!-- ── NEW AI LAYER: Hermes + GEPA + RAGAS ── -->
+<div class="section-eyebrow" style="margin-top:48px">Sovereign AI Layer — Hermes + GEPA + RAGAS</div>
+
+<div class="comp-grid">
+
+  <div class="comp-card" style="border-left-color:#c4573a">
+    <div class="comp-card-layer" style="color:#c4573a">Agent Runtime</div>
+    <div class="comp-card-name">Hermes — sovereign tutor agent</div>
+    <div class="comp-card-desc">The tutor runs on Hermes v0.18.2: SOUL.md identity (hashed into every audit row), ReAct agent loop, HindSight session-spanning memory, MCP tools (search_course_content, generate_notes). Sovereign inference on Ollama/vLLM — generation never leaves the machine. Production routes all traffic through the Hermes agent loop.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">Hermes v0.18.2</span><span class="comp-tag">SOUL.md</span><span class="comp-tag">HindSight</span><span class="comp-tag">MCP</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#6366f1">
+    <div class="comp-card-layer" style="color:#6366f1">Self-Evolution</div>
+    <div class="comp-card-name">GEPA — reflective prompt evolution</div>
+    <div class="comp-card-desc">Offline loop: eval current SOUL on test set → LLM reflects on 3 weakest cases → proposes improved SOUL → re-eval candidate → Pareto gate (avg improves AND no case regresses below 2) → human approves via API → apply with .bak rollback. Every evolved SOUL is SHA-fingerprinted in the audit log — tamper-evident self-improvement under human oversight. Never runs during a live chat.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">GEPA</span><span class="comp-tag">Pareto gate</span><span class="comp-tag">HITL approve</span><span class="comp-tag">audit hash</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#059669">
+    <div class="comp-card-layer" style="color:#059669">RAG Evaluation</div>
+    <div class="comp-card-name">RAGAS — sovereign quality measurement</div>
+    <div class="comp-card-desc">RAGAS 0.2.14 scores the tutor on faithfulness (are the answer's claims supported by retrieved context?) and LLM context precision (were retrieved chunks useful?). The judge is pointed at the local model — no external calls. Feeds the same grounding signal GEPA optimises. Runs serially on the local model (parallel judge calls would saturate one GPU).</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">RAGAS 0.2.14</span><span class="comp-tag">faithfulness</span><span class="comp-tag">context precision</span><span class="comp-tag">sovereign judge</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#7c3aed">
+    <div class="comp-card-layer" style="color:#7c3aed">Two-Engine Design</div>
+    <div class="comp-card-name">Hermes (agent) + LangGraph (workflow)</div>
+    <div class="comp-card-desc">Design rule: agent when the AI decides its next move; workflow when every step is known in advance. Hermes handles the open-ended tutor (ReAct loop). LangGraph handles QuizMe and artifact generation (plan → HITL interrupt → generate → loop → summarize, with MemorySaver checkpointer for durable suspend/resume). No single framework forced on everything.</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">Hermes</span><span class="comp-tag">LangGraph 1.2.9</span><span class="comp-tag">MemorySaver</span><span class="comp-tag">interrupt</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#d97706">
+    <div class="comp-card-layer" style="color:#d97706">Governance</div>
+    <div class="comp-card-name">EU-AI-Act audit + GDPR erasure</div>
+    <div class="comp-card-desc">Audit row written before every inference: student, question, model, provider, SOUL hash. The hash makes the agent's identity tamper-evident — you can prove which SOUL answered. GDPR: GET /api/hermes/memory/{id} shows what's stored; DELETE erases it. Grounding is enforced in code — below threshold 0.45 the model is never called (deterministic, not model-trust).</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">EU-AI-Act audit</span><span class="comp-tag">SOUL hash</span><span class="comp-tag">GDPR</span><span class="comp-tag">threshold 0.45</span>
+    </div>
+  </div>
+
+  <div class="comp-card" style="border-left-color:#64748b">
+    <div class="comp-card-layer" style="color:#64748b">Sovereign Inference</div>
+    <div class="comp-card-name">Ollama (dev) → vLLM on GPU (prod)</div>
+    <div class="comp-card-desc">Both are OpenAI-compatible endpoints — dev→prod is a base_url change. Dev model: qwen2.5:3b. Generation is 100% local. The one remaining external call: retrieval embeddings still use OpenAI text-embedding-3-small (the question leaves as an embedding vector). Closing this is a one-file swap to a local embedder (e.g. nomic-embed-text).</div>
+    <div class="comp-card-tags">
+      <span class="comp-tag">Ollama</span><span class="comp-tag">vLLM</span><span class="comp-tag">sovereign</span><span class="comp-tag">OpenAI-compatible</span>
+    </div>
+  </div>
+
+</div>
+
 </body>
 </html>
