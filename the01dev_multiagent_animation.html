@@ -114,7 +114,7 @@ body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; 
 
 <div class="page-header">
   <div class="page-title">0.1% DEV Multi-Agent Pipeline</div>
-  <div class="page-sub">LangChain + Mastra · Planner-Executor · Supervisor-Worker · HITL suspend/resume · ~67% fewer LLM calls</div>
+  <div class="page-sub">LangGraph · Planner-Executor · Supervisor-Worker · HITL suspend/resume · ~67% fewer LLM calls</div>
 </div>
 
 <div class="phase-banner">
@@ -214,7 +214,7 @@ const STEPS = [
   // Phase 3: Execution & HITL
   { phase:2, from:'nWorker1', to:'nLLM', text:'Worker 1 sends the <strong>Lesson 1 prompt</strong> to GPT: source chunks + lesson scope + formatting instructions. This is the actual generation call.', active:['nWorker1','nLLM'] },
   { phase:2, from:'nLLM', to:'nWorker1', text:'GPT returns a <strong>structured lesson draft</strong>: concept explanation, code example, exercises, and a one-paragraph summary. Markdown-formatted.', active:['nLLM','nWorker1'] },
-  { phase:2, from:'nWorker1', to:'nInstructor', text:'Lesson 1 enters a <strong>suspend state</strong> — HITL via Mastra\'s suspend/resume API. Worker pauses execution and sends the draft to the instructor for review. Nothing is persisted yet.', active:['nWorker1','nInstructor'] },
+  { phase:2, from:'nWorker1', to:'nInstructor', text:'Lesson 1 enters a <strong>suspend state</strong> — HITL via LangGraph\'s interrupt/resume. Worker pauses execution and sends the draft to the instructor for review. Nothing is persisted yet.', active:['nWorker1','nInstructor'] },
   { phase:2, from:'nInstructor', to:'nInstructor', text:'Instructor reviews the draft in the admin panel. Edits the exercise section, approves the explanation. <strong>Human-in-the-loop by design</strong> — content quality gated by a domain expert, not just the LLM.', active:['nInstructor'] },
   { phase:2, from:'nInstructor', to:'nWorker1', text:'Instructor approves. <strong>Resume signal</strong> sent — Worker 1 wakes up, receives the approved (possibly edited) content, and proceeds to persist it.', active:['nInstructor','nWorker1'] },
   { phase:2, from:'nWorker2', to:'nLLM', text:'While Lesson 1 was awaiting review, <strong>Worker 2 generated Lessons 5–6 in parallel.</strong> The Supervisor-Worker pattern ensures no idle time — unblocked tasks proceed concurrently.', active:['nWorker2','nLLM'] },
