@@ -628,6 +628,142 @@ footer {
   .project-right { align-items: flex-start; }
   .divider { margin: 40px 20px; }
   footer { padding: 16px 20px; flex-direction: column; gap: 6px; text-align: center; }
+  .pf-pipe { flex-wrap: wrap; }
+}
+
+/* ── PROJECT FLOW DIAGRAMS ── */
+.project-flow {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+.pf-title {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.pf-pipe {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.pf-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.pf-step {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 0.63rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: #fff;
+  background: #1a1a18;
+  line-height: 1.4;
+}
+.pf-step.gr { background: #1d6b49; }
+.pf-step.bl { background: #1a4c8f; }
+.pf-step.am { background: var(--accent); }
+.pf-step.pu { background: #5b3496; }
+.pf-step.sl { background: #60605a; }
+.pf-step.cy { background: #0e6c8a; }
+.pf-step.lt { background: #fff; color: #1a1a18; border: 1.5px solid var(--border); }
+.pf-arrow {
+  font-size: 13pt;
+  color: #b0ada8;
+  padding: 2px 2px;
+  align-self: center;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.pf-lbl {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.35;
+  max-width: 96px;
+}
+.pf-note {
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-top: 8px;
+  line-height: 1.55;
+  border-top: 1px solid var(--border);
+  padding-top: 7px;
+}
+.pf-row-gap { height: 8px; }
+.pf-score {
+  display: flex;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+.pf-score-seg {
+  padding: 5px 10px;
+  font-size: 0.63rem;
+  font-weight: 700;
+  font-family: var(--mono);
+  color: #fff;
+  text-align: center;
+  line-height: 1.35;
+}
+.pf-sub {
+  border-top: 1px dashed var(--border);
+  padding-top: 10px;
+  margin-top: 10px;
+}
+.pf-sub-title {
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #aaa;
+  margin-bottom: 8px;
+}
+.pf-mod-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+.pf-mod {
+  padding: 5px 8px;
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.4;
+}
+.pf-two-col {
+  display: flex;
+  gap: 0;
+}
+.pf-side {
+  flex: 1;
+  padding: 0 12px;
+}
+.pf-side:first-child {
+  padding-left: 0;
+  border-right: 1px solid var(--border);
+  padding-right: 14px;
+}
+.pf-side:last-child { padding-right: 0; padding-left: 14px; }
+.pf-side-head {
+  font-family: var(--mono);
+  font-size: 0.63rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
 }
 </style>
 </head>
@@ -679,8 +815,8 @@ footer {
 <div class="stats">
   <div class="stat-card">
     <div class="stat-sub">Detection lift</div>
-    <div class="stat-number">5<span class="stat-arrow">→</span>95<span style="font-size:1rem">%</span></div>
-    <div class="stat-desc">Plagiarism detection<br>19× improvement</div>
+    <div class="stat-number">19<span style="font-size:1.2rem">×</span></div>
+    <div class="stat-desc">Plagiarism detection<br>improvement in catching cases</div>
   </div>
   <div class="stat-card">
     <div class="stat-sub">Scale</div>
@@ -767,6 +903,41 @@ footer {
           <li><strong>Plagiarism Engine</strong> — behavioural signals (paste ratio, speed anomaly, tab switches) + TF-IDF cosine similarity. Reframed from "are submissions similar" to "did this student write this." <span class="impact">19× improvement in catching cases.</span></li>
           <li><strong>Business Impact</strong> — automation eliminated manual exam oversight, making multi-cohort scale operationally viable. Each cohort = 400 students × ₹3L = <span class="impact">$2M+ in revenue per cohort unlocked for Masai.</span></li>
         </ul>
+
+        <div class="project-flow">
+          <div class="pf-title">Submission Flow — Critical Path (p95 &lt; 10s)</div>
+          <div class="pf-pipe">
+            <div class="pf-col"><div class="pf-step bl">Browser</div><div class="pf-lbl">Vue 3</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step">Django API</div><div class="pf-lbl">SELECT FOR UPDATE<br>attempt gate</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step am">SQS FIFO</div><div class="pf-lbl">burst buffer<br>exactly-once</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step" style="background:#8b1a1a;">Lambda</div><div class="pf-lbl">ephemeral sandbox<br>per-invocation</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step pu">Postgres</div><div class="pf-lbl">result written</div></div>
+          </div>
+          <div class="pf-pipe">
+            <div class="pf-col"><div class="pf-step bl">Browser</div><div class="pf-lbl">renders verdict</div></div>
+            <div class="pf-arrow">←</div>
+            <div class="pf-col"><div class="pf-step sl">Poll REST / 1.5s</div><div class="pf-lbl">GET /submissions/{id}/</div></div>
+            <div class="pf-arrow">←</div>
+            <div class="pf-col"><div class="pf-step pu">Postgres</div><div class="pf-lbl">status check</div></div>
+          </div>
+          <div class="pf-sub">
+            <div class="pf-sub-title">Supporting (off critical path)</div>
+            <div class="pf-pipe" style="gap:10px; align-items:center; flex-wrap:wrap;">
+              <div class="pf-col"><div class="pf-step am">Redis</div><div class="pf-lbl">Celery broker<br>5 async AI tasks</div></div>
+              <div class="pf-arrow">→</div>
+              <div class="pf-col"><div class="pf-step sl">Celery Workers</div><div class="pf-lbl">hints · rubric · exam gen<br>plagiarism explain · summary</div></div>
+              <span style="color:var(--border);font-size:1.4rem;align-self:center;padding:0 4px;">|</span>
+              <div class="pf-col"><div class="pf-step am">Redis</div><div class="pf-lbl">Dashboard cache<br>TTL 10s</div></div>
+              <span style="color:var(--border);font-size:1.4rem;align-self:center;padding:0 4px;">|</span>
+              <div class="pf-col"><div class="pf-step am">Redis</div><div class="pf-lbl">Plagiarism weights<br>TTL 60s</div></div>
+            </div>
+          </div>
+          <div class="pf-note">Two-phase plagiarism: Phase 1 behavioral O(N) → suspects K · Phase 2 TF-IDF cosine O(K×N). N²=2B at 10K students → reduced to ~5M. 19× improvement in catch rate.</div>
+        </div>
       </div>
       <div class="project-right">
         <div class="project-tags-r">
@@ -796,6 +967,58 @@ footer {
           <li><strong>Two-Engine AI Architecture</strong> — Hermes (ReAct agent loop) for the open-ended tutor; LangGraph (deterministic workflow with HITL interrupt/resume + MemorySaver checkpointer) for QuizMe and artifact generation. Design rule: agent when the AI decides its next move; workflow when every step is known in advance. <span class="impact">No single framework forced on every problem.</span></li>
           <li><strong>Sovereign Inference + GDPR</strong> — generation runs on Ollama/vLLM; nothing leaves the machine. Memory transparency endpoint + DELETE erasure. SOUL hash in every audit row makes self-improvement tamper-evident. <span class="impact">Compliance-ready — sovereignty, audit, and erasure from day one.</span></li>
         </ul>
+
+        <div class="project-flow">
+          <div class="pf-title">RAG Tutor Pipeline — Grounded · Audited · Sovereign</div>
+          <div class="pf-pipe">
+            <div class="pf-col"><div class="pf-step bl">Question</div><div class="pf-lbl">POST /hermes/chat</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step sl">JWT + Purchase</div><div class="pf-lbl">Firebase auth<br>Firestore check</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step" style="background:#8b1a1a;">Audit Row</div><div class="pf-lbl">written BEFORE<br>inference (EU-AI-Act)</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step am">Embed</div><div class="pf-lbl">OpenAI<br>text-embedding-3-small</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step pu">pgvector HNSW</div><div class="pf-lbl">top-4 chunks<br>cosine similarity</div></div>
+          </div>
+          <div class="pf-pipe">
+            <div class="pf-col"><div class="pf-step bl">Browser SSE</div><div class="pf-lbl">sources → tokens → done</div></div>
+            <div class="pf-arrow">←</div>
+            <div class="pf-col"><div class="pf-step gr">Ollama / vLLM</div><div class="pf-lbl">100% local<br>sovereign</div></div>
+            <div class="pf-arrow">←</div>
+            <div class="pf-col"><div class="pf-step">SOUL + Chunks</div><div class="pf-lbl">Hermes system<br>prompt</div></div>
+            <div class="pf-arrow">←</div>
+            <div class="pf-col"><div class="pf-step am">Score Gate ≥ 0.45</div><div class="pf-lbl">enforced in code<br>DECLINE if below</div></div>
+          </div>
+          <div class="pf-sub">
+            <div class="pf-two-col">
+              <div class="pf-side">
+                <div class="pf-side-head">Hermes · ReAct Agent</div>
+                <div class="pf-pipe" style="gap:3px;">
+                  <div class="pf-step bl" style="font-size:0.58rem;">Reason</div>
+                  <div class="pf-arrow" style="font-size:10pt;">→</div>
+                  <div class="pf-step am" style="font-size:0.58rem;">Tool</div>
+                  <div class="pf-arrow" style="font-size:10pt;">→</div>
+                  <div class="pf-step gr" style="font-size:0.58rem;">Observe</div>
+                  <div class="pf-arrow" style="font-size:10pt;">↩</div>
+                </div>
+                <div class="pf-lbl" style="margin-top:4px;text-align:left;max-width:none;">Open-ended → RAG Tutor</div>
+              </div>
+              <div class="pf-side">
+                <div class="pf-side-head">LangGraph · StateGraph</div>
+                <div class="pf-pipe" style="gap:3px;">
+                  <div class="pf-step pu" style="font-size:0.58rem;">Plan</div>
+                  <div class="pf-arrow" style="font-size:10pt;">→</div>
+                  <div class="pf-step" style="font-size:0.58rem;background:#8b1a1a;">HITL ⏸</div>
+                  <div class="pf-arrow" style="font-size:10pt;">→</div>
+                  <div class="pf-step gr" style="font-size:0.58rem;">Grade</div>
+                </div>
+                <div class="pf-lbl" style="margin-top:4px;text-align:left;max-width:none;">Known steps + HITL → QuizMe</div>
+              </div>
+            </div>
+          </div>
+          <div class="pf-note">GEPA loop (offline): eval SOUL on test set → 3 weakest cases → LLM proposes new SOUL → Pareto gate → human approves → SHA-fingerprinted deploy. Self-improvement that can't auto-update without oversight.</div>
+        </div>
       </div>
       <div class="project-right">
         <div class="project-tags-r">
@@ -827,6 +1050,40 @@ footer {
           <li><strong>Human-in-the-loop</strong> — consequential actions require explicit approval; every model decision, tool call, and outcome is captured in a plain-English audit trail. <span class="impact">Non-technical owners can verify every filing before submission.</span></li>
           <li><strong>Replaced spreadsheet workflows</strong> — GST, invoicing, and reconciliation moved from manual Excel to plain-English queries. <span class="impact">₹5Cr ($500K+) revenue business fully automated.</span></li>
         </ul>
+
+        <div class="project-flow">
+          <div class="pf-title">Agent Loop — ReAct + MCP Tool Calls + HITL Gate</div>
+          <div class="pf-pipe">
+            <div class="pf-col"><div class="pf-step bl">Owner Query</div><div class="pf-lbl">plain English</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step">Reason</div><div class="pf-lbl">Hermes + SOUL.md</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step am">MCP Tool Call</div><div class="pf-lbl">JSON Schema<br>validated</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step gr">Observe</div><div class="pf-lbl">result into<br>context</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step" style="background:#8b1a1a;">request_approval()</div><div class="pf-lbl">HITL pause before<br>consequential action</div></div>
+          </div>
+          <div class="pf-lbl" style="margin:4px 0 8px; text-align:left; max-width:none; color:#aaa;">↩ loop back to Reason until answer complete</div>
+          <div class="pf-sub">
+            <div class="pf-sub-title">Fuzzy Invoice Matching — 4-Signal Score</div>
+            <div class="pf-pipe" style="gap:5px; flex-wrap:wrap;">
+              <div class="pf-col"><div class="pf-step bl" style="font-size:0.58rem;">GSTIN match</div><div class="pf-lbl">weight 0.40</div></div>
+              <span style="align-self:center;color:var(--muted);font-size:0.8rem;">+</span>
+              <div class="pf-col"><div class="pf-step gr" style="font-size:0.58rem;">Name token ratio</div><div class="pf-lbl">weight 0.35</div></div>
+              <span style="align-self:center;color:var(--muted);font-size:0.8rem;">+</span>
+              <div class="pf-col"><div class="pf-step am" style="font-size:0.58rem;">Amount ±5%</div><div class="pf-lbl">weight 0.15</div></div>
+              <span style="align-self:center;color:var(--muted);font-size:0.8rem;">+</span>
+              <div class="pf-col"><div class="pf-step sl" style="font-size:0.58rem;">Date ±7d</div><div class="pf-lbl">weight 0.10</div></div>
+            </div>
+            <div class="pf-score">
+              <div class="pf-score-seg" style="background:#1d6b49;flex:3;">≥ 0.70 → Auto Match (~80%)</div>
+              <div class="pf-score-seg" style="background:var(--accent);flex:2;">0.50–0.69 → Model Judgment</div>
+              <div class="pf-score-seg" style="background:#8b1a1a;flex:2;">&lt; 0.50 → No Match</div>
+            </div>
+          </div>
+          <div class="pf-note">Python Decimal for all tax arithmetic — exact base-10, matches GSTN portal to the paisa. Approved verdicts stored in SQLite and reused month-to-month.</div>
+        </div>
       </div>
       <div class="project-right">
         <div class="project-tags-r">
@@ -854,6 +1111,28 @@ footer {
           <li><strong>Model-agnostic</strong> — switches between Ollama open-weight models (Qwen, Llama) and hosted cloud endpoints by changing one config line. <span class="impact">Zero code changes to swap model providers.</span></li>
           <li><strong>SOUL + config architecture</strong> — agent identity and capabilities declared in <code style="font-family:var(--mono);font-size:0.82em;background:#f0ebe0;padding:1px 5px;border-radius:2px">SOUL.md</code> + <code style="font-family:var(--mono);font-size:0.82em;background:#f0ebe0;padding:1px 5px;border-radius:2px">config.yaml</code>; no agent plumbing written from scratch. Fully Dockerised.</li>
         </ul>
+
+        <div class="project-flow">
+          <div class="pf-title">Two-Agent Pipeline — Choreography, Independent SOULs</div>
+          <div class="pf-pipe">
+            <div class="pf-col"><div class="pf-step lt">Query</div><div class="pf-lbl">HS code · origin<br>destination</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col">
+              <div class="pf-step bl">Researcher Agent</div>
+              <div class="pf-lbl">Hermes + SOUL.md A<br>search_regulations<br>fetch_tariff_db<br>fetch_document</div>
+            </div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step am">Findings</div><div class="pf-lbl">duties · FTAs<br>restrictions · docs</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col">
+              <div class="pf-step pu">Writer Agent</div>
+              <div class="pf-lbl">Hermes + SOUL.md B<br><strong style="color:#fff;">zero tools</strong> by config<br>synthesis only</div>
+            </div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step gr">Report</div><div class="pf-lbl">citeable<br>source-attributed</div></div>
+          </div>
+          <div class="pf-note">max_iterations=10 circuit breaker on Researcher. Choreography: Writer coupled only to the findings artifact — either agent upgrades independently. Config swap = model or SOUL change with zero code changes.</div>
+        </div>
       </div>
       <div class="project-right">
         <div class="project-tags-r">
@@ -881,6 +1160,24 @@ footer {
           <li><strong>Open-Source Community</strong> — led 10+ contributors through structured releases. <span class="impact">500+ monthly active users on kalaamlang.in.</span></li>
           <li><strong>TEDx Bangalore</strong> — invited to speak on "Why we should be able to code in our own languages." <span class="impact">Recognised as a meaningful intervention in CS access for non-English speakers.</span></li>
         </ul>
+
+        <div class="project-flow">
+          <div class="pf-title">5-Phase Interpreter Pipeline — Pure JS · Zero Dependencies</div>
+          <div class="pf-pipe">
+            <div class="pf-col"><div class="pf-step lt">Source</div><div class="pf-lbl">हिंदी / मराठी<br>বাংলা / తెలుగు...</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step sl">① Cleaning</div><div class="pf-lbl">keyword map<br>→ normalized tokens</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step">② Scanning</div><div class="pf-lbl">char-level scan<br>→ cleaned_sourcedata[]</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step am">③ Tokenization</div><div class="pf-lbl">20 Push* functions<br>→ typed tokens[]</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step gr">④ Interpretation</div><div class="pf-lbl">walk tokens[]<br>→ memory{} + ExecutionStack[]</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step bl">⑤ Output</div><div class="pf-lbl">kalaam{}: output<br>trace · timing</div></div>
+          </div>
+          <div class="pf-note">Learning Mode: ExecutionStack[] replays every step in the student's language — the trace is the product. New language = 1 keyword map entry, zero parser changes. npm package `kalaam` v2.3.3.</div>
+        </div>
       </div>
       <div class="project-right">
         <div class="project-tags-r">
@@ -926,6 +1223,22 @@ footer {
           <li>ESM with named tree-shakeable exports and a unified <code style="font-family:var(--mono);font-size:0.82em;background:#f0ebe0;padding:1px 5px;border-radius:2px">_s</code> namespace. Open-source contribution platform — stub functions invite community PRs.</li>
           <li><span class="impact">19 forks. Published on npm.</span></li>
         </ul>
+
+        <div class="project-flow">
+          <div class="pf-title">9-Module Architecture — 50+ Functions · Zero Runtime Dependencies</div>
+          <div class="pf-mod-grid">
+            <div class="pf-mod" style="background:#dbeafe;color:#1e40af;">textCaseManipulation<div style="font-weight:400;font-size:0.55rem;margin-top:2px;">camelCase · snakeCase · titleCase</div></div>
+            <div class="pf-mod" style="background:#dcfce7;color:#166534;">textCleaning<div style="font-weight:400;font-size:0.55rem;margin-top:2px;">trim · normalizeWhitespace</div></div>
+            <div class="pf-mod" style="background:#fef3c7;color:#92400e;">textFormatting<div style="font-weight:400;font-size:0.55rem;margin-top:2px;">Intl API — date · currency · relative</div></div>
+            <div class="pf-mod" style="background:#fee2e2;color:#991b1b;">textMaskingAndSecurity<div style="font-weight:400;font-size:0.55rem;margin-top:2px;">maskEmail · maskPhone · moderate</div></div>
+            <div class="pf-mod" style="background:#ede9fe;color:#4c1d95;">textMetadataAndExtraction<div style="font-weight:400;font-size:0.55rem;margin-top:2px;">URLs · IPs · emails · hashtags</div></div>
+            <div class="pf-mod" style="background:#e0f2fe;color:#0c4a6e;">textAnalysisAndValidation<div style="font-weight:400;font-size:0.55rem;margin-top:2px;">isPalindrome · matchesPattern</div></div>
+            <div class="pf-mod" style="background:#fce7f3;color:#831843;">textTransformations<div style="font-weight:400;font-size:0.55rem;margin-top:2px;">shorten · wordWrap · shuffle</div></div>
+            <div class="pf-mod" style="background:#f0fdf4;color:#14532d;">textSpecializedOperations<div style="font-weight:400;font-size:0.55rem;margin-top:2px;">levenshteinDistance · isBalanced</div></div>
+            <div class="pf-mod" style="background:#fff7ed;color:#7c2d12;">textGeneration<div style="font-weight:400;font-size:0.55rem;margin-top:2px;">randomString · loremIpsum</div></div>
+          </div>
+          <div class="pf-note">Two import patterns: <code style="font-family:var(--mono);font-size:0.75em;background:#ede8dc;padding:1px 4px;">import { maskEmail } from 'stringy-core'</code> (tree-shakeable) · <code style="font-family:var(--mono);font-size:0.75em;background:#ede8dc;padding:1px 4px;">import { _s }</code> (namespace convenience). Husky + lint-staged pre-commit.</div>
+        </div>
       </div>
       <div class="project-right">
         <div class="project-tags-r">

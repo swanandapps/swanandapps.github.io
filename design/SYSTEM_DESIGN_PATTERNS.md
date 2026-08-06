@@ -18,8 +18,11 @@
 | Your projects as proof points | Part 7 |
 | Full glossary | Part 8 |
 
-**Section map:**
-A. Read Scalability · B. Write Scalability · C. Consistency · D. Real-Time · E. Data Storage · F. Caching · G. Messaging · H. API Design · I. Resilience · J. Security · K. Observability · L. Geographic Distribution · M. Storage Patterns · N. Availability & Reliability · O. Architecture Patterns · P. Infrastructure Fundamentals · Q. Location-Based Patterns
+**Section map (Part 3 — Core Patterns):**
+A. Read Scalability · B. Write Scalability · C. Consistency · D. Real-Time · E. Data Storage · F. Caching · G. Messaging · H. API Design · I. Resilience · J. Security · K. Observability · L. Geographic Distribution · M. Storage Patterns · N. Availability & Reliability · O. Architecture Patterns (incl. Hexagonal, DDD, Strangler Fig, Serverless) · P. Infrastructure Fundamentals · Q. Location-Based Patterns · R. Multi-Tenant Architecture · S. Consistent Hashing · T. Bloom Filters · U. Feature Flags · V. Zero-Downtime Schema Migrations · W. Webhooks · X. Connection Pooling
+
+**Part 4 — Software Engineering Foundations:**
+SOLID Principles · GoF Design Patterns (Creational · Structural · Behavioral)
 
 ---
 
@@ -1422,6 +1425,167 @@ Output: URL hit counts across the entire 1 TB dataset
 
 ---
 
+#### O4. Layered / N-Tier Architecture
+
+**What it is:** Application structured in horizontal layers where each layer communicates only with the layer directly below it.
+
+```
+Presentation Layer   (API handlers, controllers, serializers)
+        │ calls
+Application Layer    (business logic, use cases, orchestration)
+        │ calls
+Data Layer           (repositories, DB adapters, ORM models)
+```
+
+**Rules:** Upper layers depend on lower layers, never the reverse. Each layer is independently replaceable.
+
+**When it works:** Standard CRUD services, small teams, code that needs to be immediately navigable by a new engineer.
+
+**Where it breaks down:** Business logic leaks into the presentation layer (fat controllers). DB row shapes bleed all the way up to the API response. As the system grows, layers become dumping grounds rather than principled boundaries.
+
+**Interview move:** "I'd use layered architecture for a straightforward CRUD service. Once business rules start varying significantly — pricing tiers, complex validation, permission policies — I'd shift toward hexagonal so the domain code doesn't depend on the DB."
+
+---
+
+#### O5. Hexagonal Architecture (Ports & Adapters) / Clean Architecture
+
+**What it is:** Invert the dependencies so the domain (business rules) depends on nothing external. Infrastructure (DB, HTTP, queues) plugs in via adapters defined by the domain.
+
+```
+         ┌───────────────────────────────────┐
+         │             DOMAIN                │
+         │   (entities, business rules)      │
+         │   depends on NOTHING external     │
+         └───────────────────────────────────┘
+              ↑                    ↑
+     Port (interface)     Port (interface)
+              ↑                    ↑
+  Adapter (Postgres)    Adapter (REST controller)
+```
+
+**Ports** — interfaces the domain defines ("I need a SubmissionRepository that can `save` and `find_by_id`"). **Adapters** — concrete implementations (PostgresSubmissionRepository, InMemorySubmissionRepository for tests).
+
+**Why it matters:**
+- Swap Postgres for DynamoDB → write one new adapter, domain untouched.
+- Test business logic with zero infrastructure — stub the port, no DB required.
+- The most important code (domain rules) is testable in complete isolation.
+
+**Your example (Munshi):** Vendor reconciliation rules live in the domain. The GSTR-2A CSV parser and the SQLite adapter are both adapters. The domain only knows the `VendorRepository` interface — not which database backs it.
+
+**Interview move:** "Hexagonal is my default for anything with complex, frequently-changing business rules. The payoff is testability of the domain without a database. The cost is more files and more interfaces — worth it once the domain has more than a handful of core rules."
+
+---
+
+#### O6. Domain-Driven Design (DDD)
+
+**What it is:** A design approach where the model shared between engineers and domain experts drives all architecture decisions. The code vocabulary matches the business vocabulary exactly.
+
+**Core concepts:**
+
+| Concept | What it means |
+|---|---|
+| **Bounded Context** | An explicit boundary where a domain model is defined and consistent. "Account" means different things in Billing vs. Auth — those are separate bounded contexts with their own models. |
+| **Aggregate** | A cluster of domain objects always consistent together. One root entity owns the aggregate; all changes go through the root. `Order` is the root; `OrderItem` lives inside and is never accessed directly. |
+| **Entity** | An object with identity that persists over time (User, Order). Equality is by ID, not by value. |
+| **Value Object** | An object with no identity; equality is by value (Money, Address, Email). Immutable. |
+| **Domain Event** | A record of something that happened. `OrderPlaced`, `ExamClosed`. Always past tense. Drives integration between bounded contexts. |
+| **Repository** | Interface through which aggregates are loaded and saved. Domain doesn't know if backing store is Postgres, Redis, or a file. |
+| **Anti-Corruption Layer (ACL)** | Translation layer between two bounded contexts. Prevents one model's concepts from polluting another's. |
+| **Ubiquitous Language** | Shared vocabulary used in all conversations and in the code itself. Engineers and domain experts talk the same way. |
+
+**Context Map — how bounded contexts integrate:**
+
+| Integration style | Description |
+|---|---|
+| **Published Language** | Open standard format (JSON API, Protobuf). Any context can consume. |
+| **Customer/Supplier** | Supplier team produces; customer team consumes and drives requirements. |
+| **Conformist** | Downstream conforms to upstream model entirely; no translation. |
+| **ACL** | Downstream translates upstream model via its own translation layer. |
+| **Shared Kernel** | Two teams share a small common model. High coupling; requires coordination. |
+
+**When DDD pays off:** Complex domains with many rules that change frequently. Multiple teams owning different parts of the system. Business vocabulary is large and precise (finance, healthcare, legal, compliance).
+
+**When it's overkill:** Simple CRUD. Internal tooling. Small teams where a domain expert isn't in the room.
+
+**Your example (Trade Compliance):** HS codes, tariff classifications, duty rates, and trade restrictions are a complex domain with precise vocabulary. A `TariffRule` aggregate with `apply_to(shipment)` is a natural DDD model. The Researcher agent and Writer agent map to different bounded contexts within the compliance domain.
+
+**Interview move:** "DDD pays off when the domain is genuinely complex — meaning the business rules are the hard part, not the infrastructure. For a product catalogue: layered architecture is fine. For a billing system with pricing rules, trials, proration, refunds, and tax jurisdiction logic — I'd want bounded contexts and aggregates so the code reflects how the business actually thinks."
+
+---
+
+#### O7. Strangler Fig Pattern
+
+**What it is:** Incrementally replace a monolith by routing new traffic to new services while the old monolith handles the rest. The new system grows around the monolith until the monolith can be switched off — like a strangler fig vine that eventually replaces its host tree.
+
+```
+Phase 1 — Monolith handles everything:
+  Client → Monolith
+
+Phase 2 — Proxy introduced; one feature migrated:
+  Client → Proxy (nginx / API Gateway)
+               ├── /auth/*       → New Auth Service
+               └── /*            → Monolith (everything else)
+
+Phase 3 — More features migrated:
+  Client → Proxy
+               ├── /auth/*       → Auth Service
+               ├── /payments/*   → Payments Service
+               ├── /notify/*     → Notification Service
+               └── /*            → Monolith (shrinking core)
+
+Phase 4 — Monolith retired:
+  Client → API Gateway → New services only
+```
+
+**Key enabler — the proxy:** Without a proxy/API gateway, you'd need a hard cutover. The proxy lets you shift traffic incrementally, feature by feature, without touching the monolith's code.
+
+**How to choose what to migrate first:**
+1. Features with the clearest bounded context (auth, billing, notifications)
+2. Features that need independent scaling (the CPU-intensive code execution in CodeMas)
+3. Features causing the most merge conflicts between teams
+
+**Data migration (the hard part):** The monolith owns the database. Options:
+- **Shared DB (short-term):** New service reads/writes the monolith's DB. Breaks independence but gets you running fast.
+- **DB per service (target):** New service owns its data, syncs via events or CDC. The eventual goal.
+
+**Interview move:** "I'd never greenfield-rewrite a working monolith. Strangler Fig is the only safe approach — incremental, each step is rollback-safe, and you can stop at any point. The proxy layer is the critical first investment. Once it's in place, you can move features one at a time without a big bang."
+
+---
+
+#### O8. Serverless Architecture
+
+**What it is:** Code deployed as stateless functions triggered by events. No server management — the cloud provider handles scaling, patching, and availability. You pay per invocation, not per idle hour.
+
+**Mental model:** Function = handler that runs when triggered, completes, and exits. State lives in external storage (DB, cache, queue).
+
+| Property | Serverless | Traditional server |
+|---|---|---|
+| Startup | Cold start: 50ms–5s | Always warm |
+| Scaling | Automatic (0 → thousands) | Manual or autoscale with warm floor |
+| State | Stateless — stored externally | Can hold in-process state |
+| Cost model | Per invocation + duration | Per hour (idle costs money) |
+| Long-running tasks | Limited (15 min max on Lambda) | Unlimited |
+| Debugging | Harder — distributed, no SSH | Easier — local, consistent |
+
+**Cold start problem:** First invocation after inactivity: download package, initialise runtime, run init code. 2–5 seconds for large runtimes (Java, .NET). Solutions: provisioned concurrency (keep N warm), smaller packages, lightweight runtimes (Node, Python).
+
+**When serverless wins:**
+- Event-driven, bursty workloads (code execution, image resizing, webhook handling)
+- Low-traffic services that would waste money on an always-on server
+- Glue code between AWS services (S3 trigger → process → DynamoDB)
+
+**When serverless loses:**
+- Long-running tasks (DB migrations, video encoding)
+- Needs in-process state or background threads
+- Very high steady-state traffic (per-invocation cost exceeds EC2)
+- Cold-start latency is user-facing
+
+**Your proof point (CodeMas):** Lambda is the code sandbox. Students submit → SQS buffers → Lambda runs student code in isolation per invocation. Perfect fit: bursty, stateless, hard time limit (15s), VPC-isolated per invocation.
+
+**Interview move:** "I'd use serverless for the event-driven edge of a system — processing queue jobs, responding to S3 uploads, webhooks. For anything with sustained high-throughput traffic or long-running work, I'd rather pay for an always-warm container or EC2 instance. The inflection point is roughly when the per-invocation cost exceeds what a reserved instance would cost."
+
+---
+
 ### P. Infrastructure Fundamentals
 
 ---
@@ -1592,6 +1756,525 @@ SELECT * FROM places WHERE geohash LIKE '9q8yy%';  -- fast index range scan
 
 ---
 
+### R. Multi-Tenant Architecture
+
+**What it is:** A single deployment of software serves multiple distinct customers (tenants). Each tenant's data is isolated from others. The architecture decision is *how* that isolation is enforced — and that choice drives cost, compliance posture, and operational complexity.
+
+---
+
+#### R1. The Three Models
+
+| Model | Structure | Isolation level | Cost per tenant | Best for |
+|---|---|---|---|---|
+| **Silo (dedicated)** | Each tenant gets their own DB (and often their own compute) | Strongest — hardware-level | High | Healthcare, finance, government, enterprise |
+| **Pool (shared)** | All tenants share one DB; every table has a `tenant_id` column | Code-level only | Lowest | SaaS startups, SMB market |
+| **Bridge (hybrid)** | Shared compute; DB isolation varies by tier (shared DB for free, per-tenant schema for growth, dedicated cluster for enterprise) | Tiered | Tiered | Mid-market SaaS |
+
+**Silo model:**
+```
+Tenant A  →  dedicated DB-A
+Tenant B  →  dedicated DB-B
+Tenant C  →  dedicated DB-C
+```
+- Noisy neighbour is impossible — Tenant A's heavy query cannot slow Tenant B.
+- Per-tenant backups, migrations, rollbacks.
+- Operational overhead scales linearly with tenant count.
+- Cost floor: you pay for idle resources per tenant even if they're inactive.
+
+**Pool model:**
+```
+Tenant A ┐
+Tenant B ├──→  shared DB  (every table has tenant_id FK)
+Tenant C ┘
+```
+- Cheapest and simplest to start.
+- Risk: one missing `WHERE tenant_id = ?` exposes all tenants' data.
+- One slow tenant can degrade DB performance for everyone.
+- Hard to give enterprise customers a data-residency guarantee.
+
+**Bridge model:**
+```
+Free / SMB tier  →  shared DB, shared compute
+Growth tier      →  per-tenant schema on shared cluster
+Enterprise tier  →  dedicated DB cluster, dedicated compute
+```
+This is how Stripe, Salesforce, and Shopify operate at scale.
+
+---
+
+#### R2. Row-Level Security (RLS) — The Pool Model's Safety Net
+
+The pool model's biggest risk is a missing `WHERE tenant_id =` clause. Postgres Row-Level Security enforces isolation at the database level — a missing WHERE clause returns zero rows instead of all tenants' data.
+
+```sql
+-- Enable RLS on every tenant-scoped table (run once per table):
+ALTER TABLE submissions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY tenant_isolation ON submissions
+  USING (tenant_id = current_setting('app.tenant_id')::uuid);
+
+-- Django middleware sets this at the start of every request:
+--   SET LOCAL app.tenant_id = '<uuid-from-jwt>'
+-- After that, every ORM query is automatically scoped — no WHERE clause needed.
+```
+
+**Middleware wiring:**
+1. JWT arrives with `tenant_id` claim.
+2. Django middleware extracts `tenant_id` and calls `SET LOCAL app.tenant_id = ?`.
+3. All ORM queries on RLS-enabled tables automatically include the tenant filter.
+4. **PgBouncer caveat:** Use transaction mode. `SET LOCAL` is transaction-scoped — it resets when the transaction ends, so the next connection's user cannot inherit it. Session mode would leak the tenant context across connections.
+
+---
+
+#### R3. Tenant Routing
+
+**Subdomain routing (most common):**
+```
+acme.yoursaas.com      →  tenant_id = 'acme'
+beta-corp.yoursaas.com →  tenant_id = 'beta-corp'
+```
+nginx or API Gateway extracts the subdomain, resolves to `tenant_id`, injects into the request context.
+
+**Custom domain routing:**
+```
+app.acme.com  →  CNAME  →  yoursaas.com  →  tenant resolved from Host header
+```
+The `tenants` table stores `custom_domain → tenant_id`. Wildcard TLS cert or per-tenant cert via Let's Encrypt / cert-manager.
+
+**Path-based routing:**
+```
+yoursaas.com/t/acme/dashboard
+```
+Simpler TLS; less professional for enterprise customers.
+
+---
+
+#### R4. Tenant Isolation Checklist
+
+Every layer needs isolation, not just the DB:
+
+| Layer | Isolation mechanism |
+|---|---|
+| **Database** | RLS + `tenant_id` FK on every table |
+| **Cache (Redis)** | Key prefix: `{tenant_id}:{key}` — never store unscoped keys |
+| **File storage (S3)** | Path prefix: `s3://bucket/{tenant_id}/uploads/` + IAM prefix policy |
+| **Message queue** | SQS FIFO `MessageGroupId = tenant_id`, or dedicated queue per tenant |
+| **Background jobs** | Tag every job with `tenant_id`; worker sets DB context before executing |
+| **Logging** | Structured logs always include `tenant_id` field |
+| **Rate limiting** | Enforce per `tenant_id`, not per IP (a shared office = one IP, many tenants) |
+| **Search index** | Per-tenant index, or `tenant_id` metadata filter before returning results |
+
+---
+
+#### R5. The Noisy Neighbour Problem
+
+One tenant's heavy load degrades performance for others on a shared system.
+
+**Solutions:**
+
+| Problem | Fix |
+|---|---|
+| One tenant floods the queue | SQS FIFO `MessageGroupId = tenant_id` — each tenant's messages stay in their own lane |
+| API spam from one tenant | Per-tenant rate limiting: Redis counter `rate:{tenant_id}:{window}` |
+| One tenant's query hogs DB | Per-session `statement_timeout`; the runaway query is killed, not everyone else's |
+| One tenant starves Lambda concurrency | Reserved concurrency per tenant (expensive tier) |
+| One tenant monopolises worker pool | Fair-queue scheduling: background workers pull from per-tenant queues in round-robin |
+
+---
+
+#### R6. Onboarding and Offboarding
+
+**Onboarding:**
+1. Create record in `tenants` table (name, plan, `tenant_id`).
+2. Provision subdomain (or DNS entry for custom domain).
+3. Pool model: nothing else DB-side — RLS handles it automatically.
+4. Silo model: run schema migration against the new tenant's dedicated DB.
+5. Seed required defaults (roles, permissions, plan limits).
+6. Send welcome email + first admin invite.
+
+**Offboarding / GDPR Article 17 erasure:**
+1. Deactivate tenant (stop accepting logins, mark `deleted_at`).
+2. Export all tenant data (GDPR Article 20: data portability).
+3. `DELETE FROM every_table WHERE tenant_id = ?` (or `DROP SCHEMA tenant_{id}` in silo).
+4. Delete S3 objects under `{tenant_id}/` prefix.
+5. Flush Redis keys matching `{tenant_id}:*`.
+6. Revoke subdomain DNS entry.
+7. Write erasure event to audit log (tamper-evident).
+
+---
+
+#### R7. Interview Move
+
+"Multi-tenancy is a spectrum. I'd start with the pool model — shared DB with `tenant_id` on every table — and enforce isolation at the database with Postgres RLS rather than in application code. That makes a missing WHERE clause return zero rows instead of all tenants' data.
+
+For enterprise customers who need data residency or compliance certifications (SOC 2, HIPAA), I'd provision a dedicated DB cluster (silo). Everyone else stays in the pool. The routing layer doesn't care — it resolves `tenant_id` from the JWT and injects it. That's the bridge model in practice.
+
+The three layers I always check: DB isolation (RLS or dedicated DB), cache key namespacing (tenant_id prefix), and queue isolation (MessageGroupId or separate queue per tenant to prevent noisy neighbours)."
+
+---
+
+### S. Consistent Hashing
+
+**The problem it solves:** You have N cache or DB nodes and need to distribute keys evenly. The naive approach — `node = hash(key) % N` — breaks badly when N changes: adding or removing one node remaps nearly every key, causing a cache miss storm that hits the database.
+
+**Consistent hashing** maps both keys and nodes onto a virtual ring (0 to 2³²). Each node owns the arc from its position clockwise to the next node. When a node changes, only the `1/N` keys in that arc are remapped — everything else stays.
+
+```
+              0
+           /     \
+        270       90
+           \     /
+             180
+
+Nodes placed at hash(node_id):
+  Node A → position  45   (owns arc 315° → 45°)
+  Node B → position 135   (owns arc  45° → 135°)
+  Node C → position 225   (owns arc 135° → 225°)
+  Node D → position 315   (owns arc 225° → 315°)
+
+Key lookup:
+  hash(key1) →  80  → walk clockwise → hits Node B → routed there
+  hash(key2) → 200  → walk clockwise → hits Node C → routed there
+```
+
+**When a node is removed:**
+- Only keys between the previous node and the removed node's position need to remap to the removed node's successor.
+- All other keys: unaffected.
+- Compare: `hash(key) % N` remaps `(N-1)/N` ≈ all keys on any topology change.
+
+**Virtual nodes (vnodes):** Each physical node is placed at multiple positions on the ring (e.g. 150 per node). This:
+- Distributes load more evenly (avoids hot arcs with non-uniform placement).
+- Lets higher-capacity nodes own more positions (weighted distribution).
+- Ensures smooth key migration when nodes join or leave.
+
+**Where it's used:**
+
+| System | How |
+|---|---|
+| **Cassandra** | Partitions data across nodes using a token ring — consistent hashing |
+| **DynamoDB** | Internal ring routes requests by partition key |
+| **Redis Cluster** | 16,384 hash slots distributed across nodes; consistent hashing determines which slot → which node |
+| **CDN** | Route requests to the same edge node for the same URL (cache locality) |
+| **Load balancers** | Sticky sessions: same user always routes to the same backend |
+
+**Interview move:** "Consistent hashing solves the reshuffling problem when nodes are added or removed from a distributed cache or database. The ring guarantees only `1/N` keys migrate on a topology change instead of all of them. Virtual nodes handle uneven physical hardware — a node with 2× the RAM gets 2× the ring positions and 2× the keys."
+
+---
+
+### T. Bloom Filters
+
+**What it is:** A probabilistic data structure for set membership that uses far less memory than a hash set. Answers: "Is X in the set?" with one of two responses:
+- **"Definitely not"** — 100% accurate, zero false negatives.
+- **"Probably yes"** — small, configurable false positive rate; never false negatives.
+
+**How it works:**
+1. Allocate a bit array of size `m` (all zeros).
+2. Choose `k` independent hash functions.
+3. **Add X:** run X through all `k` hash functions → set those bit positions to 1.
+4. **Check X:** run X through all `k` hash functions → if ANY bit is 0, X is definitely not in the set. If ALL bits are 1, X is probably in the set (all bits might have been set by previous insertions of other items).
+
+**Trade-off:** False positive rate is tunable — lower rate → larger bit array. False negatives never occur.
+
+**Sizing rule of thumb:** 10 bits per expected element → ~1% false positive rate. Formula: `m = -(N × ln p) / (ln 2)²` where N = expected items, p = desired false positive rate.
+
+**Where it's used:**
+
+| Use case | Why |
+|---|---|
+| **Cache miss optimisation** | Before querying the DB for a key, check the bloom filter. "Definitely not" → skip the DB entirely. Only query DB when "probably yes". Eliminates DB hits for keys that will never exist. |
+| **URL deduplication in web crawlers** | "Have we crawled this URL?" False positive = skip a URL (acceptable). False negative = crawl twice (unacceptable). Bloom filter eliminates false negatives. Your example: CodeMas web crawler skeleton in Part 6. |
+| **Username availability** | Quick bloom filter check before the DB query — most taken usernames are filtered without hitting the DB. |
+| **Chrome Safe Browsing** | Browser ships with a bloom filter of known-bad URLs. Local check first, no network call unless "probably yes". |
+| **Cassandra / LevelDB** | SSTable bloom filters: "Does this SSTable definitely not contain this row key?" Skips disk reads for keys that won't be found. |
+
+**Cannot delete from a standard bloom filter.** Deletion requires a counting bloom filter (each bit becomes a counter).
+
+**Interview move:** "I use a bloom filter as a fast pre-filter in front of an expensive check — DB lookup, network call, disk read. The guarantee is asymmetric: 'definitely not' is always correct and lets me skip the expensive operation; 'probably yes' still needs the real check. In practice, a well-sized bloom filter eliminates 90–99% of unnecessary expensive calls."
+
+---
+
+### U. Feature Flags
+
+**What it is:** A runtime toggle that enables or disables a code path without a new deployment. Decouples **deploy** (code ships to prod) from **release** (users can see it).
+
+```python
+if feature_flag("new_checkout_flow", user=request.user):
+    return new_checkout(request)
+else:
+    return old_checkout(request)
+```
+
+**Types of flags:**
+
+| Type | Scope | Use case |
+|---|---|---|
+| **Kill switch** | Global on/off | Instantly disable a feature causing incidents — no hotfix deploy |
+| **Gradual rollout** | % of users | Roll to 1% → 10% → 50% → 100%, watching error rates at each step |
+| **User targeting** | Specific users or groups | Beta users, internal employees, specific tenants |
+| **A/B test** | Random 50/50 split | Measure impact before committing to full rollout |
+| **Dark launch** | All users, results discarded | Run new code in prod with real data; hide results from users |
+| **Operational** | Infrastructure switches | Toggle between Postgres and DynamoDB; swap queue implementations |
+
+**Flag evaluation order (most systems):**
+```
+1. Is the flag globally disabled?       → off for everyone
+2. Is this user in the override list?   → use override
+3. Is this user in a targeted cohort?   → enabled (beta users, employees)
+4. Is this user in the rollout %?       → enabled
+5. Default                              → disabled
+```
+
+**Ops pattern — trunk-based development:** Feature flags let all engineers commit to `main`. Features are always deployed; flags control who sees them. No long-lived feature branches, no merge conflicts.
+
+**Release lifecycle:**
+```
+Build behind flag (default: off)
+  → Deploy to prod (zero user impact)
+    → Enable for internal team (test with real production data)
+      → 1% rollout → watch error rate and latency → 10% → 50% → 100%
+        → Remove the flag (most important step — flags are tech debt)
+```
+
+**Flag storage options:**
+
+| Option | Trade-off |
+|---|---|
+| Environment variable | Simple; requires redeploy to change |
+| Database table | No redeploy; cache aggressively (TTL 30s) to avoid DB on every request |
+| Redis | Fast; TTL-based; loses history and targeting rules |
+| Dedicated service (LaunchDarkly, Unleash, Flagsmith) | Real-time evaluation, targeting, analytics — at a cost |
+
+**Flag debt:** Every flag is a branching path. 10 flags = up to 2¹⁰ code paths to reason about. Treat flag removal as a first-class ticket in the sprint after full rollout.
+
+**Interview move:** "Feature flags are how I'd do a zero-risk release. The feature ships to prod on day one, hidden behind a flag. Internal team tests it with real production data. Then I roll to 1% of users, watch error rate and latency for 30 minutes, then 10%, then full. If anything spikes, I flip the flag off — no hotfix deploy, no rollback, instant. The cost is flag debt, which I'd manage by creating a cleanup ticket the moment a flag hits 100%."
+
+---
+
+### V. Zero-Downtime Schema Migrations
+
+**The problem:** You need to change the DB schema while the application is running. During a rolling deploy, old code and new code run simultaneously. Any migration that breaks the currently-running version causes an outage.
+
+**The core rule:** Every migration must be backward-compatible with the code currently running in production.
+
+---
+
+#### The Expand/Contract Pattern
+
+Every breaking schema change is split into three phases, each independently deployable:
+
+```
+Phase 1 — EXPAND
+  Add the new structure (column, table, index).
+  Old code ignores it. New code writes to both old and new.
+  Deploy new code that dual-writes.
+
+Phase 2 — MIGRATE
+  Backfill existing rows in batches (no table lock).
+  Verify data is consistent.
+
+Phase 3 — CONTRACT
+  Old code is gone. Drop the old structure.
+  New code reads only from the new structure.
+```
+
+**Example: Renaming `users.name` → `users.full_name`:**
+
+```sql
+-- ❌ WRONG: breaks old code during deploy window
+ALTER TABLE users RENAME COLUMN name TO full_name;
+
+-- ✅ RIGHT:
+
+-- Phase 1: Add new column; deploy code that writes to BOTH
+ALTER TABLE users ADD COLUMN full_name VARCHAR;
+-- New code: INSERT ... (name=val, full_name=val)
+
+-- Phase 2: Backfill; no lock on modern Postgres (UPDATE in batches of 1000)
+UPDATE users SET full_name = name WHERE full_name IS NULL;
+
+-- Phase 3: Old code is gone; drop the old column
+ALTER TABLE users DROP COLUMN name;
+```
+
+---
+
+**Common migrations and how to make them safe:**
+
+| Operation | Risk | Safe approach |
+|---|---|---|
+| Add column (nullable) | None | Just add it — old code ignores it |
+| Add column (NOT NULL, no default) | Table lock during backfill | Add nullable → backfill in batches → add NOT NULL constraint |
+| Add index | `CREATE INDEX` takes AccessExclusiveLock — blocks all queries | `CREATE INDEX CONCURRENTLY` — builds in background, no lock |
+| Rename column | Old code breaks | Expand/Contract: add new name, dual-write, drop old name |
+| Remove column | Old code breaks if it reads the column | Remove from code first (deploy) → then drop from DB (separate migration) |
+| Add foreign key | Scans and locks both tables | Add as `NOT VALID` → `VALIDATE CONSTRAINT` in background (Postgres 9.4+) |
+| Backfill large table | Full table scan locks rows | Batch with `LIMIT 1000` + sleep; use `pg_repack` for live table rebuilds |
+
+**Lock levels to know (Postgres):**
+
+| Operation | Lock | Impact |
+|---|---|---|
+| `ADD COLUMN` (nullable) | AccessShareLock | Safe — no write blocking |
+| `ADD COLUMN NOT NULL` (no default) | AccessExclusiveLock | Blocks all queries |
+| `CREATE INDEX` | AccessExclusiveLock | Blocks all queries |
+| `CREATE INDEX CONCURRENTLY` | No exclusive lock | Safe; takes longer |
+| `ADD CONSTRAINT ... NOT VALID` | ShareRowExclusiveLock | Brief; safe for FK |
+| `VALIDATE CONSTRAINT` | ShareUpdateExclusiveLock | Background; safe |
+
+**Interview move:** "Every schema change I deploy is backward-compatible with the currently-running code version. I use Expand/Contract: add the new structure, dual-write, backfill, then drop the old structure in a separate migration and separate deploy. The only operations I still schedule for low-traffic windows are backfills on tables with hundreds of millions of rows where even batched updates accumulate meaningful lock time."
+
+---
+
+### W. Webhooks
+
+**What it is:** A reverse API call. Instead of polling an external service for state changes, you register a URL and the service POSTs a JSON payload to you when an event happens.
+
+```
+Traditional polling:                     Webhook:
+
+Your app: "Any new payments?"            Razorpay → POST /webhook/payment
+Razorpay: "No"                           Your app → processes → 200 OK
+Your app: "Any new payments?"
+Razorpay: "No"
+  ...8 minutes pass...
+Your app: "Any new payments?"
+Razorpay: "Yes — here it is"
+```
+
+**The contract:**
+1. Register your URL with the provider.
+2. Provider POSTs a JSON payload to your URL when the event fires.
+3. You return 200 within their timeout (usually 5–30 seconds).
+4. Non-200 or timeout → provider retries with exponential backoff.
+
+---
+
+**Design: consuming webhooks correctly**
+
+**1. Return 200 immediately, process async:**
+```
+Webhook arrives → write raw payload to internal queue → return 200
+Background worker → dequeue → verify signature → deduplicate → process
+```
+Never do real work inside the webhook handler. Slow processing → timeout → retry storm → duplicate work.
+
+**2. Verify the HMAC signature:**
+```python
+import hmac, hashlib
+
+def verify_webhook(request, secret: str) -> bool:
+    expected = hmac.new(
+        secret.encode(),
+        request.body,
+        hashlib.sha256
+    ).hexdigest()
+    received = request.headers.get("X-Signature", "")
+    return hmac.compare_digest(expected, received)
+```
+Always verify before touching anything. Prevents spoofed events.
+
+**3. Idempotent processing (providers will retry):**
+```python
+event_id = payload["id"]
+# Postgres upsert — safe to call multiple times with same event_id
+rows = db.execute(
+    "INSERT INTO processed_events (id) VALUES (?) ON CONFLICT DO NOTHING",
+    event_id
+).rowcount
+if rows == 0:
+    return 200  # already processed, skip silently
+# ... process the event
+```
+
+**4. Fan-out via internal event bus:**
+One incoming webhook can trigger multiple internal handlers. The webhook receiver only writes to a queue; separate consumers handle email, analytics, Slack notification independently.
+
+---
+
+**Design: sending webhooks (you are the provider)**
+
+Use the **Outbox Pattern** to guarantee delivery:
+1. In the same DB transaction as the business operation, write the event to an `outbox` table.
+2. A background poller reads the outbox and delivers to the customer's endpoint.
+3. If the delivery succeeds (200), mark the outbox row as sent.
+4. If it fails, retry with exponential backoff. After N failures, move to DLQ, notify customer.
+
+This guarantees the webhook fires if and only if the business operation committed — no fire-and-forget that can silently drop events.
+
+**Common failure modes:**
+
+| Problem | Solution |
+|---|---|
+| Provider retries after your timeout | Return 200 fast; process async |
+| Duplicate delivery | Upsert on `event_id` |
+| Replay attack | Timestamp in payload; reject if > 5 min old |
+| Provider's IP changes | Verify HMAC signature, not source IP |
+| Customer endpoint is down | Exponential backoff + DLQ + customer notification |
+
+**Interview move:** "When consuming: return 200 immediately and queue the event — never process in the webhook handler. Verify the HMAC signature before touching anything. Upsert on event_id for idempotency. When sending: use the Outbox Pattern so the webhook fires if and only if the DB transaction committed."
+
+---
+
+### X. Connection Pooling
+
+**Why it matters:** Opening a Postgres connection costs ~5ms and spawns one backend OS process consuming 5–10 MB RAM. At 1,000 concurrent requests with no pooling: 1,000 backend processes, 5–10 GB RAM just for connections, all competing for CPU. Postgres's default `max_connections` is 100.
+
+**What a pool does:** Reuse a fixed set of long-lived connections across many short-lived requests. A pool of 25 connections can serve thousands of concurrent requests.
+
+```
+1,000 concurrent requests
+          │
+  Connection Pool (25 connections)
+    conn-01 ─────────────────────── Postgres
+    conn-02 ─────────────────────── Postgres
+    ...
+    conn-25 ─────────────────────── Postgres
+
+Requests queue at the pool. Connections are checked out and returned.
+Postgres sees 25 connections, not 1,000.
+```
+
+**Pool sizing (HikariCP / general recommendation):**
+```
+pool_size = (core_count × 2) + effective_spindle_count
+
+4-core Postgres server with SSD:
+pool_size = (4 × 2) + 1 = 9 per application
+
+Rule of thumb for web apps:
+pool_size ≈ (max_concurrent_requests × avg_query_time_ms) / 1,000
+
+Example: 100 concurrent requests, each holds connection for 50ms:
+pool_size = (100 × 50) / 1,000 = 5 connections needed
+```
+
+**In-process pool vs PgBouncer:**
+
+| | In-process pool | PgBouncer |
+|---|---|---|
+| Where | Inside the application process (SQLAlchemy, HikariCP) | External proxy process |
+| Per-process connections | Yes — 10 app servers × 25 = 250 to Postgres | All app servers share → Postgres sees only N |
+| Best for | Single-process apps or when total connection count is within Postgres limits | Many app processes; microservices; serverless |
+
+**PgBouncer pooling modes:**
+
+| Mode | Connection held for | Multiplexing | Gotchas |
+|---|---|---|---|
+| **Session** | Entire client session | Low | One client = one Postgres connection |
+| **Transaction** | Duration of a transaction | High | Best for web apps; breaks `SET` that persists between transactions |
+| **Statement** | One statement | Highest | Breaks multi-statement transactions |
+
+**Multi-tenant + PgBouncer critical note:** Postgres RLS uses `SET LOCAL app.tenant_id = ?`. `SET LOCAL` is transaction-scoped — it resets when the transaction ends. **Always use PgBouncer in transaction mode with RLS.** Session mode would let the tenant context persist to the next user on the same connection — a serious data-isolation bug.
+
+**Pool exhaustion — the failure mode:**
+Symptom: requests hang waiting for a connection; Postgres CPU is low; the bottleneck is the pool queue.
+Diagnosis: `SELECT count(*) FROM pg_stat_activity` — if near `max_connections`, you're at the Postgres ceiling. If well below and still hanging, the application pool is exhausted.
+Fix: increase pool size (up to Postgres `max_connections`), reduce query duration, add read replicas for reads, or add PgBouncer to multiplex.
+
+**Interview move:** "The first thing I check when a Postgres app slows under load is whether it's hitting the connection limit. Pool exhaustion looks exactly like a database performance problem — high latency, timeouts — but the DB is actually idle. Fix: PgBouncer in transaction mode between the app and Postgres, pool sized to 2× CPU cores. With RLS for multi-tenancy, transaction mode is mandatory — session mode leaks tenant context across connections."
+
+---
+
 ---
 
 ### SQL vs NoSQL
@@ -1667,6 +2350,307 @@ SELECT * FROM places WHERE geohash LIKE '9q8yy%';  -- fast index range scan
 | Mobile clients needing flexible queries | GraphQL |
 | Streaming RPC (server push) | gRPC server streaming |
 | Simple CRUD | REST |
+
+---
+
+## Part 4: Software Engineering Foundations
+
+> **When this comes up:** Senior engineering interviews frequently ask "Walk me through SOLID principles" or "What design patterns have you used?" These questions test whether you've written production code that evolved over time — not just code that worked once. Anchor every principle to a concrete example.
+
+---
+
+### SOLID Principles
+
+Five principles for writing code that's easy to extend, test, and reason about.
+
+---
+
+#### S — Single Responsibility Principle
+
+**One class, one reason to change.**
+
+A class that authenticates users, sends emails, and writes audit logs has three reasons to change. When the email provider changes, you shouldn't touch the authentication code. Split them: one class authenticates, one sends emails, one writes audit logs.
+
+**Smell:** A class name with "And" in it — `AuthAndEmailHandler`. A class with 500+ lines because every new feature appended a method.
+
+**Your example (Kalaam interpreter):** The 5-phase pipeline — clean, scan, tokenize, interpret, output — is each a separate function. The cleaner doesn't tokenize. The tokenizer doesn't interpret. A change to tokenization doesn't touch interpretation.
+
+---
+
+#### O — Open/Closed Principle
+
+**Open for extension, closed for modification.**
+
+Add new behaviour by adding new code, not by editing existing, tested code.
+
+**Classic mechanism:** Define an abstraction (interface, base class). New behaviour = new implementation of the abstraction. The caller depends on the abstraction and never changes.
+
+**Your example (Trade Compliance agents):** The Researcher agent and Writer agent share the same tool-calling interface. Adding a Validator agent means writing a new class — the orchestrator that calls them doesn't change. The system is open for new agents, closed for modification of the orchestrator.
+
+**Smell:** Every time you add a new type, you open a `switch` or `if/elif` chain and add a case. That chain is never closed.
+
+---
+
+#### L — Liskov Substitution Principle
+
+**Subtypes must be substitutable for their base types without breaking the program.**
+
+If `S` extends `T`, anywhere a `T` is used, you can substitute an `S` and the program still behaves correctly. A subclass can't promise less than its parent.
+
+**Classic violation:**
+```python
+class Rectangle:
+    def set_width(self, w): self.width = w
+    def set_height(self, h): self.height = h
+
+class Square(Rectangle):          # LSP violation
+    def set_width(self, w):
+        self.width = self.height = w   # breaks Rectangle's independent-axis contract
+```
+
+Code that calls `set_width` and `set_height` independently breaks when given a `Square`.
+
+**Interview move:** "LSP is why I'm skeptical of inheritance for code reuse. I use it for true substitutability — a `PostgresRepository` and an `InMemoryRepository` are both valid `Repository` implementations. But I won't extend a class just to reuse methods if the subtype doesn't honour the parent's full contract."
+
+---
+
+#### I — Interface Segregation Principle
+
+**Clients should not be forced to depend on interfaces they don't use.**
+
+One fat interface with 10 methods → split into 3 focused interfaces. Each caller imports only the interface with the methods it actually needs. Fewer dependencies, easier to mock in tests.
+
+**Your example (stringy-core):** Each of the 9 modules is a focused group. The caller who needs `maskEmail` imports only the masking module. Named ESM exports let the bundler tree-shake to exactly the functions used — no interface pollution.
+
+---
+
+#### D — Dependency Inversion Principle
+
+**High-level modules should not depend on low-level modules. Both should depend on abstractions.**
+
+Business logic should not import `PostgresSubmissionRepository` directly. It imports a `SubmissionRepository` interface. The wiring (which concrete class to inject) happens at startup.
+
+```python
+# High-level (domain) — depends on abstraction:
+class SubmissionService:
+    def __init__(self, repo: SubmissionRepository):
+        self.repo = repo
+
+# Low-level (infrastructure) — implements abstraction:
+class PostgresSubmissionRepository(SubmissionRepository): ...
+class InMemorySubmissionRepository(SubmissionRepository): ...  # for tests
+
+# Startup / DI container:
+service = SubmissionService(repo=PostgresSubmissionRepository(db))
+```
+
+**Why it matters:** Swap the DB implementation for a test double without touching the service. This is the mechanism that makes hexagonal architecture work.
+
+---
+
+### GoF Software Design Patterns
+
+The 23 Gang of Four patterns grouped by intent — with concrete examples from your projects.
+
+---
+
+#### Creational Patterns — How objects are created
+
+**Factory Method** — Define an interface for creating an object; let subclasses or a factory function decide which class to instantiate.
+
+```python
+def create_agent(task_type: str) -> Agent:
+    if task_type == "open_ended":
+        return HermesAgent(soul=SOUL_MD)      # ReAct loop, decides its own path
+    elif task_type == "structured":
+        return LangGraphWorkflow(graph=QUIZ_GRAPH)  # known steps, resumable
+```
+
+**Your example (01.dev two-engine design):** Open-ended tutoring → Hermes. Structured quiz → LangGraph. The caller asks for an agent by task type and doesn't know which engine it gets. Adding a new engine = add a new branch, no caller changes.
+
+---
+
+**Builder** — Construct a complex object step by step; separate construction from representation.
+
+Used when an object requires many optional parameters. Avoids telescoping constructors.
+
+```python
+agent = AgentBuilder() \
+    .with_soul("SOUL.md") \
+    .with_memory(HindSightMemory(student_id)) \
+    .with_tools([search_course_content, generate_notes]) \
+    .with_model("qwen2.5:3b") \
+    .build()
+```
+
+**Singleton** — Ensure a class has only one instance and provide a global access point.
+
+Appropriate for: DB connection pool, application config, logger. Often overused as a global variable in disguise.
+
+**Prototype** — Create new objects by cloning an existing one. Useful when object creation is expensive and new objects differ only slightly from a base.
+
+---
+
+#### Structural Patterns — How objects are composed
+
+**Decorator** — Add behaviour to an object dynamically without changing its class.
+
+```python
+class LoggedRepository(SubmissionRepository):
+    def __init__(self, inner: SubmissionRepository):
+        self.inner = inner
+
+    def save(self, submission):
+        log.info(f"Saving {submission.id}")
+        result = self.inner.save(submission)
+        log.info(f"Saved {submission.id}")
+        return result
+
+# Wrap any repo:
+repo = LoggedRepository(PostgresSubmissionRepository(db))
+```
+
+**Your example (Django middleware):** Each middleware wraps the next — authentication wraps the view, rate limiting wraps authentication. Request flows through the chain. Each middleware adds behaviour without modifying the others.
+
+---
+
+**Adapter** — Make an incompatible interface work with another. Translates one interface into the one the client expects.
+
+```python
+class MarathiKeywordAdapter(LanguageAdapter):
+    def normalize(self, keyword: str) -> str:
+        return MARATHI_TO_TOKEN[keyword]
+
+class HindiKeywordAdapter(LanguageAdapter):
+    def normalize(self, keyword: str) -> str:
+        return HINDI_TO_TOKEN[keyword]
+```
+
+**Your example (Kalaam keyword substitution):** The interpreter works on normalized tokens. Each language is an adapter that converts native keywords into tokens the interpreter understands. Adding a new language = write one new adapter, no interpreter changes.
+
+---
+
+**Facade** — Provide a simplified interface to a complex subsystem.
+
+```javascript
+// stringy-core — the _s namespace is a Facade:
+import { _s } from 'stringy-core'
+_s.maskEmail('user@example.com')  // hides Intl API, regex, character manipulation
+_s.formatCurrency(1500, 'INR')    // hides locale, Intl.NumberFormat complexity
+```
+
+**Your example (stringy-core `_s` namespace):** 50+ functions across 9 modules. The `_s` facade gives one simple import. Internally each function uses Intl API, regex, string operations — the caller sees none of it.
+
+---
+
+**Proxy** — Control access to an object. Types: Virtual proxy (lazy init), Protection proxy (auth check), Remote proxy (network call looks local).
+
+**Your example (01.dev grounding gate):** Before the LLM is called, the proxy checks cosine similarity ≥ 0.45. Below threshold: the model is never called, a decline is returned. The chat handler doesn't implement this check — the proxy does. The model is the real subject; the grounding gate is the protection proxy.
+
+**Composite** — Compose objects into tree structures and treat individual objects and compositions uniformly. Classic example: a file system where `File` and `Directory` both implement the same `FileSystemNode` interface.
+
+---
+
+#### Behavioral Patterns — How objects communicate
+
+**Observer** — When one object changes state, all registered dependents are notified automatically.
+
+```
+Exam.is_active transitions True → False
+  │ (Django pre_save signal)
+  ├── PlagiarismOrchestrator.on_exam_close()  → Phase 1: behavioural scoring
+  └── AuditLogger.on_exam_close()             → write audit event
+```
+
+**Your example (CodeMas plagiarism trigger):** Django's `pre_save` signal is the Observer pattern. `Exam` is the subject. `PlagiarismOrchestrator` is the observer. When the exam closes, the orchestrator is notified without `Exam` knowing anything about plagiarism.
+
+---
+
+**Strategy** — Define a family of algorithms, encapsulate each, and make them interchangeable.
+
+```python
+class SimilarityStrategy(ABC):
+    def score(self, a: str, b: str) -> float: ...
+
+class TFIDFCosine(SimilarityStrategy):
+    def score(self, a, b): ...     # used in CodeMas plagiarism Phase 2
+
+class FuzzyTokenSetRatio(SimilarityStrategy):
+    def score(self, a, b): ...     # used in Munshi vendor reconciliation
+```
+
+**Your example (Munshi vendor matching):** The reconciliation engine holds a `SimilarityStrategy`. Swap in Levenshtein distance or embedding cosine similarity without touching the engine. The algorithm is the variable; the engine is the constant.
+
+---
+
+**Command** — Encapsulate a request as an object. Enables queuing, logging, and undo.
+
+```json
+{
+  "type": "execute_submission",
+  "submission_id": "uuid",
+  "student_code": "...",
+  "language": "python",
+  "test_cases": [...]
+}
+```
+
+**Your example (CodeMas SQS message):** Each SQS message is a Command. It encapsulates the full request. Lambda receives it, executes it. Idempotent (SQS deduplication ID = submission UUID). Retryable (Lambda retries on failure). Can be queued (SQS FIFO).
+
+---
+
+**Template Method** — Define the skeleton of an algorithm in a base class; let subclasses override specific steps.
+
+```python
+class PlagiarismAnalyzer(ABC):
+    def analyze(self, exam_id):          # template — fixed skeleton
+        submissions = self.load(exam_id)
+        flags = self.score(submissions)  # ← subclasses override this
+        self.save(flags)
+
+    @abstractmethod
+    def score(self, submissions): ...
+
+class BehavioralAnalyzer(PlagiarismAnalyzer):
+    def score(self, submissions): ...    # Phase 1: paste ratio, speed, tabs
+
+class SimilarityAnalyzer(PlagiarismAnalyzer):
+    def score(self, submissions): ...    # Phase 2: TF-IDF + cosine
+```
+
+**Your example (CodeMas two-phase plagiarism):** The orchestration skeleton (load → score → save) is fixed. Phase 1 and Phase 2 override only the scoring step.
+
+---
+
+**State** — Allow an object to change its behaviour when its internal state changes. The object appears to change its class.
+
+**Your example (01.dev QuizMe LangGraph):** The workflow StateGraph transitions between states: `plan_objectives` → interrupt → `generate_quiz` → interrupt → `summarize`. The system behaves completely differently in each state — waiting for human input, generating content, summarizing results — driven by which state node is active.
+
+---
+
+**Iterator** — Provide a way to access elements of a collection sequentially without exposing the underlying representation.
+
+**Your example (Kalaam token walk):** The interpreter iterates through `tokens[]` without knowing how they were produced. The tokenizer and interpreter are decoupled through sequential access. The interpreter doesn't know if tokens came from a character scan, a cache, or a file.
+
+---
+
+#### Pattern Selection Quick Reference
+
+| Problem | Pattern |
+|---|---|
+| Need exactly one global instance | Singleton |
+| Complex object with many optional parts | Builder |
+| Object creation varies by type at runtime | Factory Method |
+| Add behaviour to an object without subclassing | Decorator |
+| Make two incompatible interfaces work together | Adapter |
+| Simplify a complex subsystem for callers | Facade |
+| Notify multiple objects of a state change | Observer |
+| Swap algorithms at runtime without caller changes | Strategy |
+| Encapsulate a request as an object for queuing/retry | Command |
+| Fixed algorithm structure, variable steps | Template Method |
+| Control or mediate access to another object | Proxy |
+| Object behaviour changes based on internal state | State |
+| Treat individual objects and groups uniformly | Composite |
 
 ---
 

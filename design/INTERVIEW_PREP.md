@@ -1,835 +1,886 @@
-# Swanand Kadam — Interview Prep System
+# Interview Prep Master Guide — Swanand Kadam
 
-**How to use this file:**
-Upload or paste this entire document into any AI (Claude, ChatGPT, Gemini). Then say: "Start the interview session." The AI will act as a senior interviewer, drill Swanand on his own projects, and bridge into broader system design questions.
-
-**What this covers:**
-1. All projects — architecture, trade-offs, AI features
-2. Targeted question banks per project
-3. System design bridges — from his actual decisions to canonical SD patterns (design YouTube, design Twitter, design a booking system)
+> Printable study guide covering all 6 projects across every dimension you'll be asked about.
+> Read this before any system design or technical interview.
 
 ---
 
-## PART 1 — WHO IS SWANAND
+## 1. Tech Stacks at a Glance
 
-Senior Full-Stack and AI Engineer, 6+ years. Specialises in high-concurrency platforms, LLM-powered features, RAG pipelines, and local-first agent systems. Built things from zero to production in small teams — first engineer under a CTO, co-founder, open-source creator.
-
-**Core positioning:** Systems that scale. AI that ships. Code that matters.
-
-**Tech surface:** Python, Django, FastAPI, React 18 + TypeScript, PostgreSQL, pgvector, AWS Lambda, SQS, SSE, LangGraph, Hermes runtime, MCP, Ollama, Docker, Redis (prior), Celery (prior), Vue, Node.js, npm packaging.
-
----
-
-## PART 2 — PROJECT CONTEXT (embedded, self-contained)
-
-### PROJECT 1: CodeMas — Real-Time Coding Assessment Platform
-
-**Company:** Masai School. **Role:** First engineer under CTO. **Scale:** 10,000 concurrent students.
-
-**Business impact:** Each cohort = 400 students × ₹3L = $2M+ in revenue unlocked per cohort. Plagiarism detection: 5% → 95% (19× lift). AI features reduced exam creation effort by 80%.
+| Project | Frontend | Backend | AI / Agent | Data | Infra |
+|---|---|---|---|---|---|
+| **CodeMas** | Vue 3 + Vite | Django 4.2 + DRF + Simple JWT | — | Postgres + MongoDB + SQS FIFO | Lambda, Nginx, Gunicorn, Docker |
+| **the01.dev** | React 19 + TS + Vite + Tailwind | FastAPI 0.115 + Pydantic 2.10 | Hermes v0.18.2 + LangGraph 1.2.9 + RAGAS 0.2.14 + GEPA | Firestore (prod), in-mem (dev) | Ollama/vLLM, FastMCP, uvicorn |
+| **Munshi** | — (agent CLI/API) | FastAPI + Hermes runtime | Hermes + SOUL.md + GEPA eval harness | SQLite (local, Decimal columns) | Docker Compose, Ollama (local-only) |
+| **Kalaam** | Vue 2 + Quasar (PWA) | npm package (pure JS, zero deps) | — | In-browser memory{} flat object | Netlify static, service worker cache |
+| **stringy-core** | — (library) | npm package (ESM) | — | — | npm publish, Husky + lint-staged |
+| **Trade Compliance** | — (agent CLI) | Hermes runtime × 2 | Researcher SOUL + Writer SOUL | In-memory / file | Docker Compose, Ollama |
 
 ---
 
-**Submission pipeline (current architecture):**
-```
-Student → POST /submit → Django API
-  → SELECT FOR UPDATE (attempt gate)
-  → INSERT Submission (Postgres)
-  → Enqueue to SQS FIFO
-  → 201 response immediately
-
-Browser opens SSE stream (/results/{id})
-
-SQS → Lambda invocation (one per submission)
-  → Lambda executes student code (isolated, 15s timeout)
-  → Writes result to Postgres
-
-SSE endpoint polls Postgres every 500ms
-  → Status change detected → push to browser → stream closes
-```
-
-**Architecture migration:** Originally Redis LPUSH → Celery BRPOP → Docker container on a persistent host. Migrated to SQS FIFO → Lambda. Trade-offs:
-- Lost: Redis pub/sub for real-time result push (replaced by Postgres polling, 500ms acceptable)
-- Gained: true per-invocation isolation (no shared host), zero worker management, elastic scale at deadline bursts
-- Docker on a persistent host required managing worker processes, restarts, and container lifecycle. Lambda is fully ephemeral — each submission gets a clean slate with a hard 15-second timeout.
-
-**Key decisions and why:**
-- **SQS FIFO over Redis list:** Decouples execution from API. During deadline (400 students submit in 30s), SQS absorbs the burst. Each exam gets its own queue for isolation. At-least-once delivery with deduplication ID prevents double execution.
-- **Lambda as sandbox:** Per-invocation isolation — no shared memory, no shared filesystem, hard timeout enforced by AWS. No need to run Docker on a persistent host or manage container cleanup.
-- **SSE over WebSockets:** Code execution is unidirectional (server pushes once). SSE: native browser reconnection via EventSource, works through HTTP/1.1 proxies without upgrade negotiation, Lambda-compatible. WebSockets need persistent connection management — wrong tool here.
-- **SELECT FOR UPDATE:** Before accepting a submission, locks the attempt row. Prevents two simultaneous submissions (two browser tabs at exam deadline) from both incrementing the attempt counter past the limit. Without this, a race condition allows unlimited attempts.
-- **201 immediate response:** API returns 201 as soon as the submission is queued. Never waits for execution. Keeps API latency flat at <100ms regardless of code complexity.
-
----
-
-**5 AI-powered features (not agents — single-shot LLM calls, event-triggered):**
-
-All are async, triggered by events, completely off the submission critical path. GPT enrichment appears after the student already has their execution result. Zero latency added.
-
-| Feature | Trigger | What it does |
-|---|---|---|
-| Rubric Scoring | Every failed submission | GPT grades on correctness, code quality, approach, edge cases (0–2 each) with justifications |
-| Socratic Hint | Failed submission | GPT generates a pedagogical nudge — points at the concept, never reveals the answer |
-| Exam Generator | Trainer request | GPT drafts full exam (questions + test cases) from topic + difficulty; human reviews before persistence |
-| Trainer Narrative | Cohort summary request | GPT generates per-student and cohort-level performance summaries |
-| Plagiarism Engine | Exam close (pre_save signal) | Two-phase: behavioral + TF-IDF (not LLM-based) |
-
-All 5 share a single GPT-4o-mini endpoint, are idempotent, write to Postgres only.
-
----
-
-**Plagiarism system — the reframing:**
-
-Original question: "Are two submissions similar?" → O(N²) comparisons at 2K submissions = 4M pairs.
-Reframed question: "Did this student write this?" → behavioral evidence first, similarity second.
-
-**Phase 1 — Behavioural (O(N), synchronous at exam close):**
-Scores every submission independently:
-- Paste ratio: `paste_chars / total_chars` (weight 0.40)
-- Speed vs difficulty baseline: `time_taken / expected_time_for_difficulty` (weight 0.30)
-- Tab switches: normalised count (weight 0.15)
-- Attempt surprise: how late the passing attempt arrived (weight 0.15)
-Risk > 0.2 → BehaviouralFlag written to DB.
-
-**Phase 2 — Similarity (O(K×N), queued after Phase 1):**
-Only HIGH-confidence suspects (K) are compared against the full cohort (N). TF-IDF cosine similarity. Pairs above 0.80 similarity → flagged.
-
-Why TF-IDF over CodeBERT/MOSS/AST: no GPU required, language-agnostic (works across Python/JS/Java/C++), interpretable output for trainers, accurate enough at 2K submissions.
-
----
-
-### PROJECT 2: the01.dev — AI-Powered Ed-Tech Platform
-
-**Role:** Co-founder. Led engineering (2-person team). **Stack:** React 18 + TypeScript + Vite, FastAPI (Python), pgvector (HNSW), LangGraph, GPT-4.1-mini, text-embedding-3-small, Razorpay, Firebase.
-
----
-
-**RAG course assistant pipeline:**
-
-*Indexing (on startup):*
-`seed_transcripts.json` → `chunk_courses()` (180-word windows, 35-word overlap, step=145) → `embed_many()` batch → pgvector HNSW index (PostgreSQL)
-
-*Query:*
-User question → `embed(question)` → HNSW ANN search (top 8 candidates) → `_rank_matches()`: semantic score (weight 1.0) + lexical overlap/Jaccard (stop-word filtered) → `max(semantic, lexical)` per chunk → top 5 → score gate ≥ 0.15
-
-*Answer:*
-Context blocks `[Course | Lecture | MM:SS-MM:SS]\ntext` → GPT-4.1-mini → `_to_source()` → `Source {timestamp, snippet, score}` → React SourceCard deep-links to video player at `?t=seconds`
-
-**Key decisions:**
-- **Hybrid cosine + BM25 (Jaccard):** Pure semantic misses exact keyword matches (function names, error messages). The `max()` combination: either signal can promote a chunk. Recall improves without sacrificing precision.
-- **Score gate ≥ 0.15:** Below threshold → returns canned "not enough context" message. LLM never called on ambiguous retrieval. Saves cost, prevents hallucination. The gate is the cheapest safety mechanism.
-- **pgvector HNSW:** Approximate nearest neighbour — O(log N) vs O(N×D) for exact scan. Scales without full-table scan as transcript corpus grows.
-- **Source timestamps:** Not just "this lecture" — answers include `?t=342` deep-links. Users jump to the exact second in the video.
-
----
-
-**LangGraph multi-agent content pipeline (PDF → Lesson):**
-
-Planner agent → decomposes PDF into lesson structure → Human approval (HITL suspend/resume) → Executor agents run in parallel (one per section) → Supervisor reviews each output → routes failed sections back to worker → assembles final lesson.
-
-~67% reduction in unnecessary LLM calls via on-demand generation (only generate what gets approved).
-
----
-
-**Payments:** Razorpay server-side order creation (secret never leaves FastAPI). Client gets `order_id` + public `key_id`. Prices stored in paise (integer) — no float precision issues. Atomic access provisioning on payment success.
-
----
-
-### PROJECT 3: Munshi — Sovereign GST Agent
-
-**Built for:** Bharatvarsh Arts (₹5Cr/$500K+ revenue business). Replaces Excel-based GST workflows with plain-English queries. **Key constraint:** financial data must never leave the machine.
-
-**Stack:** Hermes runtime (Nous Research), MCP tools (custom), FastAPI, Ollama (local inference), Python Decimal, Docker, SQLite.
-
----
-
-**Architecture (fully local):**
-```
-Owner query → Hermes runtime → MCP tool selection
-  → Fetch GSTR-2B / Read invoices / Compute tax / Write audit log
-  → Fuzzy match engine (GSTIN prefix + name normalisation + amount tolerance ±2%)
-  → Ambiguous cases → model judges (plain-English reasoning)
-  → Decimal computation (exact rupees, never float)
-  → Audit trail entry
-  → Human approval gate → consequential action
-```
-
-Everything runs on the local machine. Ollama runs model inference locally. No data transmitted over any network. Privacy by architecture, not policy.
-
-**Key decisions:**
-- **Local-first:** GST data is sensitive. Cloud APIs create data residency risk. Local inference (Ollama) means the model is also local — no prompt data transmitted.
-- **Fuzzy match first, model second:** Deterministic matching handles the clear cases fast. Model only sees ambiguous ones — keeps cost zero for 80%+ of matches.
-- **Python Decimal for all tax arithmetic:** IEEE 754 float accumulates errors across thousands of invoices. At ₹5Cr revenue scale, that error compounds into wrong ITC claims or incorrect filings. Decimal eliminates this class of bug entirely.
-- **HITL before consequential actions:** Filing, reconciliation verdicts, ITC claims all require explicit owner approval. Model can judge, but cannot act. Audit trail in plain English so a non-technical owner can verify every decision.
-
----
-
-### PROJECT 4: Trade Compliance Researcher — Multi-Agent System
-
-**Stack:** Hermes runtime, MCP tools, Ollama (default), Docker Compose, Python.
-
-**Architecture:**
-Researcher agent → gathers regulatory data iteratively via MCP tools (regulation search, tariff DB, document fetcher) → passes findings to Writer agent → Writer synthesises structured compliance report with citations.
-
-Both agents share conversation memory across turns via Hermes. SOUL.md declares agent identity, tone, constraints. `config.yaml` declares tools and model. One config line to swap Ollama for OpenAI or any OpenAI-compatible endpoint — zero code changes.
-
----
-
-### PROJECT 5: Kalaam — India's First Hindi Programming Language
-
-**Published:** npm package `kalaam` v2.3.3. Frontend: kalaamlang.in. **Users:** 500+ monthly. **Recognition:** TEDx Bangalore, IEEE Nagpur.
-
-**5-phase interpreter pipeline (pure JavaScript, zero runtime deps):**
-
-1. **Cleaning:** `earlyCleaning()` + keyword substitution. Language-specific keywords (Hindi: "यदि", Marathi: "जर") → normalised tokens. ONLY phase that knows about language. Everything after is language-agnostic.
-2. **Scanning:** Character-level scan → `cleaned_sourcedata[]`
-3. **Tokenizing:** `cleaned_sourcedata[]` → typed `tokens[]` via 20 `Push*` functions + TypeChecking pass
-4. **Interpretation:** Walk `tokens[]`, execute against `memory{}`, build `ExecutionStack[]`
-5. **Output:** Return `kalaam{}` object: `{ output, ExecutionStack, isError, TimeTaken }`
-
-**Adding a new language = 1 keyword map entry, zero parser changes.** The cleaning phase handles substitution before parsing. All 5 supported languages (Hindi, Marathi, Bengali, Telugu, Odia) required no parser modification.
-
-**ExecutionStack (Learning Mode):** Every operation appends to `ExecutionStack[]`. UI replays it line-by-line in the student's language — shows what each line does and how the interpreter evaluates it. No teacher required.
-
-**Offline PWA:** Service-worker cached. After first load, runs with zero connectivity on a budget Android phone. This is the physical reach requirement — tier-3 cities have intermittent internet.
-
-Public API: `Compile(sourcecode, languageKeywords)` → `{ output, ExecutionStack, isError, TimeTaken }`
-
----
-
-### PROJECT 6: Bharatvarsh.art — D2C E-Commerce
-
-Indian cultural wall art. Built and led engineering end-to-end. ₹2Cr+ in revenue. Key insight from this: the printer (supplier/infrastructure) made more money than the poster seller — infrastructure businesses are more defensible than application businesses.
-
----
-
-### PROJECT 7: stringy-core — JavaScript String Utility Library
-
-npm package. 50+ pure functions, 9 modules, zero runtime deps, ESM. Two export patterns: named tree-shakeable imports + `_s` namespace. 19 forks. Modules include: textCaseManipulation, textFormatting (all via Intl API), textMaskingAndSecurity, textMetadataAndExtraction (15 regex extractors), textSpecializedOperations (levenshteinDistance via DP matrix).
-
----
-
-## PART 3 — INTERVIEWER INSTRUCTIONS
-
-You are a senior staff engineer interviewing Swanand. You have read all of Part 2 above. You know his systems in detail.
-
-**Rules:**
-- Ask one question at a time. Wait for his answer before the next.
-- If the answer is correct but shallow, say "go deeper" or ask a specific follow-up.
-- If he gives a number (19×, $2M, 500ms), ask "how did you measure that?"
-- If he names a technology, ask "why that one and not X?" where X is the obvious alternative.
-- If he gets stuck, don't give the answer. Ask "what would you look at first?" or "what breaks before you get there?"
-- After 3-4 questions on one topic, pivot: either a what-if extension or a system design bridge.
-- End every session with: "You were sharp on [X]. You need more work on [Y]. Review [Z] before your next interview."
-
-**At the start of every session, ask:**
-> "Which mode?
-> 1. Project drill — pick a project, I go deep on trade-offs and architecture
-> 2. AI systems — tool calling, RAG, observability, evaluation, agent reliability
-> 3. What-if scenarios — I take your existing projects and add new constraints
-> 4. System design bridges — from your projects to canonical SD problems
-> 5. Full mock — I pick everything, you answer cold"
-
----
-
-## PART 4 — QUESTION BANK
-
-### CodeMas Trade-offs
-
-- Walk me through submission pipeline from click to result.
-- Why SQS FIFO over Redis list or a DB-backed queue?
-- What did you give up by choosing Lambda over Docker on a persistent host?
-- Lambda has cold starts. How does that affect a student submitting at an exam deadline?
-- Your SSE polls Postgres every 500ms. At 10K connections that's 20K reads/sec on Postgres. How did you handle that load?
-- Why SSE and not WebSockets?
-- What does SELECT FOR UPDATE prevent exactly, and when does it actually matter in your system?
-- You said 201 immediately. What happens to the submission if the Lambda invocation fails after you've returned 201?
-- Walk me through the plagiarism system — why two phases?
-- Why behavioral signals first and not similarity first?
-- Why TF-IDF over MOSS, CodeBERT, or AST comparison?
-- A student copies from GitHub and renames all variables. Your TF-IDF catches that?
-- What's your false positive rate on plagiarism? How would you know if it's too high?
-- If GPT-4o-mini is down, what happens to students mid-exam?
-- You say rubric scoring is off the critical path. How do you technically guarantee that?
-- How do you know if the rubric scoring is actually accurate? What's your eval loop?
-
-### AI Systems (tool calling, RAG, observability)
-
-- Tool calling fails silently — wrong tool selected, bad arguments, hallucinated parameters. How do you detect that in production?
-- What's your strategy for mitigating tool call failures? Retry logic? Schema validation? Fallback?
-- What observability do you have on your LLM features — what can you see when something goes wrong?
-- How do you prevent prompt injection when user queries go into your RAG context?
-- Your score gate is 0.15. How did you pick that number? How would you know if it's wrong?
-- Walk me through your hybrid retrieval — what does BM25 catch that cosine misses?
-- If your vector index grows 10× — what's the retrieval latency impact with HNSW?
-- How do you evaluate RAG quality? What metrics? RAGAS? Human eval?
-- The LangGraph supervisor routes failed executor output back to workers. How does it decide what "failed" means?
-- How does human-in-the-loop suspend/resume work in LangGraph technically?
-- Munshi: the model judges ambiguous invoice matches. What if the model is wrong and the owner approves? Who's accountable?
-- How does your audit trail map from raw tool call arguments/results to plain English?
+## 2. Claims Made — and How to Defend Each
+
+Every claim below will come up in interviews. Know the defense before you make the claim.
+
+### CodeMas
+
+| Claim | What to say when pushed |
+|---|---|
+| "10,000 concurrent students" | SQS FIFO absorbs submission bursts. Lambda scales horizontally per invocation. SSE connections are lightweight persistent HTTP — Gunicorn handles thousands with gevent workers. Postgres handles reads via PgBouncer connection pooler. |
+| "Plagiarism catches 19× more cases" | Behavioral phase 1 catches low-effort copiers who never submit duplicate code. Similarity phase 2 catches code-share rings. Previous system was exact-match only — caught near-zero behavioral cheating. The 19× is relative improvement over that baseline. |
+| "Secure sandbox" | Lambda in VPC with no outbound internet access. `/tmp` wiped per invocation. 128MB memory limit. 15-second hard timeout enforced by AWS. Student code cannot phone home or access other students' data. |
+| "Real-time results" | Honest version: Django polls Postgres every 500ms and forwards via SSE. True push existed only when Redis pub/sub was the delivery mechanism. After Lambda migration, SSE is "polling theater" — architecturally equivalent to client polling. Own this trade-off when asked. |
+
+### the01.dev
+
+| Claim | What to say when pushed |
+|---|---|
+| "Grounded or silent" | Enforced in code, not model trust. Score gate at 0.45: below threshold, `return DECLINE` fires before the model is ever invoked. Model can only hallucinate within the retrieved material, not from training data at large. |
+| "Sovereign inference" | Generation: 100% local — Ollama in dev (qwen2.5:3b), vLLM on GPU in prod. One remaining external call: retrieval embeddings use OpenAI text-embedding-3-small. Closing it is a one-file swap to nomic-embed-text. |
+| "Self-evolving SOUL via GEPA" | Pipeline runs offline, never during live chat. Human approves before any SOUL write. Pareto gate: candidate avg > baseline avg AND no case scores < 2. Every applied SOUL SHA-fingerprinted in audit log. |
+| "EU-AI-Act compliant audit" | Audit row written BEFORE inference — not after. Fields: student_id, question, model, provider, SOUL hash, timestamp. Cannot be retroactively modified. |
+| "GDPR — right to erasure" | DELETE /api/hermes/memory/{id} removes all stored turns and profile for that student. GET version gives transparency. |
+
+### Munshi
+
+| Claim | What to say when pushed |
+|---|---|
+| "Nothing leaves the machine" | Inference on local Ollama. SQLite on-disk. No cloud API for generation. Fully local by architecture, not policy. |
+| "Never invents a number" | Enforced by tool architecture: convert_currency, compute_gst, lookup_hsn are deterministic Python functions. Model calls tool; tool returns Decimal; model narrates. SOUL.md: "if a capability isn't built yet, say so plainly." |
+| "Prepare, don't commit" | HITL approval required before any consequential action. Model shows computed summary; human approves. Nothing filed, issued, or imported without human in the loop. |
 
 ### Kalaam
 
-- Walk me through all 5 interpreter phases.
-- Why do keyword substitution in Phase 1 and not in the parser?
-- Show me in words what it takes to add a new language.
-- How does ExecutionStack get built during interpretation?
-- 90-95% test coverage — what are you NOT testing and why?
-- What's the hardest bug you fixed in the interpreter?
-
----
-
-## PART 5 — WHAT-IF SCENARIOS
-
-### CodeMas → SaaS
-
-- CodeMas is now a SaaS serving 500 clients. Each client has their own students. How does your DB schema change?
-- How do you handle tenant isolation for code execution? Can one client's Lambda affect another's?
-- Your plagiarism system compares within an exam. In SaaS, do clients share a plagiarism pool or not?
-- How do you price this? Per submission? Per student? What's your cost model per unit?
-- One client runs 10K exams, another runs 10. How does your Lambda concurrency quota management work?
-
-### CodeMas → 100K concurrent users
-
-- What breaks first when you go from 10K to 100K concurrent users?
-- Postgres polling at 500ms per SSE connection breaks at 100K connections. What do you replace it with?
-- SQS + Lambda can handle the burst, but you hit Lambda concurrency limits per AWS account. What's your mitigation?
-- Your SELECT FOR UPDATE becomes a bottleneck at 100K. What's the alternative?
-
-### Munshi → Multi-user SaaS
-
-- You built for one business, fully local. Now 50 accounting firms want it. What changes architecturally?
-- Does local-first still work for a multi-user product? What's the alternative and what do you lose?
-- Your HITL is one owner approving. In a firm with 5 accountants, how does approval routing work?
-
-### RAG → Production Scale
-
-- Your pgvector store works now. At 10K courses with full transcripts, what's your retrieval latency?
-- You index on startup. If 10 new courses are added daily, how does re-indexing work without downtime?
-- Your score gate returns a canned message below 0.15. A user asks a valid question your transcripts don't cover — is a canned message the right UX? What else could you do?
-
-### CodeMas → Real-Time Collaborative Coding
-
-- Students can now pair-program in the exam. Two browsers edit the same code. How do you handle concurrent edits?
-- What protocol do you use — OT, CRDTs, or something else? Why?
-
----
-
-## PART 6 — SYSTEM DESIGN BRIDGES
-
-*Each bridge starts from a real decision in one of Swanand's projects, then extends it to a canonical system design problem. The goal: practice recognising patterns across domains.*
-
----
-
-### Bridge 1: CodeMas SQS+Lambda → Design a Video Processing Pipeline (YouTube)
-
-**Your decision:** Student submits code → SQS queue → Lambda processes → result stored → browser polls.
-
-**The pattern:** Async job processing with durable queue, isolated worker, and status polling.
-
-**Bridge question:**
-> "You built exactly this pattern for code execution. Now design YouTube's video processing pipeline. A user uploads a video — walk me through what happens before it's watchable in multiple resolutions."
-
-*What this covers:* blob storage (S3), job queue (SQS/Kafka), transcoding workers (EC2/Lambda), CDN delivery, progress polling vs webhook, idempotency, dead letter queues, retry with exponential backoff.
-
-**Follow-ups:**
-- Your Lambda has a 15s timeout. A 4K video transcoding takes 20 minutes. What's your architecture now?
-- How do you handle a transcoding worker crash mid-job? What state do you need to persist?
-- One queue or multiple queues for different video qualities?
-
----
-
-### Bridge 2: CodeMas SSE → Design a Real-Time Notification System (Twitter/X)
-
-**Your decision:** You chose SSE over WebSockets for unidirectional, server-pushed results.
-
-**The pattern:** Server-push for live updates. When does each protocol win?
-
-**Bridge question:**
-> "Design Twitter's real-time feed — when you follow someone and they tweet, your feed updates within a second. Walk me through the architecture."
-
-*What this covers:* fan-out on write vs fan-out on read, pub/sub (Redis/Kafka), WebSockets vs SSE vs polling, connection management at scale, celebrity problem (accounts with 50M followers), timeline storage.
-
-**Follow-ups:**
-- SSE at 10M concurrent users. Each connection is held open on your server. What's the cost? What's your alternative?
-- A celebrity tweets. You need to fan-out to 50M followers. How fast? What's your strategy?
-- How does Twitter decide when to fan-out on write vs fan-out on read?
-
----
-
-### Bridge 3: CodeMas Plagiarism O(K×N) → Design a Duplicate Detection System
-
-**Your decision:** Don't compare all pairs O(N²). Score each item independently first to find suspects K, then compare suspects against full set O(K×N).
-
-**The pattern:** Candidate generation before expensive comparison.
-
-**Bridge question:**
-> "Design a system that detects duplicate listings on an e-commerce platform. New listings come in at 10K/day. Existing catalogue has 50M items. How do you find near-duplicates at scale?"
-
-*What this covers:* LSH (Locality Sensitive Hashing), MinHash for Jaccard similarity, candidate generation, blocking/bucketing, approximate vs exact matching, offline batch vs online real-time.
-
-**Follow-ups:**
-- Your TF-IDF at 50M products is O(N) per new listing. That's too slow. What's the alternative?
-- How does Airbnb detect duplicate property listings? What signals do they use beyond text?
-- What's your false positive rate target and how does it change your architecture?
-
----
-
-### Bridge 4: SELECT FOR UPDATE → Design a Ticket Booking System (BookMyShow)
-
-**Your decision:** Lock the attempt row before incrementing to prevent two simultaneous submissions both succeeding.
-
-**The pattern:** Pessimistic locking to prevent race conditions on shared mutable state.
-
-**Bridge question:**
-> "Design BookMyShow's seat booking flow. Two users click 'Book Seat A1' simultaneously. Exactly one should succeed. Walk me through the architecture."
-
-*What this covers:* pessimistic vs optimistic locking, SELECT FOR UPDATE, distributed locks (Redis SETNX), two-phase commit, compensation patterns (SAGA), temporary reservation with TTL, at-most-once vs at-least-once.
-
-**Follow-ups:**
-- SELECT FOR UPDATE works in a single Postgres instance. You've sharded your DB across 5 nodes. How do you prevent double-booking now?
-- You reserve a seat for 10 minutes while the user pays. Payment fails. How do you release the reservation automatically?
-- 1M users trying to book a Coldplay concert simultaneously. SELECT FOR UPDATE creates a thundering herd. What's your mitigation?
-
----
-
-### Bridge 5: RAG Pipeline → Design an Enterprise Search System
-
-**Your decision:** Embed transcripts → pgvector HNSW → hybrid cosine + BM25 retrieval → score gate → LLM answer.
-
-**The pattern:** Multi-stage retrieval: candidate generation → re-ranking → answer synthesis.
-
-**Bridge question:**
-> "Design Notion's AI Q&A — a user asks 'what did we decide about the pricing strategy last quarter?' and gets an answer grounded in their workspace docs. Walk me through the full system."
-
-*What this covers:* chunking strategies, embedding models, vector DBs (pgvector/Pinecone/Weaviate), hybrid retrieval, re-ranking (cross-encoders), context window management, hallucination prevention, freshness/staleness.
-
-**Follow-ups:**
-- A document is updated after it was indexed. How do you handle stale embeddings?
-- Your BM25 is good for exact keyword matches. The user asks in different words than the doc uses. How does your hybrid handle that?
-- Your score gate filters low-confidence retrievals. But for enterprise search, "I don't know" might be worse than a low-confidence answer. How do you adjust?
-- How do you handle a workspace with 10M documents where HNSW index rebuild takes 6 hours?
-
----
-
-### Bridge 6: LangGraph Multi-Agent → Design an AI Coding Assistant (GitHub Copilot Workspace)
-
-**Your decision:** Planner decomposes the task, executor agents run sections in parallel, supervisor routes failures back to workers, HITL for approval.
-
-**The pattern:** Orchestrator-worker with supervision, human checkpoints, and compensation.
-
-**Bridge question:**
-> "Design GitHub Copilot Workspace — a developer says 'add Stripe payments to this codebase.' The AI reads the code, plans the changes, implements them, runs tests, and submits a PR. Walk me through the agent architecture."
-
-*What this covers:* planning vs execution separation, tool use (code read, write, run tests), parallelism, failure recovery, human checkpoints, sandboxing for code execution, agent memory.
-
-**Follow-ups:**
-- The executor writes code that breaks existing tests. How does the supervisor handle that?
-- Your planner produces a bad decomposition that only reveals itself 10 steps in. How do you recover?
-- How do you prevent the agent from deleting production data when it has write access to the repo?
-
----
-
-### Bridge 7: Munshi Local-First → Design a Privacy-Preserving Analytics System
-
-**Your decision:** All computation stays on the local machine. Model inference is local (Ollama). No data over the network.
-
-**The pattern:** Edge computation, federated learning, zero-trust data architecture.
-
-**Bridge question:**
-> "Design Apple's on-device intelligence — Siri can answer questions about your emails and messages, but Apple promises they never see your data. How do you architect that?"
-
-*What this covers:* on-device ML, federated learning, differential privacy, model distillation (large cloud model → small on-device model), secure enclaves, what can and can't be done locally.
-
-**Follow-ups:**
-- Your on-device model is smaller and less capable. How do you decide what stays on-device and what goes to the cloud?
-- A user's on-device model gets out of date. How do you push model updates without exposing their data?
-- Munshi's tax computations are deterministic Python. What happens when you need to compute something the local model can't handle?
-
----
-
-### Bridge 8: Kalaam Interpreter → Design a Code Execution Platform (LeetCode)
-
-**Your decision:** Browser-based interpreter, service-worker cached, runs offline, each language = one keyword map.
-
-**The pattern:** Secure, isolated, multi-language code execution at scale.
-
-**Bridge question:**
-> "Design LeetCode's code execution backend. A user submits Python code, it runs against hidden test cases, and returns pass/fail with runtime and memory in under 5 seconds. 100K submissions/day across 20 languages."
-
-*What this covers:* sandboxing strategies (gVisor, nsjail, Firecracker, WASM, Lambda), resource limits (CPU/memory/time), language runtimes, test case isolation, queue management, result storage.
-
-**Follow-ups:**
-- A student submits `while True: pass`. How do you prevent it from running forever?
-- Your Lambda approach costs $X per execution. At 100K submissions/day, what's your monthly bill and how do you optimise it?
-- How do you prevent one submission from reading another user's test cases from the filesystem?
-- LeetCode needs to support a new language (Rust). What does that change in your architecture?
-
----
-
-### Bridge 9: CodeMas Event-Driven → Design an Order Processing System (Flipkart)
-
-**Your decision:** Submission event → SQS → Lambda (async processing) → status written to DB → polling for result.
-
-**The pattern:** Event-driven processing with eventual consistency and status polling.
-
-**Bridge question:**
-> "Design Flipkart's order processing pipeline. User clicks 'Buy Now' — walk me through what happens across payment, inventory, warehouse, and delivery."
-
-*What this covers:* SAGA pattern, choreography vs orchestration, event sourcing, idempotency, compensation transactions, distributed transactions (two-phase commit vs SAGA), outbox pattern.
-
-**Follow-ups:**
-- Payment succeeds but inventory reservation fails. How do you refund? That's a distributed transaction — how do you handle it without two-phase commit?
-- Your order event is processed twice due to at-least-once delivery. How do you ensure the customer is charged only once?
-- How does the SAGA pattern differ from what you did in CodeMas?
-
----
-
-### Bridge 10: Plagiarism Behavioral Signals → Design a Fraud Detection System
-
-**Your decision:** Use behavioral signals (paste ratio, speed, tab switches) alongside code similarity — not just what was submitted, but how.
-
-**The pattern:** Behavioral anomaly detection. Features from user behaviour, not just content.
-
-**Bridge question:**
-> "Design Razorpay's fraud detection system. A payment is made — you have 200ms to decide if it's fraudulent before approving it."
-
-*What this covers:* feature engineering (device fingerprint, velocity, geolocation delta, transaction history), ML model serving (latency vs accuracy), rule engine + ML ensemble, real-time feature store, false positive cost vs false negative cost.
-
-**Follow-ups:**
-- Your plagiarism system runs post-exam — latency doesn't matter. Fraud detection has 200ms. What changes?
-- You flag a legitimate transaction as fraud. The user can't pay. What's the cost of a false positive vs a false negative?
-- A new fraud pattern emerges your model has never seen. How do you detect it?
-- Swanand's behavioral signals are hand-crafted features. In fraud detection, how do you decide which features to use?
-
----
-
-## PART 7 — FINAL INTERVIEW RULES
-
-After every session, the interviewer must give:
-
-**Sharp on:** [list topics where answers were detailed, precise, and unprompted]
-
-**Needs work on:** [list topics where answers were shallow, hesitant, or incorrect]
-
-**Review before next interview:** [2–3 specific concepts — e.g., "Redis pub/sub internals", "SAGA pattern", "HNSW index mechanics"]
-
----
-
-## PART 8 — COMPLETE SYSTEM DESIGN PATTERNS REFERENCE
-
-Use this section as a refresher before any interview. For each pattern the interviewer should be able to ask: "You used X in your project — now explain how it applies to Y."
-
----
-
-### Scalability
-
-| Pattern | What it solves |
+| Claim | What to say when pushed |
 |---|---|
-| **Horizontal scaling** | Add more machines instead of bigger machines — stateless services scale this way |
-| **Vertical scaling** | Bigger machine — simpler, but has a hard ceiling |
-| **Auto-scaling** | Scale in/out based on metrics (CPU, queue depth) — AWS ASG, Kubernetes HPA |
-| **Load balancing** | Distribute traffic across instances — round robin, least connections, consistent hash, L4 vs L7 |
-| **Database sharding** | Split data across DBs by shard key (user ID, geo) — watch for hot shards |
-| **Read replicas** | Offload reads from primary — replication lag is the trade-off |
-| **CQRS** | Separate read and write models — optimise each independently |
-| **Event sourcing** | Store events not state — replay to rebuild. Audit trail for free. Complexity cost. |
-| **Cell-based architecture** | Partition users into isolated cells — blast radius of one cell's failure is contained. Slack, Amazon use this. |
-| **Geo-distribution / multi-region** | Serve users from nearest region — active-active vs active-passive trade-off |
+| "Fully offline" | Cache-first service worker: after first load, zero network required. Interpreter is pure JS, zero runtime deps, runs in the browser. Verified on airplane mode. |
+| "Adding a language = 1 keyword map entry, no code change" | Only Phase 1 (Cleaning) is language-aware. It substitutes language keywords to normalized English tokens. Parser and interpreter operate on normalized tokens — they see no language-specific syntax. |
 
----
+### stringy-core
 
-### Multi-Tenancy
-
-| Pattern | What it solves |
+| Claim | What to say when pushed |
 |---|---|
-| **Silo model (DB per tenant)** | Strongest isolation, highest cost — right for enterprise with compliance requirements |
-| **Pool model (shared DB, tenant_id column)** | Cheapest — one wrong query leaks cross-tenant data. Mitigate with RLS. |
-| **Bridge model (schema per tenant)** | Shared DB instance, separate schema — middle ground, Postgres handles well |
-| **Row-level security (RLS)** | DB enforces tenant filter at query level — protection even if app layer forgets WHERE clause |
-| **Tenant-aware caching** | Cache keys must include tenant ID: `cache:{tenant_id}:{resource}` — never share across tenants |
-| **Noisy neighbour** | One tenant's heavy load degrades others — per-tenant rate limits, per-tenant queues |
-| **Tenant-aware connection pooling** | Prevent one tenant's slow queries from starving pool for all others |
-| **Tenant isolation for compute** | Standard tier = shared infra, Enterprise = dedicated — tiered pricing model |
-| **Cross-tenant data leakage** | Hardest SaaS bug — integration tests must assert cross-tenant queries return empty |
+| "Zero runtime dependencies" | package.json has no `dependencies` key, only `devDependencies`. `npm install stringy-core` installs nothing extra. Bundle is self-contained. |
+| "Tree-shakeable" | All functions are named exports from individual modules. A bundler doing static analysis on `import { maskEmail }` can drop the other 49 functions at compile time. |
 
 ---
 
-### Caching
+## 3. Toughest Challenge — Per Project
 
-| Pattern | What it solves |
+### CodeMas
+
+**Challenge:** At exam close, all 10,000 students submit within a 30-second burst. Django must check each student's attempt counter atomically — if two tab refreshes race, both pass the limit check and double-insert.
+
+**How solved:** SELECT FOR UPDATE inside a Postgres transaction. Row lock on `submission_attempts` means the second concurrent request blocks until the first commits. It then reads the updated count, sees the limit is reached, and rejects.
+
+**What to say:** "The hard problem wasn't scale — SQS handles that by design. The hard problem was the race condition at the submission gate. SELECT FOR UPDATE is the textbook answer. Alternative: optimistic locking (check version on UPDATE, retry on mismatch) — better for low-contention, but adds retry complexity we didn't need."
+
+---
+
+### the01.dev
+
+**Challenge:** Dev model (qwen2.5:3b) loses multi-turn context when routed through the Hermes ReAct loop. Student asks Q1, gets answer, asks follow-up Q2 — Hermes re-invokes tools and the answer doesn't reference Q1's context.
+
+**How solved:** Dev reliable path bypasses the agent loop and calls the model directly with conversation history injected. Same SOUL, same tools, different invocation path based on model capability. Production model routes through full Hermes.
+
+**What to say:** "This is a production constraint that doesn't appear in demos. Small models and agentic loops don't compose well — context gets fragmented across tool calls. Our mitigation is environment-aware routing. HindSight memory is configured but only activates when traffic routes through the full Hermes agent loop. It's a documented gap, not a hidden one."
+
+---
+
+### Munshi
+
+**Challenge:** GST reconciliation needs to match invoices across GSTR-2A and internal purchase register — different naming conventions, abbreviations, date formats. Exact match fails on 40–50% of real invoices.
+
+**How solved:** Four-signal fuzzy pipeline: (1) GSTIN prefix match, (2) name token set ratio ≥ 85% after normalization, (3) amount within ±2%, (4) date within 7 days. Auto-match when all 4 agree. Escalate to model when 2–3 agree. No-match when <2. Model only touches the ambiguous 20%.
+
+**What to say:** "The key insight: don't put the model on the hot path for every invoice. The four-signal pipeline filters 80% of cases automatically. The model sees only the genuine judgment calls."
+
+---
+
+### Kalaam
+
+**Challenge:** Meaningful error messages for students who don't know English. The interpreter fails on line 3 — the error needs to be in Hindi, not English.
+
+**Current state (honest):** English error messages. ExecutionStack gives the step trace in the student's language, so they can see WHERE it failed. Error text localization is scoped backlog.
+
+**What to say:** "Localized errors need template strings per language — different from keyword substitution which only maps source code terms. It's scoped and feasible, not a rearchitecting problem. Known gap."
+
+---
+
+### stringy-core
+
+**Challenge:** ESM-first package that also needs to run in Jest, which defaults to Node.js CommonJS.
+
+**How solved:** Babel transform in `jest.config.js` (`@babel/preset-env` targeting current Node). Tests run against CJS-transpiled code. npm package ships ESM. Two distinct consumption paths.
+
+**What to say:** "Ship ESM for bundlers and tree-shaking. Use Babel transform only in the test environment, never in package output. The ESM/CJS split is the #1 source of confusion in modern JS libraries — separate the concerns."
+
+---
+
+### Trade Compliance
+
+**Challenge:** Preventing the Researcher agent from tool-looping — calling the same tool repeatedly because results feel incomplete.
+
+**How solved:** Three-layer defense: (1) SOUL.md tells it to stop when enough data is gathered, (2) Hermes hard turn limit (max_iterations in config), (3) MCP schema validation rejects malformed args — error becomes context that nudges a different call.
+
+**What to say:** "Pure SOUL instructions aren't enough — models under pressure drift from them. You need a hard circuit breaker in the runtime. The turn limit is that circuit breaker."
+
+---
+
+## 4. Tool Calling Reliability
+
+Applies to: the01.dev (Hermes MCP), Munshi (same), Trade Compliance (Researcher's 4 tools).
+
+### What fails
+
+| Failure mode | What happens |
 |---|---|
-| **Cache-aside (lazy loading)** | App checks cache, loads DB on miss, writes to cache — most common pattern |
-| **Write-through** | Write to cache and DB simultaneously — never stale, higher write latency |
-| **Write-behind (write-back)** | Write to cache, async flush to DB — fast writes, risk of data loss on crash |
-| **Read-through** | Cache sits in front of DB, handles its own population |
-| **CDN caching** | Static assets served from edge — lower global latency |
-| **Cache eviction policies** | LRU (least recently used), LFU (least frequently used), TTL-based |
-| **Thundering herd / cache stampede** | Many requests hit DB simultaneously on cache miss — fix: mutex lock or probabilistic early expiry |
-| **Cache warming** | Pre-populate cache before traffic hits — avoid cold start latency spike |
-| **Distributed cache** | Redis Cluster — sharded, replicated cache across machines |
+| Malformed arguments | Model passes wrong type or missing required field |
+| Tool timeout | External API doesn't respond within deadline |
+| Unexpected return format | Tool returns `null` or error object instead of typed struct |
+| Infinite tool loop | Model keeps calling because results feel incomplete |
+| Hallucinated tool name | Model invents a tool name that doesn't exist |
 
----
+### Defense at each layer
 
-### Async & Queuing
-
-| Pattern | What it solves |
+| Layer | Mechanism |
 |---|---|
-| **Message queue** | Decouple producer and consumer — absorbs bursts (SQS, RabbitMQ) |
-| **Pub/sub** | One publisher, many subscribers — fan-out (Kafka, Redis pub/sub, SNS) |
-| **Consumer groups (Kafka)** | Multiple consumers share a topic — each partition consumed by one consumer in the group |
-| **Dead letter queue (DLQ)** | Failed messages go here after N retries — investigate separately, don't block main queue |
-| **Outbox pattern** | Write DB row and event in one transaction — guarantees event is published even if service crashes after write |
-| **Competing consumers** | Multiple workers pull from same queue — parallel processing, each message processed once |
-| **Priority queue** | High-priority messages processed before low-priority |
-| **Backpressure** | Fast producer overwhelming slow consumer — signal producer to slow down, or buffer, or drop. Critical in streaming. |
-| **Fan-out** | One event triggers multiple downstream processes — Order placed → notify warehouse, send email, update analytics |
-| **Exactly-once delivery** | Hard to guarantee in distributed systems — use idempotency keys to simulate it |
+| MCP schema validation | Each tool has a typed JSON schema. Wrong args = rejected at the boundary; error becomes conversation context |
+| Retry with backoff | Hermes retries transient failures up to 3× with exponential backoff |
+| SOUL.md constraint | "Never invoke a tool you don't have. If a capability isn't built, say so plainly." |
+| Turn limit (circuit breaker) | Hard cap on max_iterations in Hermes config. Loops cannot run forever |
+| Structured return types | Tools return typed dicts, not prose. Caller code validates shape before passing to model |
+| Deterministic tools for numbers | In Munshi: all financial computation in Python. Tool return value is the ground truth — model narrates, never computes |
+
+### Interview answer
+
+"Tool calling reliability has three failure modes: bad args, bad return, bad loops. MCP schema validation kills bad args at the boundary. Turn limits kill loops. Bad returns are the real risk — design tools to return structured data so your code can validate the shape before passing it to the model. If validation fails, decline gracefully."
 
 ---
 
-### Reliability & Resilience
+## 5. Lambda Cold Start + Warming (CodeMas)
 
-| Pattern | What it solves |
+### The problem
+
+Cold start adds 2–4 seconds after a container is recycled. At exam start, all containers are cold. Student submits → Lambda cold → 4s overhead → 5–7s total perceived latency. Unacceptable.
+
+### Options and trade-offs
+
+| Strategy | Mechanism | Cost | When to use |
+|---|---|---|---|
+| Provisioned Concurrency | Lambda keeps N containers warm at all times | Pay when idle | Predictable load with known peak |
+| Scheduled ping | CloudWatch Event triggers dummy Lambda every 5 min | Negligible | Only keeps 1 warm; burst demand still cold-starts |
+| Pre-exam warm-up trigger | Admin action 5 min before exam warms M containers | Dev effort | Requires exam schedule awareness |
+| Smaller deployment package | Less code = faster init | Discipline | Helps, doesn't eliminate cold starts |
+| ARM Lambda (Graviton) | Faster init + ~20% cheaper | Small migration | Best default for new Lambdas |
+
+### Current approach
+
+Provisioned Concurrency set to estimated peak concurrent Lambda executions.
+
+Peak math: 10,000 students × 30-second burst window ÷ 1.5s average execution = ~500 concurrent Lambdas at peak. Provision 500 containers = guaranteed warm at burst. Between exams: set provisioned concurrency to 0. Pay only during exam windows.
+
+### Interview answer
+
+"Cold starts are a Lambda fact of life. Provisioned Concurrency is the right answer when load is predictable — and an exam platform has a perfectly predictable load schedule. Provision to your peak concurrency estimate, turn it off between exams, pay only when you need it. Alternative: trigger warm-up 5 minutes before exam open via admin action."
+
+---
+
+## 6. Scaling Problems — What Breaks First
+
+### CodeMas — 10× (100K users)
+
+| Bottleneck | Current limit | Breaking point | Fix |
+|---|---|---|---|
+| SSE connection state | Gunicorn gevent workers | ~50K open connections per instance | Dedicated SSE microservice (Node.js) or drop SSE for client polling |
+| Postgres SSE reads | 500ms poll × 100K connections | 200K reads/sec → pool saturation | PgBouncer + read replicas + Redis result cache (TTL 30s post-completion) |
+| SQS FIFO throughput | 3,000 msg/sec per queue | ~30K submissions/burst | Per-exam queues already isolate; or switch to Standard queue + idempotency key |
+| Lambda concurrency | AWS default: 1,000/account | ~33K submissions/min | Request quota increase via AWS console |
+
+### the01.dev — 10K courses
+
+| Bottleneck | Current limit | Breaking point | Fix |
+|---|---|---|---|
+| ANN retrieval latency | In-memory HNSW | ~50K vectors before latency spikes | Partition index by course; lazy-load course index on first access |
+| Re-indexing on new content | Full rebuild | Minutes of downtime per new course | Write-behind: append new chunks live, rebuild index async |
+| LangGraph checkpoints | MemorySaver (in-process) | Process restart wipes in-flight workflows | Postgres or Redis checkpointer |
+| vLLM GPU throughput | Single 40GB GPU | ~50 concurrent inference requests | Multi-GPU tensor parallelism or quantised model (4-bit, 4× throughput) |
+
+### Munshi — 50 accounting firms (multi-tenant)
+
+| Bottleneck | Current limit | Breaking point | Fix |
+|---|---|---|---|
+| Local architecture | Single machine, N=1 | Any N > 1 | Per-firm Postgres schema or row-level security; shared Hermes runtime |
+| HITL flow | CLI approval | >10 approvals/day | Web dashboard with approval queue and webhook notifications |
+| Ollama model serving | Single instance | Concurrent requests from same firm | Request queue or shared vLLM endpoint |
+
+---
+
+## 7. Concurrency Problems
+
+### CodeMas: Submission Race Condition
+
+**Problem:** Two browser tabs submit the same (student, question) pair simultaneously. Both pass the attempt limit check before either writes. Double-insert.
+
+**Solution:**
+```sql
+BEGIN;
+SELECT attempt_count FROM submission_attempts
+  WHERE student_id = $1 AND question_id = $2
+  FOR UPDATE;           -- row lock acquired here
+-- if count >= limit: ROLLBACK; return 429
+UPDATE submission_attempts
+  SET attempt_count = attempt_count + 1
+  WHERE student_id = $1 AND question_id = $2;
+INSERT INTO submissions (...) VALUES (...);
+COMMIT;                 -- lock released here
+```
+
+Second request blocks on `FOR UPDATE` until first commits, reads the incremented count, sees limit reached, rejects.
+
+**Alternative:** Optimistic locking — read version column, UPDATE WHERE version = read_version, retry on 0 rows affected. Better for low-contention, adds retry complexity. SELECT FOR UPDATE is simpler here.
+
+---
+
+### CodeMas: SQS Deduplication
+
+**Problem:** Django times out waiting for SQS ack, retries. SQS receives the message twice. Lambda executes the submission twice.
+
+**Solution:** SQS FIFO with `MessageDeduplicationId = submission_uuid` (generated once before enqueue). Within the 5-minute deduplication window, any message with the same ID is silently dropped. Lambda sees exactly one message.
+
+**Why FIFO over Standard:** Standard is at-least-once but unordered. A student's second attempt must be processed after their first (the first informs the attempt counter). FIFO with `MessageGroupId = exam_id + student_id` enforces ordering per student per exam.
+
+---
+
+### the01.dev: LangGraph Checkpoint Conflict
+
+**Problem:** Student opens QuizMe in two tabs, resumes workflow from both. Two concurrent requests read the same checkpoint, both try to write the next state.
+
+**Solution (current):** MemorySaver is in-process — single-threaded event loop prevents true simultaneous writes in dev. In production with Postgres checkpointer: optimistic locking on checkpoint version. First write wins; second reads new checkpoint, retries.
+
+---
+
+## 8. Hallucination Problems
+
+### the01.dev: Grounding Gate
+
+The model is never called below threshold 0.45. Code enforcement, not model trust.
+
+```python
+results = vector_store.similarity_search_with_score(question, k=4)
+top_score = results[0][1]  # cosine similarity of best chunk
+
+if top_score < THRESHOLD:   # 0.45
+    if not user_consented_general_knowledge:
+        return {"type": "decline", "msg": "No relevant course material found."}
+    else:
+        return general_answer_flagged_as_ungrounded
+
+# Only here if top_score >= 0.45
+context = "\n".join([r[0].page_content for r in results])
+# Inject context into SOUL system prompt → call model
+```
+
+Threshold calibrated on 100-question eval set: 50 in-scope (should answer), 50 out-of-scope (should decline). F1 maximized at 0.45.
+
+**Residual risk:** Model answers within retrieved chunks. If a chunk is wrong, the model amplifies it. Mitigation: RAGAS faithfulness checks whether model claims are supported by the chunks.
+
+**Interview answer:** "Zero hallucination is indefensible for any LLM system. The defensible claim: we don't generate when retrieval is weak. Below 0.45, the model is never invoked. Above 0.45, hallucination risk is constrained to the retrieved material, not the full training set."
+
+---
+
+### Munshi: Deterministic Numbers
+
+**Two layers:**
+
+1. **Tool architecture:** All financial computation in Python (`compute_gst`, `convert_currency`, `lookup_hsn_duty_rate`). Model calls tool; tool returns Decimal; model narrates. Number comes from the tool, not the model.
+
+2. **SOUL.md constraint:** "NEVER invent a number — not a duty rate, tax amount, HS/HSN code, or any rupee/euro figure. If you don't have a tool for the computation, say so."
+
+**Why Python Decimal (not float):**
+```python
+# float — wrong at scale
+1250.75 * 0.18  →  225.13499999999999
+
+# Decimal — exact
+Decimal('1250.75') * Decimal('0.18')  →  Decimal('225.1350')
+```
+At ₹5Cr annual revenue, float errors compound across thousands of invoices to hundreds of rupees. Wrong tax filing.
+
+**Residual risk:** Model could fabricate a tool argument (e.g. wrong HS code to lookup). Mitigation: MCP schema validates arg types; audit log records every tool call; HITL approval before commitment.
+
+---
+
+## 9. Multi-Tenancy
+
+### CodeMas: Per-Exam Isolation (Current)
+
+- **SQS:** `MessageGroupId = exam_id`. Each exam gets its own ordered lane. One exam's burst doesn't delay another.
+- **Postgres:** All queries exam-scoped via `exam_id` FK. No cross-exam data accessible at query level.
+- **Lambda:** Stateless per invocation. No shared state between exams.
+- **SSE:** Per-student stream, keyed to `submission_id`. No cross-student broadcast.
+- **Redis cache:** Keyed `exam_id + metric`, TTL 10s.
+
+**Extending to multi-school SaaS:**
+- Add `school_id` to all tables
+- Postgres Row-Level Security: `CREATE POLICY school_isolation ON submissions USING (school_id = current_setting('app.school_id'))`
+- School JWT claims: `school_id` in token payload, set as Postgres session variable per request
+- Per-school SQS queues or `MessageGroupId = school_id + exam_id`
+- Per-school Lambda concurrency limits to prevent one school starving another
+
+---
+
+### the01.dev: Per-Student Memory
+
+- Each student: Firebase Auth UID as `student_id`
+- HindSight memory keyed by `student_id`: running profile + last N turns
+- Audit log rows keyed by `student_id`
+- GDPR delete: `DELETE /api/hermes/memory/{id}` removes all rows
+
+**Extending to institutions:**
+- Add `institution_id` to student profile
+- Scope HNSW retrieval to institution's course catalogue (separate index per institution, or metadata filter)
+- Per-institution Razorpay sub-merchant accounts
+
+---
+
+## 10. Event-Driven Architecture
+
+### CodeMas: Full Submission Pipeline
+
+```
+Student Browser
+  │  POST /submit  (sync — student needs 201 fast)
+  ▼
+Django (Gunicorn + gevent)
+  │  SELECT FOR UPDATE  (attempt gate, ~2ms)
+  │  INSERT submissions (status='pending')
+  │  SQS.send_message(MessageGroupId=exam_id, DeduplicationId=sub_uuid)
+  │  return 201  ← student gets this in ~10ms; execution is async from here
+  ▼
+SQS FIFO Queue (per-exam lane — absorbs burst, orders per student)
+  │  Lambda event source mapping (auto-scales to queue depth)
+  ▼
+Lambda Sandbox (VPC, no internet, /tmp fresh each invocation, 15s timeout)
+  │  Execute student code, capture stdout/stderr/exit_code
+  │  UPDATE submissions SET result=..., status='completed' WHERE id=...
+  ▼
+Postgres (result written)
+  ▲
+  │  Django SSE handler polls every 500ms
+  │  SELECT result FROM submissions WHERE id=$1
+  │  If result != null: push SSE event, close stream
+  ▼
+Student Browser (receives result via SSE)
+```
+
+**Why SQS decoupling matters:** Django returns 201 in ~10ms. Lambda takes 1–5 seconds. Without the queue, Django blocks a Gunicorn worker for 5 seconds × 10K students = saturated thread pool.
+
+**Honest SSE note:** After Lambda migration, Django polls Postgres every 500ms and forwards via SSE. True push only existed with Redis pub/sub. Client polling every 500ms is architecturally equivalent. If building today: drop SSE for client polling, or invest in WebSocket push.
+
+---
+
+### the01.dev: Streaming Token Response
+
+```
+Student Browser  (POST /api/hermes/chat + EventSource open simultaneously)
+  ▼
+FastAPI
+  │  Write audit row (BEFORE inference — tamper-evident)
+  │  Load HindSight memory (profile + last 3 turns)
+  │  Embed question (OpenAI text-embedding-3-small)
+  │  HNSW ANN → top-4 chunks by cosine similarity
+  │  Check: top_score >= 0.45?
+  ├── No: SSE {type:"decline"}, close
+  └── Yes: inject chunks into SOUL system prompt
+            call model (Ollama/vLLM, streaming)
+            SSE stream:
+              → {type:"sources", chunks:[...]}  (first)
+              → {type:"token", content:"..."} × N tokens
+              → {type:"done"}
+  ▼
+Student Browser (renders sources immediately, streams tokens as they arrive)
+```
+
+**Why SSE over WebSocket:** SSE is unidirectional (server→client) — exactly what streaming token generation needs. WebSocket is bidirectional and adds complexity for no benefit. SSE also has built-in reconnect via `Last-Event-ID`.
+
+---
+
+## 11. Deployment — How Each Project Runs
+
+### CodeMas
+```
+Internet
+  → Nginx (SSL termination, proxy_read_timeout 300s for SSE — key config)
+  → Gunicorn (--worker-class gevent, --workers 4)
+  → Django
+  → AWS SQS → Lambda (AWS-managed, VPC, no server to manage)
+  → RDS Postgres
+  → MongoDB (submission history, analytics)
+```
+- Nginx: `proxy_read_timeout 300s` — SSE connections are long-lived; default 60s kills them.
+- Gunicorn gevent workers: handle thousands of concurrent SSE connections with shared thread pool.
+- Lambda: deployed via Serverless Framework or AWS CDK. VPC config: private subnet, no outbound internet.
+- DB migrations: `python manage.py migrate` in pre-deploy hook.
+
+---
+
+### the01.dev
+```
+5 processes (localhost in dev / Docker Compose in prod):
+  :5173  Vite (frontend)
+  :8080  FastAPI (main backend — auth, payments, catalogue)
+  :8642  Hermes gateway (agent runtime, isolated venv)
+  :8090  LangGraph server (QuizMe + artifact gen, isolated venv)
+  :11434 Ollama (local model serving)
+```
+- Each Python service in its own venv — Hermes, LangGraph, and RAGAS have conflicting transitive deps.
+- Firestore credentials: service account JSON via `GOOGLE_APPLICATION_CREDENTIALS` env var.
+- In prod: Docker Compose or Kubernetes, same ports, Nginx at the edge.
+
+---
+
+### Munshi
+```
+Docker Compose:
+  hermes_runtime  (Hermes agent gateway)
+  ollama          (local model — pull on first run)
+  mcp_tools       (FastMCP stdio server, 4 tools)
+  sqlite volume   (file-mounted, persists across restarts)
+```
+Entirely local. No internet connectivity after initial `ollama pull`. Sovereignty is architectural.
+
+---
+
+### Kalaam
+```
+npm publish → npm registry (library consumers)
+Vue 2 + Quasar → build → dist/ → Netlify (static hosting)
+Service worker: cache-first, auto-updates on new deploy
+```
+Zero server required for end users. All computation in the browser.
+
+---
+
+### stringy-core
+```
+npm publish --access public
+```
+Package on npm registry. Consumers `npm install stringy-core`. No server, no runtime infra.
+
+---
+
+### Trade Compliance
+```
+Docker Compose:
+  ollama          (local model)
+  mcp_tools       (4 MCP tools)
+  researcher      (Hermes runtime, researcher SOUL.md, has tools)
+  writer          (Hermes runtime, writer SOUL.md, no tools — config.yaml tools:[])
+```
+Swap `model_endpoint` in config.yaml from `http://ollama:11434/v1` to `https://api.openai.com/v1` → runs on OpenAI. No code change.
+
+---
+
+## 12. Data Modeling
+
+### CodeMas: Core Tables
+
+```sql
+-- Exam structure
+CREATE TABLE exams (
+  id UUID PRIMARY KEY,
+  is_active BOOLEAN,         -- pre_save signal on True→False triggers plagiarism
+  school_id UUID,
+  created_at TIMESTAMPTZ
+);
+CREATE TABLE questions (
+  id UUID PRIMARY KEY,
+  exam_id UUID REFERENCES exams,
+  difficulty TEXT,            -- used in speed_anomaly scoring (Phase 1 plagiarism)
+  time_limit_seconds INT
+);
+
+-- Submission flow — the critical tables
+CREATE TABLE submission_attempts (
+  id UUID PRIMARY KEY,
+  student_id UUID,
+  question_id UUID REFERENCES questions,
+  attempt_count INT DEFAULT 0,
+  UNIQUE(student_id, question_id)   -- one row per student per question
+  -- SELECT FOR UPDATE locks this row for each submission
+);
+
+CREATE TABLE submissions (
+  id UUID PRIMARY KEY,              -- also SQS MessageDeduplicationId
+  student_id UUID,
+  question_id UUID REFERENCES questions,
+  code TEXT,
+  status TEXT,                      -- 'pending' | 'running' | 'completed' | 'error'
+  result JSONB,                     -- {stdout, stderr, exit_code, time_ms}
+  submitted_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ
+  -- SSE handler polls: SELECT result FROM submissions WHERE id = $1
+);
+CREATE INDEX idx_submissions_pending ON submissions(id) WHERE status = 'pending';
+
+-- Plagiarism results
+CREATE TABLE behavioural_flags (
+  student_id UUID,
+  question_id UUID REFERENCES questions,
+  risk_score FLOAT,                 -- paste_ratio*0.40 + speed*0.30 + tabs*0.15 + surprise*0.15
+  flagged BOOLEAN                   -- risk_score > 0.2
+);
+CREATE TABLE similarity_flags (
+  student_a UUID,
+  student_b UUID,
+  question_id UUID REFERENCES questions,
+  similarity_score FLOAT            -- TF-IDF cosine similarity, flagged > 0.80
+);
+```
+
+---
+
+### the01.dev: Firestore Collections
+
+```
+students/{student_id}
+  profile: {
+    topics_covered: string[],
+    turn_count: int,
+    first_seen: timestamp,
+    last_seen: timestamp
+  }
+  turns: [     ← HindSight sliding window (last N turns)
+    { question, answer, sources: [{chunk_id, score}], timestamp }
+  ]
+
+audit_log/{row_id}    ← written BEFORE inference, immutable after write
+  student_id: string
+  question: string
+  model: string
+  provider: string    -- "ollama/qwen2.5:3b" | "vllm/mistral-7b"
+  soul_hash: string   -- SHA-256 of SOUL.md at inference time
+  timestamp: timestamptz
+
+quiz_sessions/{session_id}   ← LangGraph MemorySaver checkpoint
+  state: {
+    objectives: string[],
+    current_index: int,
+    answers: [{question, student_answer, score, feedback}],
+    final_score: float | null
+  }
+  thread_id: string
+```
+
+Vector store: HNSW in-memory index. Each vector metadata: `{course_id, module_id, chunk_index, text}`. Retrieval uses cosine similarity. Threshold: 0.45.
+
+---
+
+### Munshi: SQLite Schema
+
+```sql
+CREATE TABLE invoices (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  vendor_gstin TEXT,
+  vendor_name TEXT,
+  invoice_number TEXT,
+  amount_inr TEXT,           -- stored as TEXT, loaded as Decimal — NEVER REAL
+  date DATE,
+  source TEXT                -- 'gstr2a' | 'purchase_register'
+);
+
+CREATE TABLE matches (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  invoice_a_id INT REFERENCES invoices,
+  invoice_b_id INT REFERENCES invoices,
+  match_type TEXT,           -- 'auto' | 'model_approved' | 'no_match'
+  confidence_signals INT,    -- count of 4 signals that agreed (4=auto, 2-3=model)
+  approved_by_human BOOLEAN DEFAULT FALSE,
+  approved_at TIMESTAMPTZ
+);
+
+CREATE TABLE audit_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  action TEXT,               -- 'tool_call' | 'model_inference' | 'human_approval'
+  tool_name TEXT,
+  input_json TEXT,
+  output_json TEXT,
+  timestamp TIMESTAMPTZ
+);
+```
+
+**Why TEXT for amount_inr, not REAL:** SQLite REAL is 64-bit float. `1250.75 * 0.18 = 225.13499999999999`. Load as `Decimal(row['amount_inr'])` from TEXT → exact arithmetic throughout.
+
+---
+
+### Kalaam: In-Interpreter Runtime State
+
+```javascript
+// Not a database — the interpreter's working state
+memory = {
+  'x': 5,
+  'greeting': 'नमस्ते',
+  'result': 13
+}
+// Flat object, intentionally. No scope chains — scope adds confusion for beginners.
+// Trade-off: recursive functions would overwrite caller's variables. Known limitation.
+
+ExecutionStack = [
+  { step: 1, line: 1, action: 'assign', variable: 'x', value: 5 },
+  { step: 2, line: 2, action: 'assign', variable: 'y', value: 8 },
+  { step: 3, line: 3, action: 'add', operands: ['x','y'], result: 13 },
+  { step: 4, line: 3, action: 'assign', variable: 'result', value: 13 },
+  { step: 5, line: 4, action: 'print', value: 13, output: '13' }
+]
+// UI replays this array step-by-step in the student's own language.
+// No teacher required — the stack IS the explanation.
+```
+
+---
+
+## 13. Event-Driven vs. Request-Response — When to Use Each
+
+| Criterion | Request-Response | Event-Driven (queue / stream) |
+|---|---|---|
+| Latency requirement | < 100ms, caller is blocking | > 1s acceptable, or caller can wait |
+| Reliability requirement | OK to lose on crash | Must not lose (queue persists on disk) |
+| Load pattern | Steady, predictable | Bursty, spiky |
+| Caller needs result | Immediately | Eventually (poll or push) |
+| Decoupling needed | Tight coupling is fine | Producer and consumer must scale independently |
+
+**CodeMas split:** Submission acceptance = request-response (student needs 201 in < 100ms). Code execution = event-driven via SQS (async, result via SSE poll). Correct split. Running code execution synchronously in the API worker = 5s × 10K students = saturated thread pool.
+
+---
+
+## 14. Interview Bridges — Your Work to Real-World Systems
+
+| Your system | Maps to |
 |---|---|
-| **Circuit breaker** | Stop calling a failing service — fail fast, allow recovery (Closed → Open → Half-open) |
-| **Retry with exponential backoff + jitter** | Retry failing calls with increasing delay + random jitter — avoids thundering herd on retry |
-| **Bulkhead** | Isolate resources per service — one slow dependency doesn't exhaust thread pool for all |
-| **Timeout** | Don't wait forever — set max wait, fail fast, let caller handle it |
-| **Fallback** | If primary fails, return cached/default/degraded response — degrade gracefully |
-| **Idempotency** | Same request N times = same result — critical for retries. Use idempotency keys. |
-| **Load shedding** | Drop low-priority traffic under extreme load — protect core functionality |
-| **Graceful degradation** | Core features work even when non-core services fail |
-| **Health check / heartbeat** | Regular pings detect failure before users do — liveness vs readiness probes |
-| **Chaos engineering** | Deliberately inject failures — find weaknesses before production does |
+| CodeMas SQS + Lambda | YouTube video processing (upload → queue → transcoding worker → CDN) |
+| CodeMas SELECT FOR UPDATE | BookMyShow seat reservation (same race condition, same lock) |
+| CodeMas SSE polling Postgres | Twitter timeline polling (after real-time push broke down at scale) |
+| CodeMas plagiarism O(K×N) | Large-scale dedup in data pipelines (Spotify song dedup, Dropbox block dedup) |
+| CodeMas behavioral signals first | Razorpay/PayPal fraud detection (behavior flags before deep ML model) |
+| 01dev GEPA self-improvement | Anthropic's Constitutional AI self-critique loop |
+| 01dev grounding gate 0.45 | Google Search confidence gate (below threshold → no answer box shown) |
+| 01dev two-engine design | GitHub Copilot Workspace (agent for open-ended, workflow for CI/deploy) |
+| 01dev sovereign inference | Apple on-device AI (privacy by architecture, not policy) |
+| 01dev HITL interrupt in LangGraph | Content moderation human review queues (flag → queue → human decision) |
+| Munshi local-first | Apple Neural Engine (processing on device, not in cloud) |
+| Munshi Decimal over float | Every bank, payment processor, and accounting system ever built |
+| Munshi 4-signal fuzzy pipeline | Entity resolution in dbt, Snowflake, Databricks data pipelines |
+| Munshi SOUL.md constraints | Guardrails pattern for production AI agents |
+| Kalaam 5-phase interpreter | CPython pipeline (tokenize → parse → compile → eval) |
+| Kalaam Phase 1 keyword substitution | C preprocessor macros; SQL query rewriting in ORM layers |
+| Kalaam ExecutionStack Learning Mode | VS Code debugger step-through (call stack is the same concept) |
+| Kalaam zero deps | npm left-pad incident — zero deps = zero supply chain risk |
+| stringy-core tree-shaking | Bundle size optimization in any production React/Vue app |
+| stringy-core Intl API | i18n patterns at scale (Google, Microsoft use ICU/Intl internally) |
+| Trade Compliance Researcher + Writer | MapReduce — gather phase, then synthesis phase |
+| Trade Compliance MCP validation | OpenAI function calling schema enforcement (same contract) |
+| Trade Compliance model-agnostic config | LiteLLM, LangChain model wrappers — provider abstraction |
 
 ---
 
-### Distributed Transactions
+## 15. What I'd Do Differently — Per Project
 
-| Pattern | What it solves |
+| Project | Top changes if starting over |
 |---|---|
-| **Two-phase commit (2PC)** | Atomic commit across multiple services — slow, coordinator is SPOF, mostly avoided |
-| **SAGA — Choreography** | Services react to each other's events — decentralised, harder to debug |
-| **SAGA — Orchestration** | Central orchestrator calls services in sequence — easier to reason about, single point of control |
-| **Compensating transactions** | If a SAGA step fails, run a compensating action to undo previous steps — not a rollback, an explicit reversal |
-| **Eventual consistency** | Distributed system will become consistent given enough time — accept temporary inconsistency for availability |
+| **CodeMas** | (1) Drop SSE, use client polling — SSE is polling theater post-Lambda migration. (2) Postgres RLS for multi-school SaaS from day 1. (3) Provisioned Concurrency on exam schedule to eliminate cold starts. |
+| **the01.dev** | (1) Local embedding model (nomic-embed-text) from day 1 — eliminate the OpenAI dependency. (2) Postgres checkpointer instead of MemorySaver — LangGraph workflows survive restarts. (3) Integration tests for the grounding gate before anything else. |
+| **Munshi** | (1) Complete the GEPA self-improvement loop (reflection + proposal + Pareto gate). (2) Web approval UI instead of CLI for HITL. (3) Tool result caching — avoid redundant convert_currency calls for same inputs. |
+| **Kalaam** | (1) Error messages in the student's language (template strings per language). (2) REPL mode — execute on keystroke, debounced 300ms. (3) Formal grammar spec — enables linter, formatter, IDE support. |
+| **stringy-core** | (1) TypeScript from day 1 — return types would have caught the isPalindrome boolean bug at compile time. (2) Vitest benchmarks for O(n²) functions. (3) CDN IIFE build so contributors can use it via `<script>` tag without a bundler. |
+| **Trade Compliance** | (1) Researcher returns structured JSON, not prose — Writer gets typed input, not text to parse. (2) Confidence score per finding so Writer can flag low-confidence claims. (3) RAGAS-style eval for report quality — currently no systematic evaluation. |
 
 ---
 
-### Consistency Models
+## 16. Common Follow-Up Questions — Quick Answers
 
-| Model | What it means |
-|---|---|
-| **ACID** | Atomicity, Consistency, Isolation, Durability — traditional relational DB guarantees |
-| **BASE** | Basically Available, Soft state, Eventually consistent — NoSQL trade-off |
-| **CAP theorem** | In a partition, choose Consistency OR Availability — you can't have both |
-| **PACELC** | Extends CAP — even without partition, trade off Latency vs Consistency |
-| **Strong consistency** | Every read sees the most recent write — expensive, requires coordination |
-| **Eventual consistency** | Reads may be stale temporarily — cheap, scales well |
-| **Causal consistency** | Causally related operations seen in order by all nodes |
-| **Read-your-writes** | After you write, you always read your own write — weaker than strong, stronger than eventual |
-| **Linearizability** | Operations appear instant and globally ordered — strongest model, highest cost |
-| **Serializability** | Concurrent transactions produce same result as some serial order — database isolation level |
+**"How do you monitor all this in production?"**
+CodeMas: CloudWatch for Lambda errors/duration, Postgres slow query log, Nginx access log for SSE connection drops.
+the01.dev: Audit log IS the monitoring — every inference logged before it happens. Check `audit_log` for volume and SOUL hash distribution.
+Munshi: SQLite `audit_log` table; every tool call and HITL decision recorded with inputs and outputs.
 
 ---
 
-### Microservices Patterns
-
-| Pattern | What it solves |
-|---|---|
-| **Service discovery** | Services find each other dynamically — client-side (Eureka) vs server-side (AWS ALB) |
-| **Service mesh** | Handles retries, mTLS, tracing between services at infrastructure level — Istio, Linkerd |
-| **Sidecar pattern** | Proxy runs alongside app container — handles cross-cutting concerns (auth, logging, retries) |
-| **Strangler fig** | Gradually replace monolith — wrap old system, migrate feature by feature, never big-bang rewrite |
-| **API gateway** | Single entry point — auth, rate limiting, routing, SSL termination, protocol translation |
-| **BFF (Backend for Frontend)** | Separate backend per client type — mobile gets optimised mobile API, web gets its own |
-| **Shared nothing** | Each service owns its data — no shared DB between services |
+**"What's your testing strategy?"**
+CodeMas: Django TestCase for API endpoints; pytest for plagiarism scoring logic; no Lambda integration tests (known gap).
+the01.dev: FastAPI TestClient for endpoints; RAGAS eval set for grounding gate; no LangGraph workflow tests (gap).
+Kalaam: Jest, 90–95% coverage on interpreter; Husky blocks commit if tests fail.
+stringy-core: Jest, all 50+ functions covered; Husky + lint-staged enforces ESLint + Prettier on commit.
 
 ---
 
-### Data Pipelines & Streaming
-
-| Pattern | What it solves |
-|---|---|
-| **Batch processing** | Process large volumes of data on a schedule — Spark, Hadoop. High throughput, high latency. |
-| **Stream processing** | Process data as it arrives — Kafka Streams, Flink. Low latency, event-by-event. |
-| **Lambda architecture** | Batch layer (accurate, slow) + Speed layer (approximate, fast) + Serving layer merges both |
-| **Kappa architecture** | Stream-only — no batch layer. Simpler. Reprocess by replaying the stream. |
-| **ETL** | Extract → Transform → Load — transform before storage |
-| **ELT** | Extract → Load → Transform — load raw, transform in-warehouse (BigQuery, Snowflake) |
-| **Change Data Capture (CDC)** | Stream DB changes as events — Debezium reads Postgres WAL. Sync secondary systems without polling. |
+**"How do you handle secrets?"**
+CodeMas: Django SECRET_KEY + DB credentials in env vars, never in code.
+the01.dev: Firebase service account via `GOOGLE_APPLICATION_CREDENTIALS`; Razorpay keys in `.env`; OpenAI key in `.env`.
+Munshi: No cloud secrets — local-only. Ollama needs no API key.
+Trade Compliance: OpenAI key in `.env` if using cloud mode; Ollama mode needs no secrets.
 
 ---
 
-### Database Internals
-
-| Concept | What it means |
-|---|---|
-| **B-tree index** | Default index — balanced tree, great for reads, point lookups, range queries |
-| **LSM tree** | Log-structured merge tree — optimised for writes (Cassandra, RocksDB). Reads require merging. |
-| **Write-ahead log (WAL)** | Every write goes to WAL first — DB survives crash by replaying WAL on restart |
-| **Covering index** | Index contains all columns a query needs — no table lookup required, fastest possible read |
-| **Composite index order** | `(a, b)` index helps queries on `a` and `(a, b)` but NOT on `b` alone |
-| **N+1 query problem** | Loading N records, then querying each individually — fix with JOIN or batch fetch |
-| **Materialized view** | Pre-computed query result stored as a table — fast reads, needs refresh on data change |
-| **Denormalisation** | Duplicate data to avoid JOINs — trade write complexity for read speed |
-| **Partitioning** | Split one large table into smaller partitions by range/hash — Postgres native, transparent to queries |
+**"How do you handle versioning / backward compatibility?"**
+stringy-core: Semantic versioning; named exports are the public API contract; no breaking changes to existing function signatures.
+Kalaam: npm semver; `Compile()` signature is the public contract.
+CodeMas: URL prefix versioning (/api/v1/). Others: internal services — no external versioning needed.
 
 ---
 
-### Storage Types
+**"Walk me through a scaling problem."**
+Use the bottleneck tables in Section 6. State the current scale, name the first thing that breaks, explain WHY it breaks with numbers, then give the fix.
 
-| Type | When to use |
-|---|---|
-| **Block storage (EBS)** | Low latency, raw disk, attached to one instance — databases, OS volumes |
-| **Object storage (S3)** | Unlimited scale, high durability, high latency — images, videos, backups, data lake |
-| **File storage (EFS)** | Shared, mountable by many instances simultaneously — shared config, ML model weights |
-| **In-memory storage (Redis)** | Sub-millisecond — cache, session store, leaderboards, rate limiting |
-| **Time-series DB (InfluxDB, TimescaleDB)** | Metrics, sensor data — optimised for time-range queries, automatic downsampling |
+Example: "At 10× CodeMas load, the SSE connection state on a single Gunicorn instance saturates at ~50K open connections. Fix: dedicated SSE microservice in Node.js, or drop SSE for client polling — which is architecturally equivalent anyway after the Lambda migration."
 
 ---
 
-### Geographic Distribution
-
-| Pattern | What it solves |
-|---|---|
-| **Active-active multi-region** | Traffic served from multiple regions simultaneously — no failover delay, conflict resolution required |
-| **Active-passive multi-region** | One region handles traffic, other is on standby — simpler, failover has delay |
-| **Geo-routing** | Route user to nearest region — DNS-based (Route53 latency routing) or Anycast |
-| **Data residency / sovereignty** | GDPR — EU user data must stay in EU. Architecture must enforce regional data boundaries. |
-| **CDN edge nodes** | Cache content globally — user hits closest PoP, not origin server |
+**"How would you add observability to your RAG system?"**
+the01.dev approach: (1) Audit log captures every inference with model + SOUL hash — correlation ID links question to answer to retrieved chunks. (2) RAGAS faithfulness score runs offline on a sample of turns — flags drift in answer quality over time. (3) Gate declination rate is a health metric — if it spikes, either the eval set is breaking retrieval or students are asking off-topic questions.
 
 ---
 
-### Consensus & Coordination
-
-| Pattern | What it solves |
-|---|---|
-| **Leader election** | One node coordinates — Raft algorithm. etcd, ZooKeeper handle this. |
-| **Raft consensus** | Distributed agreement — leader elected, log replicated, majority quorum required to commit |
-| **Fencing tokens** | Prevent split-brain — stale leader gets a monotonically increasing token; storage rejects writes from old tokens |
-| **Distributed lock (Redis SETNX / Redlock)** | Mutual exclusion across machines — set if not exists with TTL, Redlock uses quorum across Redis nodes |
+**"What's the hardest part of building with LLMs vs. traditional software?"**
+"Traditional software: deterministic — same input, same output, easy to test. LLMs: probabilistic — same input, different output each time. This changes everything about testing (you test distributions, not exact values), observability (you log inputs and outputs, not just errors), and trust (you verify with tools, not model self-report). The SOUL.md pattern, the grounding gate, the audit log — all of these are adaptations to the non-deterministic nature of the model."
 
 ---
 
-### Concurrency & Locking
+## 17. STAR Behavioral Stories
 
-| Pattern | What it solves |
-|---|---|
-| **Pessimistic locking (SELECT FOR UPDATE)** | Lock before read — prevents concurrent writes, higher contention |
-| **Optimistic locking (version/ETag)** | No lock — check version on write, retry on conflict — lower contention, works for low-conflict scenarios |
-| **Distributed lock** | Lock across machines — Redis SETNX with TTL |
-| **Rate limiting** | Token bucket (bursts allowed), leaky bucket (smooth rate), sliding window (per-user per-minute) |
-| **Semaphore** | Limit concurrent operations — only N workers can run this job simultaneously |
+Use these when the interviewer says "tell me about a time when…" Pick the story that matches the question, then deliver it in under 2 minutes. Don't read it word for word — know the shape.
 
 ---
 
-### API Design
+### Story 1 — Difficult Technical Decision Under Pressure
+*Use for: "Tell me about a hard call you had to make" / "Tell me about a time you had to choose between two bad options"*
 
-| Pattern | What it solves |
-|---|---|
-| **Cursor-based pagination** | Stable pagination on live data — offset breaks when rows are inserted/deleted between pages |
-| **Offset pagination** | Simple but breaks on live data — fine for static datasets |
-| **API versioning** | URL path (`/v1/`), Accept header, query param — URL is most common, headers are cleanest |
-| **Idempotency keys** | POST with `Idempotency-Key` header — server deduplicates, safe to retry payment APIs |
-| **Webhook pattern** | Server pushes to caller's URL on event — inversion of polling. Caller must handle retries and failures. |
-| **Long polling** | Client requests, server holds open until data ready — simpler than WebSocket, higher latency than SSE |
-| **SSE** | Unidirectional server push — notifications, live results. HTTP/1.1 compatible. |
-| **WebSockets** | Bidirectional persistent connection — chat, multiplayer, collaborative editing |
-| **gRPC** | Binary, schema-defined (protobuf), streaming — fast internal service communication |
+**Situation:** At CodeMas (Masai School), we were running Celery workers on a persistent server to execute student code. We had sandbox isolation using Docker — one container per submission. At exam close, all 10,000 students submitted simultaneously. The submission burst was overwhelming the queue.
+
+**Task:** Evaluate migrating to AWS Lambda for the code execution layer. The architecture change was significant — Lambda is ephemeral, Celery workers are persistent. I had to make the call without a long evaluation window because an exam was coming.
+
+**Action:** I mapped out the trade-off across 9 dimensions — isolation, scale, cold start, cost, delivery mechanism. The hardest part: Lambda gave up the Redis pub/sub channel that powered true SSE push. After the migration, SSE would become "polling theater" — Django polling Postgres every 500ms and forwarding. Architecturally equivalent to client polling. I documented this honestly before recommending migration. The isolation gain (fresh `/tmp` per invocation, no shared process state between students) and the elastic scale justified it.
+
+**Result:** Migrated to Lambda + SQS FIFO. Zero submission processing failures at the next exam close. Infra overhead dropped to zero — Lambda scales itself. The SSE trade-off is documented and something I own in every conversation about the system.
 
 ---
 
-### Release & Deployment Patterns
+### Story 2 — Solving a Problem Nobody Had Named Yet
+*Use for: "Tell me about an innovative solution" / "Tell me about something you built from scratch"*
 
-| Pattern | What it solves |
-|---|---|
-| **Blue-green deployment** | Two identical envs — instant traffic switch, instant rollback |
-| **Canary deployment** | Roll out to X% of users first — catch failures before full rollout |
-| **Rolling deployment** | Replace instances one-by-one — no downtime, slower rollout |
-| **Feature flags** | Deploy code but disable feature — decouple deployment from release |
-| **Dark launch** | Run new code in parallel with old — compare outputs, no user impact |
-| **Shadow traffic** | Mirror real traffic to new service — test under real load without affecting users |
+**Situation:** At Masai School, the plagiarism problem was framed as "are these submissions similar?" — pure code similarity. The system compared TF-IDF cosine similarity between submissions. Students had started sharing code in subtly modified forms to beat the threshold.
 
----
+**Task:** Redesign the detection approach. The similarity-first framing was the wrong model of the problem.
 
-### Search & Retrieval
+**Action:** Reframed it: "Did this student write this code?" That's a different question. A student who copied would show behavioural anomalies — unusually high paste ratio, submission speed faster than the difficulty baseline, tab switches during the problem (looking at another window). Built a two-phase system: Phase 1 runs synchronously at exam close, scores four behavioural signals with weighted formula (paste ratio 0.40, speed anomaly 0.30, tab switches 0.15, attempt surprise 0.15). Only HIGH-confidence behavioural suspects become the K in Phase 2 — then we do O(K×N) similarity, not O(N²). This cut the comparison space dramatically while catching more edge cases.
 
-| Pattern | What it solves |
-|---|---|
-| **Inverted index** | Word → list of docs — foundation of all full-text search |
-| **BM25** | Lexical relevance — keyword match with term frequency + inverse document frequency |
-| **Vector search (ANN)** | Semantic similarity — HNSW, IVF-Flat, LSH indexes in pgvector/Pinecone/Weaviate |
-| **Hybrid retrieval** | BM25 + vector combined — exact match + semantic recall |
-| **Re-ranking** | Two-stage: fast ANN retrieval → expensive cross-encoder re-rank — better precision, higher latency |
-| **RAG** | Retrieve context → LLM generates grounded answer |
-| **Faceted search** | Filter by structured attributes alongside text search |
+**Result:** 19× improvement in catching cases over the previous similarity-only system. The key insight — behaviour flags what ML confirms.
 
 ---
 
-### AI / Agent Patterns
+### Story 3 — Owning an Architecture Limitation
+*Use for: "Tell me about a failure" / "Tell me about a time you had to admit you were wrong"*
 
-| Pattern | What it solves |
-|---|---|
-| **RAG** | Ground LLM answers in retrieved documents — reduces hallucination |
-| **Tool use / function calling** | LLM selects and calls tools to complete a task |
-| **ReAct (Reason + Act)** | Agent reasons, acts, observes result, repeats — iterative task completion |
-| **Planner-Executor** | Planner decomposes task, executors run steps — separation of concerns |
-| **Orchestrator-Worker** | Central orchestrator dispatches to specialised agents |
-| **Supervisor-Worker** | Supervisor reviews output, routes failures back to workers |
-| **HITL (Human-in-the-loop)** | Human approval gate before consequential actions |
-| **Multi-agent (Researcher + Writer)** | Specialised agents collaborate — separation of concerns enforced by identity |
-| **Memory (short/long term)** | Session memory vs persistent memory store across conversations |
-| **Eval loop** | Automated quality measurement — RAGAS (faithfulness, relevance, retrieval quality) |
-| **Score gate** | Below confidence threshold, skip LLM call — saves cost, prevents hallucination |
-| **Chain-of-thought** | Step-by-step reasoning before answer — improves accuracy on complex tasks |
+**Situation:** On the01.dev, I was routing the RAG tutor through the full Hermes agent loop — SOUL.md system prompt, MCP tool calls (search_course_content, generate_notes), HindSight memory. This is the "right" architecture. But in dev, the model is qwen2.5:3b — a 3-billion parameter model running on Ollama locally.
+
+**Task:** The tutor was working for single-turn questions but multi-turn conversations were breaking — the model would answer Q2 without any reference to Q1's context. Students were getting disjointed answers.
+
+**Action:** Investigated the ReAct loop. The issue: when Hermes routes through the agent loop, tool calls fragment the conversation context. The small model can't maintain coherent multi-turn state across tool invocations. The fix in the short term was to build a "reliable path" that bypasses the agent loop for dev — calls the model directly with conversation history injected, same SOUL, same retrieved context, just no tool orchestration overhead. The full Hermes routing works correctly on production-scale models.
+
+**Result:** Multi-turn coherence restored in dev. But I documented this as a gap — HindSight memory is configured but only activates on the full Hermes path. I didn't hide it; I put it in the architecture doc so anyone reading the code understands the dev/prod difference. The lesson: validate agent loop behaviour on the model you'll actually run it with, not a larger one.
 
 ---
 
-### Data Modelling Patterns
+### Story 4 — Building for a User You're Not
+*Use for: "Tell me about empathy in design" / "Tell me about a non-obvious constraint you solved"*
 
-| Pattern | What it solves |
-|---|---|
-| **Adjacency list** | Parent ID on each row — simple hierarchy in SQL, N+1 risk for deep trees |
-| **Materialized path** | Store full path string (`/1/4/7/`) — fast subtree reads, harder updates |
-| **Nested sets** | Left/right boundaries for each node — fast subtree reads, expensive writes |
-| **Closure table** | All ancestor-descendant pairs stored — flexible queries, highest storage cost |
-| **Polymorphic association** | One FK column references multiple tables — flexible but breaks foreign key constraints |
-| **Soft delete** | `deleted_at` timestamp instead of DELETE — preserves history, complicates all queries |
+**Situation:** Built Kalaam — a programming language in Hindi, Marathi, Bengali, Telugu, and Odia — for tier-3 city students aged 14–18 with no laptop and intermittent internet. Most programming tools assume a desktop, internet, and English literacy. None of those apply.
 
----
+**Task:** Design an interpreter and learning platform that works under these constraints without compromising on the actual learning outcome.
 
-### Observability
+**Action:** Three key decisions driven entirely by the user, not by what's technically elegant: (1) Mobile-first PWA with cache-first service worker — works offline after first load, no app install needed. (2) Zero runtime dependencies in the npm package — no supply chain risk, no CDN calls. (3) Flat memory model instead of scoped environments — technically incorrect for a "real" language, but scope adds cognitive load that the target audience doesn't need yet. The interpreter's `ExecutionStack[]` records every operation in a replay-friendly format — the UI plays back the execution step-by-step in the student's language, replacing the need for a teacher to explain how the interpreter evaluates their code.
 
-| Pattern | What it solves |
-|---|---|
-| **Metrics** | Numeric time-series — latency p99, error rate, throughput, saturation |
-| **Structured logs** | JSON logs with consistent fields — queryable in Datadog, Splunk, CloudWatch |
-| **Distributed tracing** | End-to-end request path across services — OpenTelemetry, Jaeger, Datadog APM |
-| **Alerting** | Notify when metric crosses threshold — avoid alert fatigue with SLO-based alerts |
-| **SLI / SLO / SLA** | SLI = what you measure, SLO = your target, SLA = contractual commitment |
-| **Error budget** | SLO allows X% downtime per month — burn rate determines when to stop releases |
-| **Runbook** | Step-by-step guide for responding to an alert — reduces MTTR |
-| **Dashboards** | Real-time view of system health — golden signals: latency, traffic, errors, saturation |
+**Result:** 500+ monthly users, TEDx Bangalore talk, 5 languages supported. Adding a 6th language requires one keyword map entry and zero parser changes.
 
 ---
 
-### Security
+### Story 5 — Privacy as Architecture, Not Policy
+*Use for: "Tell me about a security or privacy decision" / "Tell me about a constraint that changed your design"*
 
-| Pattern | What it solves |
-|---|---|
-| **Zero trust** | Never trust, always verify — even internal service-to-service traffic |
-| **OAuth 2.0 / JWT** | Delegated auth — access token, refresh token, stateless session |
-| **mTLS** | Mutual TLS — both client and server authenticate each other |
-| **Secrets management** | Never secrets in code — AWS Secrets Manager, Vault |
-| **API key rotation** | Secrets cycle regularly — breach has limited blast radius |
-| **Rate limiting** | Prevent abuse — per-IP, per-user, per-API key |
-| **Input validation** | Validate at system boundary — SQL injection, XSS, command injection prevention |
-| **Principle of least privilege** | Services get only permissions they need — blast radius of compromise is limited |
-| **Encryption at rest / in transit** | Data protected when stored and when moving — TLS, AES-256 |
-| **DDoS mitigation** | Absorb/deflect volumetric attacks — CloudFront, AWS Shield, rate limiting at edge |
+**Situation:** Munshi is a GST reconciliation agent for Bharatvarsh Arts, a performing arts company with ₹5Cr annual revenue. The owner wanted AI-assisted reconciliation but was clear: financial data — invoices, GSTIN numbers, transaction amounts — could not go to any external API.
+
+**Task:** Build an AI agent that handles sensitive financial data within a non-negotiable sovereignty constraint.
+
+**Action:** Designed the entire system local-first. Ollama runs the model on the owner's own machine. SQLite is the database — file on disk, owner controls it. FastMCP tools do all financial computation (compute_gst, convert_currency, lookup_hsn) in Python with Decimal arithmetic — the model calls the tool, the tool returns the number. The model only narrates; it never computes a financial figure. The SOUL.md has an explicit sovereignty clause: "Nothing leaves the machine. That is a promise, not a preference." This is enforced by architecture — there's no code path that makes an external API call for generation.
+
+**Result:** Full GST reconciliation capability with zero data leaving the machine. The one design insight worth carrying: sovereignty is an architectural property, not a configuration option. If you can flip a flag and data goes to the cloud, it's not truly sovereign.
 
 ---
 
-*This document was built from real projects. Every architecture decision, trade-off, and system design bridge is grounded in something Swanand actually built and shipped.*
+## 18. Business Impact — What You Actually Unlocked
+
+When talking to EMs, PMs, or non-technical interviewers, translate every project into outcomes. Memorise these one-liners.
+
+| Project | Business outcome | For whom |
+|---|---|---|
+| **CodeMas** | Each cohort: 400 students × ₹3L = ₹12Cr revenue unlocked per cohort. Plagiarism detection 19× better. AI features cut exam creation time by ~80%. | Masai School — India's largest coding bootcamp |
+| **Munshi** | Hours of manual GST reconciliation per month → minutes. ₹5Cr in annual transactions handled with Decimal-accurate tax computation. Zero risk of data breach — nothing leaves the machine. | Bharatvarsh Arts — performing arts company |
+| **the01.dev** | 8 deep CS courses generating recurring revenue. 67% fewer LLM inference calls via on-demand generation and smart caching. GEPA means tutor quality improves automatically over time. | 0.1% Dev — own product, Co-founder |
+| **Kalaam** | 500+ monthly active learners from tier-3 cities who had no other entry point into programming. TEDx Bangalore talk. 5 Indian languages, zero internet required after first load. | Self-built open-source — npm `kalaam` v2.3.3 |
+| **stringy-core** | Published npm library, 19 forks, actively maintained open-source contribution platform. Zero deps means zero supply chain risk for any project that installs it. | Open-source community |
+| **Trade Compliance** | One query that would take a compliance analyst 2–3 hours of manual tariff lookup, FTA check, and anti-dumping research → done in 60–90 seconds, fully cited. | Exporters, importers, trade compliance teams |
+
+---
+
+### When pushed on revenue numbers
+
+- ₹12Cr per cohort at Masai: 400 students × ₹3L fee = ₹12Cr gross revenue per cohort. CodeMas is the exam and assessment infrastructure that made each cohort possible at 10K concurrent scale.
+- ₹2Cr for Bharatvarsh Arts: mentioned in context of Munshi + Trade Compliance being built to support their operations. This is their annual revenue figure, not a number we generated.
+- 67% fewer LLM calls: on-demand artifact generation (notes, quiz, flashcards) generates content only when a student requests it, not upfront for every enrolled student. Compared to eager pre-generation.
+- 80% exam creation time reduction: AI-assisted question generation, rubric writing, and difficulty calibration at CodeMas. Trainers review and approve rather than write from scratch.
+
+---
+
+## 19. Day-of Cheat Sheet (Read this last, right before you walk in)
+
+---
+
+**Who you are:** Full-stack + AI engineer, 6+ years. Built high-concurrency platforms, LLM agent systems, RAG pipelines, and a programming language. First engineer under a CTO, co-founder, open-source creator. You build things that ship.
+
+---
+
+**The 6 projects — one line each:**
+
+| # | Project | One line |
+|---|---|---|
+| 1 | **CodeMas** | Real-time exam platform for 10K concurrent students — SQS + Lambda sandbox + two-phase plagiarism (behavioural first, then similarity) |
+| 2 | **the01.dev** | Sovereign RAG tutor with self-evolving SOUL (GEPA), two-engine design (Hermes agent + LangGraph workflow), 100% local inference |
+| 3 | **Munshi** | Local-first GST agent — nothing leaves the machine, Decimal arithmetic, HITL before any consequential action |
+| 4 | **Kalaam** | Programming language in 5 Indian languages — 5-phase interpreter, offline PWA, zero deps, ExecutionStack = built-in teacher |
+| 5 | **stringy-core** | Zero-dependency JS string utility library — 50+ functions, tree-shakeable ESM, Intl API, open-source contribution platform |
+| 6 | **Trade Compliance** | Two-agent system (Researcher + Writer, both Hermes) — gather then synthesise, model-agnostic config, fully local |
+
+---
+
+**One claim + defense per project:**
+
+- CodeMas → "19× improvement in catching plagiarism" → behavioural phase catches what similarity never sees
+- the01.dev → "grounded or silent" → threshold 0.45 in code — model is never called below it
+- Munshi → "nothing leaves the machine" → Ollama + SQLite + no external generation calls, architectural not policy
+- Kalaam → "adding a language = 1 file change" → only Phase 1 is language-aware, parser sees normalized tokens
+- stringy-core → "zero runtime deps" → no `dependencies` key in package.json, confirmed
+- Trade Compliance → "model-agnostic" → change one line in config.yaml, no code change
+
+---
+
+**One toughest challenge per project:**
+
+- CodeMas → SELECT FOR UPDATE for the race condition at submission burst
+- the01.dev → small model loses multi-turn context in Hermes loop → reliable path bypasses agent loop in dev
+- Munshi → 40–50% of invoices fail exact match → four-signal fuzzy pipeline, model only sees the 20% that are genuinely ambiguous
+- Kalaam → error messages in English for students who read Hindi → known gap, scoped backlog
+- stringy-core → ESM package in Jest (CommonJS default) → Babel transform in test env only
+- Trade Compliance → agent tool loop → three-layer defence: SOUL + turn limit + MCP schema rejection
+
+---
+
+**If you get nervous:** pick the CodeMas submission pipeline or the 01dev RAG tutor pipeline and walk it step by step. You know both cold. Start with the user action (student submits code / student asks a question), walk through every system component in order, name the trade-offs at each step. That's a complete system design answer.
