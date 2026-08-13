@@ -1046,9 +1046,9 @@ footer {
         <div class="project-tagline">Bharatvarsh Arts · Local-first · Hermes runtime · Human-in-the-loop · ₹5Cr revenue scale</div>
         <ul class="project-bullets">
           <li><strong>Fuzzy Invoice Reconciliation</strong> — AI adjudicates messy purchase invoices against government GSTR-2B records; deterministic Python computes every rupee. <span class="impact">Recovers input tax credit (ITC) that exact-matching forfeits.</span></li>
-          <li><strong>Sovereign Architecture</strong> — fully local-first, nothing leaves the machine. Model only judges ambiguous matches; all tax arithmetic is exact <code style="font-family:var(--mono);font-size:0.82em;background:#f0ebe0;padding:1px 5px;border-radius:2px">Decimal</code> computation. <span class="impact">Privacy-safe for sensitive financial data.</span></li>
-          <li><strong>Human-in-the-loop</strong> — consequential actions require explicit approval; every model decision, tool call, and outcome is captured in a plain-English audit trail. <span class="impact">Non-technical owners can verify every filing before submission.</span></li>
-          <li><strong>Replaced spreadsheet workflows</strong> — GST, invoicing, and reconciliation moved from manual Excel to plain-English queries. <span class="impact">₹5Cr ($500K+) revenue business fully automated.</span></li>
+          <li><strong>Sovereign Architecture</strong> — GST side fully local-first, nothing leaves the machine. Model only judges ambiguous matches; all tax arithmetic is exact <code style="font-family:var(--mono);font-size:0.82em;background:#f0ebe0;padding:1px 5px;border-radius:2px">Decimal</code> computation. <span class="impact">Privacy-safe for sensitive financial data.</span></li>
+          <li><strong>Analytics Data Platform</strong> — Snowflake + dbt ELT pipeline unifies 4 disconnected systems (Shopify, GoKwik, NimbusPost, WhatsApp B2B). GPT-mini extracts structured B2B orders from Hinglish/Marathi chat. <span class="impact">247 actionable exceptions surfaced from ~2,100 orders; ₹15.4L revenue reconciled across channels.</span></li>
+          <li><strong>Human-in-the-loop + PII Governance</strong> — consequential actions require approval; Snowflake Dynamic Data Masking governs customer PII at mart level; <code style="font-family:var(--mono);font-size:0.82em;background:#f0ebe0;padding:1px 5px;border-radius:2px">AGENT_READER</code> role sees masked data in ad-hoc queries. <span class="impact">Agent queries are auditable and PII-safe by default.</span></li>
         </ul>
 
         <div class="project-flow">
@@ -1084,6 +1084,34 @@ footer {
           </div>
           <div class="pf-note">Python Decimal for all tax arithmetic — exact base-10, matches GSTN portal to the paisa. Approved verdicts stored in SQLite and reused month-to-month.</div>
         </div>
+
+        <div class="project-flow" style="margin-top:10px;">
+          <div class="pf-title">Analytics ELT Pipeline — Snowflake + dbt + Agent Tools</div>
+          <div class="pf-pipe" style="flex-wrap:wrap;">
+            <div class="pf-col"><div class="pf-step" style="background:#1e3a5f;font-size:0.6rem;">Shopify CSV<br>GoKwik CSV<br>NimbusPost CSV</div><div class="pf-lbl">4 sources,<br>no shared ID</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step" style="background:#3b2a6b;font-size:0.62rem;">WhatsApp B2B<br>→ GPT-mini<br>extraction</div><div class="pf-lbl">Hinglish/Marathi<br>→ structured</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step" style="background:#29444e;font-size:0.62rem;">Snowflake RAW<br>VARIANT</div><div class="pf-lbl">schema-on-read<br>no brittle DDL</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step gr" style="font-size:0.6rem;">dbt staging<br>(views)</div><div class="pf-lbl">clean · normalize<br>fix grain</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step am" style="font-size:0.6rem;">dbt marts<br>(tables · tested)</div><div class="pf-lbl">37 tests green<br>PII masked</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step bl" style="font-size:0.6rem;">7 Agent<br>Analytics Tools</div><div class="pf-lbl">order_status<br>exceptions<br>revenue</div></div>
+          </div>
+          <div class="pf-sub" style="margin-top:8px;">
+            <div class="pf-sub-title">Key Marts</div>
+            <div class="pf-pipe" style="gap:5px; flex-wrap:wrap;">
+              <div class="pf-col"><div class="pf-step" style="background:#1d3a2e;font-size:0.55rem;">xref_order_identity</div><div class="pf-lbl">identity bridge</div></div>
+              <div class="pf-col"><div class="pf-step gr" style="font-size:0.55rem;">fct_order</div><div class="pf-lbl">Order-360</div></div>
+              <div class="pf-col"><div class="pf-step" style="background:#8b1a1a;font-size:0.55rem;">b2c_exceptions</div><div class="pf-lbl">247 issues</div></div>
+              <div class="pf-col"><div class="pf-step bl" style="font-size:0.55rem;">dim_vendor_contract</div><div class="pf-lbl">SCD Type 2</div></div>
+              <div class="pf-col"><div class="pf-step am" style="font-size:0.55rem;">fct_revenue</div><div class="pf-lbl">₹15.4L unified</div></div>
+            </div>
+          </div>
+          <div class="pf-note">"AI decides, deterministic code computes" — LLM extracts WhatsApp price intent; all ₹ arithmetic is SQL. AGENT_READER role masks PII in ad-hoc queries.</div>
+        </div>
       </div>
       <div class="project-right">
         <div class="project-tags-r">
@@ -1091,7 +1119,9 @@ footer {
           <span class="project-tag-r">MCP</span>
           <span class="project-tag-r">FastAPI</span>
           <span class="project-tag-r">Ollama</span>
-          <span class="project-tag-r">Python</span>
+          <span class="project-tag-r">Snowflake</span>
+          <span class="project-tag-r">dbt</span>
+          <span class="project-tag-r">Python ELT</span>
           <span class="project-tag-r">Docker</span>
         </div>
         <div class="project-links-r">

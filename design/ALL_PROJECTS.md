@@ -13,7 +13,7 @@
 | 2 | **Kalaam** | Programming language in Hindi/Marathi/Bengali/Telugu/Odia | Mobile-first, offline-first | Vue 2 · Quasar PWA · CodeMirror · pure JS interpreter · npm |
 | 3 | **0.1% DEV** | Sovereign AI ed-tech (deep CS fundamentals) | Fully local inference, EU-AI-Act compliance | React 19 · FastAPI · Hermes · LangGraph · Ollama/vLLM · pgvector |
 | 4 | **stringy-core** | Zero-dependency JS string utility library | 50+ functions, tree-shakeable, open-source | ESM · Jest · Intl API · Husky + lint-staged |
-| 5 | **Munshi** | Sovereign AI agent for GST reconciliation | Financial data never leaves the machine | Hermes · MCP · FastAPI · Ollama · Python Decimal · SQLite |
+| 5 | **Munshi** | Sovereign GST agent + Snowflake analytics data platform | GST side: nothing leaves the machine. Analytics: 247 exceptions surfaced, ₹15.4L reconciled | Hermes · MCP · FastAPI · Ollama · Snowflake · dbt · Python ELT · SQLite |
 | 6 | **Trade Compliance Researcher** | Multi-agent tariff and trade regulation research | Two independent agents, no HITL today | Hermes · MCP · Ollama · Docker Compose |
 
 ---
@@ -343,13 +343,14 @@ date-fns is ~40KB; moment.js is larger still. The Intl API is provided by every 
 | Field | Detail |
 |---|---|
 | Client | Bharatvarsh Arts — ₹5Cr (~$600K) annual revenue |
-| Problem | GST invoice reconciliation against GSTR-2B for ITC claims — was a manual Excel process |
-| Sovereignty | Nothing leaves the machine — hard architectural constraint, not preference |
+| Problem | (1) GST invoice reconciliation against GSTR-2B for ITC claims — was manual Excel; (2) Business analytics from 4 disconnected systems with no unified order truth |
+| Sovereignty | GST side: nothing leaves the machine. Analytics side: Snowflake cloud (deliberate, with PII masking) |
 | Agent runtime | Hermes + MCP (typed, schema-validated tool calls) |
 | Arithmetic | Python Decimal — exact base-10 computation, no float errors |
-| Storage | SQLite — verdicts, audit trail, persistent memory |
+| Storage | SQLite (GST/operational); Snowflake (analytics warehouse) |
 | HITL | Agent pauses before every consequential action; owner approves or rejects |
-| Stack | Hermes · MCP · FastAPI · Ollama · Python Decimal · Docker Compose · SQLite |
+| Stack | Hermes · MCP · FastAPI · Ollama · Snowflake · dbt · Python ELT · SQLite · Docker |
+| Analytics numbers | 247 exceptions surfaced from ~2,100 orders; ₹15.4L total revenue reconciled; 37 dbt tests green |
 
 ### Architecture Overview
 
@@ -391,6 +392,39 @@ For Munshi: Hermes. Task is open-ended — model decides tool path dynamically. 
   - Many integrations needed → LangChain
 - Known steps, fixed in advance → Workflow (LangGraph)
   - Need HITL suspend/resume → LangGraph `interrupt()`
+
+### Data Engineering Layer — Analytics Platform (Snowflake + dbt)
+
+*Added Aug 2026: A full ELT data platform built on top of the agent, turning 4 disconnected e-commerce systems into clean, governed, agent-queryable analytics data.*
+
+**Why it exists:** The owner couldn't answer basic business questions because data lived in Shopify (B2C orders), GoKwik (payments), NimbusPost (shipments), and WhatsApp (B2B wholesale — unstructured Hinglish/Marathi). No shared identifier, 3 different date formats, and grain mismatches at every join. 247 actionable exceptions (RTO'd orders still showing fulfilled in Shopify; prepaid RTOs with refunds owed) were invisible until this platform surfaced them.
+
+**ELT pipeline:**
+```
+Shopify CSV + GoKwik CSV + NimbusPost CSV → Python loader (TRUNCATE + batch INSERT, 200/batch)
+WhatsApp messages → GPT-mini extraction (8 msgs/batch) → B2B structured records
+  → Snowflake RAW (VARIANT — schema-on-read, no brittle DDL)
+    → dbt staging (views: clean dates, fix grain, derive flags)
+      → dbt marts (tables: tested, agent-ready)
+        → 7 agent analytics tools
+```
+
+**dbt marts (37 tests, all green):**
+- `xref_order_identity` — identity bridge across 3 systems (no shared ID exists)
+- `fct_order` — Order-360: every fact per order including freshness timestamp
+- `b2c_exceptions` — **247 actionable issues**: 155 RTO+fulfilled mismatch, 53 prepaid RTOs owed refund, 38 no-Shopify
+- `dim_vendor_contract` — SCD Type 2 B2B price history from WhatsApp negotiations
+- `fct_b2b_order` — structured wholesale orders recovered from chat
+- `fct_revenue` — unified ₹15.4L (B2C ₹14.4L + B2B ₹1.0L)
+- `dim_date` — conformed calendar dimension
+
+**PII governance:** Snowflake Dynamic Data Masking via dbt post_hook. `AGENT_READER` role (used by `run_sql` text-to-SQL) sees `***MASKED***` on `customer_name/email/phone`. `AGENT_READER_PII` role (used by `find_customer_orders`) sees real data. Masking policy re-applied on every `dbt run` with `FORCE` to survive table rebuilds.
+
+**7 agent analytics tools:** `order_status`, `list_exceptions`, `exceptions_summary`, `revenue_summary`, `vendor_contract_price`, `find_customer_orders`, `run_sql` (guarded — single SELECT, 18 forbidden-keyword scan, auto-LIMIT, 30s timeout, masked role).
+
+**Key decision — "AI decides, deterministic code computes":** LLM extracts price intent from WhatsApp text; `contract_line_value = qty × price` is computed in SQL. Never the other way around.
+
+---
 
 ### Technology Comparisons
 

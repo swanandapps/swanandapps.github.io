@@ -607,6 +607,264 @@ Is the task open-ended — does the AI decide its own next step?
 
 ---
 
+## 11. Data Engineering Layer — Analytics Platform
+
+*Added: 2026-08-12 to 2026-08-13. A full ELT data platform built on top of the agent, serving clean governed analytics data back to the agent so it can answer business questions ("total revenue this month?", "which orders silently came back?") from tested, audited data rather than raw exports.*
+
+---
+
+### 11.1 Why a Data Layer?
+
+The GST/invoice side (Sections 1–10) is sovereign and local — everything stays on the owner's machine. The analytics side addresses a different problem: the owner couldn't answer basic business questions because her data lived in **five disconnected systems** and she was the only human connecting them manually.
+
+Three problems came out of discovery:
+1. **Broken order truth (B2C):** An order RTO'd at the courier, payment already collected, but Shopify still shows it as fulfilled. Nobody flags it automatically.
+2. **B2B has no source system:** Bulk wholesale orders and price negotiations happen on WhatsApp in Hinglish/Marathi — overwritten in Excel, history lost, disputes unanswerable.
+3. **No unified revenue view** across B2C + B2B channels.
+
+---
+
+### 11.2 Data Sources — Source-of-Truth Mapping
+
+*First step before writing any code: decide who owns each fact.*
+
+| System | Owns (source of truth for) |
+|---|---|
+| **Shopify** | B2C order details, products, customers, cancellations, refunds |
+| **GoKwik** | Prepaid payment confirmation, COD/RTO risk score |
+| **NimbusPost** | Shipment status, delivery/RTO outcomes, COD remittance |
+| **WhatsApp** | B2B orders + negotiated contract prices (no real system exists) |
+
+**Why source-of-truth mapping matters:** All three B2C systems share no common identifier. GoKwik uses its own payment ID; NimbusPost uses the AWB number; Shopify uses the order name (`#14437`). The `xref_order_identity` mart is the identity bridge that resolves this.
+
+**Data-quality issues discovered from profiling the real exports:**
+- Naive line counts lied: 28k raw lines vs 3,977 real records — embedded newlines in quoted CSV fields
+- Three different date formats: ISO 8601 (Shopify), DD-MM-YYYY (NimbusPost), M/D/YYYY H (GoKwik)
+- Casing drift: `COD` vs `cod`, `Paid` vs `paid`
+- Grain mismatch: Shopify at line-item grain, NimbusPost at shipment grain, GoKwik at order grain
+- Re-ships: an RTO'd order gets a new NimbusPost shipment with `-Copy` appended; both rows must be preserved
+
+---
+
+### 11.3 Full Stack Architecture
+
+```
+ ┌─────────────────── SOURCE SYSTEMS ────────────────────────┐
+ │  Shopify CSV      GoKwik CSV      NimbusPost CSV           │
+ │  (line-item)      (order grain)   (shipment grain)         │
+ │                                                            │
+ │  WhatsApp         ──LLM extraction──► B2B_EXTRACTED        │
+ │  (free-text msg)  (gpt-mini batch)                         │
+ └──────────────────┬─────────────────────────────────────────┘
+                    │  Python ELT loaders (load_raw.py)
+                    │  VARIANT JSON landing (schema-on-read)
+                    ▼
+ ┌─────────────────── SNOWFLAKE RAW ─────────────────────────┐
+ │  SHOPIFY_ORDERS   GOKWIK_PAYMENTS   NIMBUSPOST_SHIPMENTS   │
+ │  WHATSAPP_MESSAGES   B2B_EXTRACTED                         │
+ │  (all as VARIANT — no brittle upfront DDL)                 │
+ └──────────────────┬─────────────────────────────────────────┘
+                    │  dbt staging (views — always fresh)
+                    ▼
+ ┌─────────────────── STAGING SCHEMA (views) ────────────────┐
+ │  stg_shopify__orders         (2,109 orders; line-item→order)│
+ │  stg_nimbuspost__shipments   (2,397 rows; date/casing clean)│
+ │  stg_gokwik__payments        (2,106 rows; timestamp parse) │
+ │  stg_whatsapp__b2b           (extracted B2B intents)       │
+ │  int_nimbuspost_by_order     (shipment→order grain reduce) │
+ └──────────────────┬─────────────────────────────────────────┘
+                    │  dbt marts (tables — fast agent queries)
+                    ▼
+ ┌─────────────────── MARTS SCHEMA (tables) ─────────────────┐
+ │  xref_order_identity   ← identity bridge (no shared ID)   │
+ │  fct_order             ← Order-360 (all facts per order)  │
+ │  b2c_exceptions        ← 247 actionable issues today      │
+ │  dim_vendor_contract   ← SCD Type 2 B2B price history     │
+ │  fct_b2b_order         ← structured B2B orders from chat  │
+ │  fct_revenue           ← unified B2C+B2B revenue          │
+ │  dim_date              ← conformed date dimension          │
+ │                                                            │
+ │  PII governance: Snowflake Dynamic Data Masking on         │
+ │  customer_name / customer_email / customer_phone           │
+ └──────────────────┬─────────────────────────────────────────┘
+                    │  backend/app/warehouse/marts.py
+                    │  AGENT_READER role (SELECT-only, MARTS only)
+                    ▼
+ ┌─────────────────── LLM AGENT TOOLS ───────────────────────┐
+ │  order_status()         find_customer_orders()            │
+ │  list_exceptions()      vendor_contract_price()           │
+ │  exceptions_summary()   revenue_summary()                 │
+ │  run_sql() ← guarded text-to-SQL (read-only, auto-LIMIT)  │
+ └──────────────────┬─────────────────────────────────────────┘
+                    │
+                    ▼  Owner asks: "Which orders silently came back?"
+                 Agent answers from tested, auditable mart data
+```
+
+---
+
+### 11.4 ELT Pipeline — Python Loaders to Snowflake RAW
+
+**Why VARIANT for raw landing:**
+Rather than define brittle DDL for Shopify's 80-column export, every row lands as a single `VARIANT` (JSON) column. Staging models use `record:"Col Name"::type` for schema-on-read. This pattern handles messy/wide exports without any upfront schema negotiation — the standard Snowflake ELT landing approach.
+
+**Loading flow:**
+```python
+# load_raw.py — idempotent TRUNCATE + batch insert
+csv.DictReader  →  JSON-serialize each row
+  →  TRUNCATE raw table
+  →  batch INSERT (200 rows/batch) via PARSE_JSON()
+```
+
+**WhatsApp B2B extraction pipeline (unstructured → structured):**
+```
+RAW.WHATSAPP_MESSAGES (32 raw messages, mixed Hinglish/Marathi)
+    │
+    │  extract_b2b.py — LLM batch extraction (8 msgs/batch)
+    │  gpt-mini: "Extract {intent, product, size, qty, agreed_price, confidence}"
+    │  AI extracts meaning from text; it never calculates a number
+    ▼
+RAW.B2B_EXTRACTED (typed table — schema now known)
+    │
+    ▼
+stg_whatsapp__b2b → fct_b2b_order → fct_revenue (B2B channel)
+```
+
+**"AI decides, deterministic code computes"** applies here too: the LLM reads a price from the text (`"₹180 per piece"`), never calculates one. `contract_line_value = qty × price` is computed in SQL.
+
+---
+
+### 11.5 dbt Model Lineage
+
+**Staging layer (views — 1:1 with sources, cheap, always fresh):**
+
+| Model | Key work done |
+|---|---|
+| `stg_shopify__orders` | Collapse line-item grain → order grain via `QUALIFY ROW_NUMBER()`; derive `is_cancelled`, coerce amounts via `TRY_TO_DECIMAL` |
+| `stg_nimbuspost__shipments` | Parse DD-MM-YYYY dates; derive `is_rto`, `is_delivered`, `is_remitted`, `is_reship` flags |
+| `stg_gokwik__payments` | Parse M/D/YYYY H timestamps; derive `is_paid`; keep `rto_risk` label + score |
+| `stg_whatsapp__b2b` | Pass-through of `B2B_EXTRACTED`; rename `wa_id → vendor_id`, derive `msg_date` |
+| `int_nimbuspost_by_order` | Window-function reduce: shipment grain → order grain; preserve `was_reshipped`, `ever_rto` history |
+
+**Marts layer (tables — fast agent queries):**
+
+| Mart | What it answers |
+|---|---|
+| `xref_order_identity` | Which orders appear in all three systems? Where are the gaps? `match_status`: all_three (1,987), partial, no_shopify (38) |
+| `fct_order` | Order-360: every fact per order — totals, status, flags, AWB, tracking URL, customer identity (masked), `data_as_of` freshness |
+| `b2c_exceptions` | **247 actionable issues today**: 155 RTO'd but Shopify shows fulfilled; 53 prepaid RTO with refund owed; 38 no-Shopify; 1 COD unremitted; 6 reship-watch |
+| `dim_vendor_contract` | SCD Type 2 B2B price history: "what price was agreed with Vendor X on Date Y?" — built directly from WhatsApp effective dates, not dbt snapshots |
+| `fct_b2b_order` | Structured B2B orders from WhatsApp chat, joined to valid contract price on order date |
+| `fct_revenue` | Unified B2C + B2B: ₹15.4L all-time; July 2026: B2B (₹32k) outpaced B2C (₹30k) |
+| `dim_date` | Conformed calendar; both channels roll up through the same date definitions |
+
+---
+
+### 11.6 PII Governance — Snowflake Dynamic Data Masking
+
+**The tradeoff stated honestly:** customer identities (name, email, phone) live in Snowflake — protected by access control, not by never leaving the machine. This is the enterprise-standard approach that enables customer-level lookups. It deliberately departs from the sovereign/local-first story of the GST side.
+
+**How masking works:**
+
+```sql
+-- Applied via dbt post_hook on fct_order after every dbt run:
+CREATE OR REPLACE MASKING POLICY pii_mask AS (v STRING) RETURNS STRING →
+  CASE WHEN CURRENT_ROLE() IN ('ACCOUNTADMIN','PII_READER','AGENT_READER_PII')
+       THEN v
+       ELSE '***MASKED***'
+  END;
+
+ALTER TABLE MARTS.FCT_ORDER MODIFY COLUMN customer_name
+  SET MASKING POLICY pii_mask FORCE;
+-- FORCE re-pins on every CREATE OR REPLACE TABLE (dbt rebuild drops column policies)
+```
+
+**Role access:**
+
+| Role | Can see PII | Can query MARTS | Use case |
+|---|---|---|---|
+| `ACCOUNTADMIN` | Yes | Yes | Owner / DBA |
+| `AGENT_READER_PII` | Yes | Yes | `find_customer_orders` tool |
+| `AGENT_READER` | No — sees `***MASKED***` | Yes | `run_sql` text-to-SQL (ad-hoc analytics) |
+| Any other role | No | No | Default |
+
+**Why the text-to-SQL tool (`run_sql`) uses the masked role:** Ad-hoc analytics questions asked by the owner should never accidentally surface PII in the LLM's context. The authorized lookup tool (`find_customer_orders`) connects with the PII-allowed role explicitly when customer identity is the answer to the question.
+
+---
+
+### 11.7 Agent Analytics Tools
+
+Seven functions in `backend/app/warehouse/marts.py`, all read-only, all returning exact Decimal strings (never floats):
+
+| Tool | What it does |
+|---|---|
+| `order_status(order_number)` | Order-360 lookup in `fct_order`; normalizes order number format (`#14437`, `order 14437` → `14437`) |
+| `list_exceptions(exception_type, limit)` | Query `b2c_exceptions` with optional type filter; returns order, type, reason, next action |
+| `exceptions_summary()` | Count by exception type — "what needs me today" view |
+| `revenue_summary(month)` | B2C + B2B from `fct_revenue`, grouped by channel, optional YYYY-MM filter |
+| `vendor_contract_price(vendor, product, on_date)` | ILIKE fuzzy vendor match + SCD date range; the B2B dispute resolver |
+| `find_customer_orders(query, limit)` | ILIKE on name + phone; authorized role sees real PII |
+| `run_sql(sql, limit)` | Guarded text-to-SQL: single SELECT only, forbidden-keyword scan, auto-LIMIT, 30s timeout, `AGENT_READER` (PII masked), SQL echoed for audit |
+
+**`run_sql` guardrails layered in order:**
+1. Must be a single statement (no semicolons)
+2. Must start with `SELECT` or `WITH`
+3. Regex scan for 18 forbidden keywords (`INSERT`, `UPDATE`, `DELETE`, `DROP`, `CREATE`, `ALTER`, `GRANT`, `REVOKE`, `TRUNCATE`, `CALL`, `COPY`, `USE`, `PUT`, `REMOVE`, `UNLOAD`, `EXECUTE`, `BEGIN`, `COMMIT`)
+4. Auto-appends `LIMIT` if absent
+5. 30-second `statement_timeout` enforced at session level
+6. Connects as `AGENT_READER` — SELECT-only on MARTS, PII masked
+
+---
+
+### 11.8 Data Engineering Key Decisions
+
+| Decision | Choice | Alternative | Why |
+|---|---|---|---|
+| Warehouse | Snowflake | DuckDB, BigQuery, Redshift | Snowflake VARIANT for schema-on-read landing; Dynamic Data Masking native; deliberate cloud/production learning track |
+| Operational store | SQLite (local) | Snowflake | GST/invoice data is sovereign — never leaves the machine; Snowflake is analytics-only |
+| Raw landing | VARIANT (JSON) | Upfront DDL | 80-column Shopify exports change without warning; schema-on-read via `record:"Col"::type` in staging |
+| Transformation | dbt | Custom SQL scripts | Layering (raw→staging→marts), testability, lineage, documentation; staging as views = always fresh |
+| Materialization | Staging = views, Marts = tables | All tables or all views | Views cost nothing and stay fresh; marts are the query target — tables give fast agent response |
+| SCD Type 2 | Built directly from effective-dated data | dbt snapshots | WhatsApp data already carries full history with dates; no need for snapshot mechanism |
+| PII governance | Snowflake Dynamic Data Masking + RBAC | Hash at load | Masking enables customer lookups; hash-at-load is irreversible and breaks `find_customer_orders` |
+| Orchestration | None (manual `dbt run` or cron) | Dagster, Airflow | One pipeline, one schedule, no inter-job dependencies — orchestration overhead ≫ benefit |
+| Managed ingestion | None (custom Python loader) | Airbyte, Fivetran | Sources are CSV exports today; one-file change when APIs become available; right-sized to business scale |
+| Exception pattern | Exception list only | Full dashboard | Owner needs to act on anomalies, not browse metrics; surfacing 247 issues from 2,100 orders > a chart of everything |
+
+---
+
+### 11.9 Technology Comparisons — Data Engineering
+
+**Snowflake vs BigQuery vs Redshift vs DuckDB**
+
+| | Snowflake | BigQuery | Redshift | DuckDB |
+|---|---|---|---|---|
+| **Pricing** | Per-second compute + storage | Per-query or per-slot | Per-node (reserved) | Free (open-source) |
+| **VARIANT / semi-structured** | Native — `PARSE_JSON`, `record:"Col"`, `LATERAL FLATTEN` | `JSON_EXTRACT` | `SUPER` type | Native JSON |
+| **Dynamic Data Masking** | Native — column-level masking policies | Column-level policies (limited) | Row-level security only | None |
+| **Scale** | Petabytes | Petabytes | Petabytes | GBs (single machine) |
+| **Setup** | Cloud SaaS — minutes | Cloud SaaS — minutes | Cluster provisioning | Embedded — zero setup |
+| **For Bharatvarsh:** | Native VARIANT + DDM made it the right call | Would work; DDM less native | Overkill; cluster cost | Right for local/sovereign track; wrong for cloud analytics |
+
+**For Bharatvarsh:** Snowflake's VARIANT column and native Dynamic Data Masking were load-bearing. VARIANT eliminated brittle DDL for 80-column exports. DDM enabled the governed agent query layer without rebuilding the data. **DuckDB would be the right choice for the fully sovereign, local-first track** (same SQL dialect, zero infra, embedded) — it's not used here because the analytics engagement deliberately chose the cloud/production learning track.
+
+---
+
+**dbt vs custom SQL scripts vs Pandas**
+
+| | dbt | Custom SQL | Pandas |
+|---|---|---|---|
+| **Testing** | Built-in `not_null`, `unique`, `accepted_values`, custom SQL tests | Manual / none | Manual assertions |
+| **Lineage** | Automatic DAG from `ref()` | None | None |
+| **Documentation** | Auto-generated from YAML | None | None |
+| **Idempotent** | Yes (CREATE OR REPLACE) | Manual TRUNCATE logic | Manual |
+| **Best for** | SQL-native transformations with quality gates | One-off queries | Row-by-row Python logic |
+| **For Bharatvarsh:** | 37 tests, clean lineage, documented marts | Would work at this scale but no safety net | Wrong tool — no SQL pushdown |
+
+**Interview move:** "dbt gave me three things custom SQL scripts don't: layering (raw → staging → marts so logic is traceable), tests that run as part of the pipeline (37 tests, all green), and idempotent `CREATE OR REPLACE` so I can run it as many times as needed without side effects. For one pipeline at this scale, the overhead is near zero and the safety net is real."
+
+---
+
 ## FAQ
 
 **Q: Walk me through what happens when the owner asks "how much ITC can I claim this month?"**
