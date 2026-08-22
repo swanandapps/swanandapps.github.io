@@ -1283,6 +1283,57 @@ footer {
       </div>
     </div>
 
+    <!-- Gaslight — MCP Pentest -->
+    <div class="project-row">
+      <div class="project-idx">P.08</div>
+      <div class="project-main">
+        <div class="project-name">Gaslight — Automated Pentest CLI for MCP AI Agents</div>
+        <div class="project-tagline">Physical proof · 17 attacks · 14 model-free · No API key required · OWASP MCP Top 10</div>
+        <ul class="project-bullets">
+          <li><strong>Physical proof only — never opinions.</strong> A finding is CONFIRMED only when something physically happened: a unique canary token arrived at a local HTTP sink gaslight controls, real out-of-bounds data returned, or a tool's own state contradicted its own description. No second model grades the first. <span class="impact">5 real confirmed findings against production open-source MCP servers.</span></li>
+          <li><strong>17 attacks, 14 model-free.</strong> Full attack suite runs with zero API key — ScriptedProvider deterministically obeys injection-shaped text. LLM backends (Anthropic, OpenAI, Ollama) are optional; the deterministic core is not. <span class="impact">OWASP MCP Top 10 — 7 fully covered, 1 partial, 2 out of scope by design.</span></li>
+          <li><strong>Per-attack fresh connection.</strong> Every attack spawns its own MCP subprocess — no cross-attack state pollution. Schema targeting finds tools by field shape, not just name, so domain tools with unconventional names are still found. <span class="impact">397 tests across 4 tiers including 53+ real community MCP servers.</span></li>
+        </ul>
+
+        <div class="project-flow">
+          <div class="pf-title">Attack Pipeline — Canary/Sink Physical Proof + 17 Attack Modules</div>
+          <div class="pf-pipe">
+            <div class="pf-col"><div class="pf-step bl">Target MCP Server</div><div class="pf-lbl">stdio or SSE<br>transport</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step">Tool Enumeration<br>+ Surface Pass</div><div class="pf-lbl">schema hygiene<br>static only</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step am">17 Attacks<br>(fresh conn each)</div><div class="pf-lbl">injection · traversal<br>SSRF · authz · claims</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step gr">Local HTTP Sink<br>canary.appears_in()</div><div class="pf-lbl">port 0 · stdlib only<br>physical proof</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step" style="background:#4a1a6b;">Scorer + Blast<br>Radius</div><div class="pf-lbl">A/F grade<br>3-ring diagram</div></div>
+          </div>
+          <div class="pf-sub" style="margin-top:8px;">
+            <div class="pf-sub-title">Attack Categories</div>
+            <div class="pf-pipe" style="gap:5px; flex-wrap:wrap;">
+              <div class="pf-col"><div class="pf-step" style="background:#8b1a1a;font-size:0.55rem;">Prompt Injection<br>+ Exfil</div><div class="pf-lbl">canary at sink</div></div>
+              <div class="pf-col"><div class="pf-step" style="background:#1a3a6b;font-size:0.55rem;">Path Traversal<br>SSRF · Code Exec</div><div class="pf-lbl">content signature</div></div>
+              <div class="pf-col"><div class="pf-step" style="background:#1d3a2e;font-size:0.55rem;">Claim Integrity<br>Read-only · Approval</div><div class="pf-lbl">state diff</div></div>
+              <div class="pf-col"><div class="pf-step am" style="font-size:0.55rem;">Secret Leakage<br>Error Disclosure</div><div class="pf-lbl">regex + entropy</div></div>
+              <div class="pf-col"><div class="pf-step" style="background:#3a3a1a;font-size:0.55rem;">Authz Probes<br>Confused Deputy</div><div class="pf-lbl">tool rejection</div></div>
+            </div>
+          </div>
+          <div class="pf-note">Model-vs-code 2×2 verdict per tool: GENUINELY DEFENDED · DEFENSE-IN-DEPTH · FRAGILE (no backstop) · CRITICAL (fully exposed). <code style="font-family:var(--mono);font-size:0.75em;background:#ede8dc;padding:1px 4px;">fired=True</code> iff something physically happened — no opinion, no heuristic.</div>
+        </div>
+      </div>
+      <div class="project-right">
+        <div class="project-tags-r">
+          <span class="project-tag-r">Python</span>
+          <span class="project-tag-r">asyncio</span>
+          <span class="project-tag-r">MCP</span>
+          <span class="project-tag-r">Security</span>
+          <span class="project-tag-r">Anthropic</span>
+          <span class="project-tag-r">Ollama</span>
+          <span class="project-tag-r">pytest</span>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 

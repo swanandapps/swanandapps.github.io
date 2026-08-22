@@ -1,6 +1,6 @@
 # All Projects — Swanand Kadam
 
-> Single-file reference covering all 6 projects: architecture, decisions, technology comparisons, and interview Q&A.
+> Single-file reference covering all 7 projects: architecture, decisions, technology comparisons, and interview Q&A.
 > Pair with `SYSTEM_DESIGN_PATTERNS.md` (general patterns) and `AI_AGENT_SYSTEM_DESIGN.md` (AI-specific patterns).
 
 ---
@@ -15,6 +15,7 @@
 | 4 | **stringy-core** | Zero-dependency JS string utility library | 50+ functions, tree-shakeable, open-source | ESM · Jest · Intl API · Husky + lint-staged |
 | 5 | **Munshi** | Sovereign GST agent + Snowflake analytics data platform | GST side: nothing leaves the machine. Analytics: 247 exceptions surfaced, ₹15.4L reconciled | Hermes · MCP · FastAPI · Ollama · Snowflake · dbt · Python ELT · SQLite |
 | 6 | **Trade Compliance Researcher** | Multi-agent tariff and trade regulation research | Two independent agents, no HITL today | Hermes · MCP · Ollama · Docker Compose |
+| 7 | **Gaslight** | Automated pentest CLI for MCP AI agents | Physical proof only; 17 attacks, 14 model-free; no API key required | Python · asyncio · MCP SDK · Anthropic · Ollama · pytest |
 
 ---
 
@@ -525,6 +526,123 @@ The Researcher's findings object, however complete or incomplete at iteration 10
 
 **Q: Choreography vs orchestration — when would you switch to LangGraph here?**
 If a compliance officer needs to review raw findings before the Writer synthesises them, that's a HITL gate between the two agents. LangGraph's `interrupt()` handles this naturally: Researcher returns its findings object → graph pauses → compliance officer reviews → resumes → Writer runs. MemorySaver checkpoints the state so the pause can last days. Today, the handoff is automatic — no gate, no delay. The moment "human must approve the research before synthesis" becomes a requirement, LangGraph is the right upgrade. The Researcher and Writer would become nodes in a StateGraph instead of independent Hermes agents.
+
+---
+
+## 7. Gaslight — Automated Pentest CLI for MCP AI Agents
+
+### Quick Reference
+
+| Field | Detail |
+|---|---|
+| What | Black-box automated penetration testing CLI for any running MCP server |
+| Core thesis | Physical proof only — a finding is CONFIRMED only when something physically happened, never when a model says so |
+| Attack count | 17 attacks; 14 are model-free (no API key required) |
+| Proof mechanism | Canary tokens minted via `secrets.token_hex(4)`; local `ThreadingHTTPServer` on port 0 catches them |
+| LLM backends | Anthropic (Haiku 4.5), OpenAI (GPT-4o), Ollama (qwen2.5:3b) — all optional |
+| Coverage | OWASP MCP Top 10 — 7 fully covered, 1 partial, 2 out of scope by design |
+| Tests | 397 tests across 4 tiers; 5 real confirmed findings against production open-source MCP servers |
+| Stack | Python 3.10+ · asyncio · MCP SDK · Rich · Jinja2 · pytest · hatchling |
+| Distribution | `pip install gaslight` (PyPI); Apache-2.0 |
+| Status | v0.1.1 pre-launch; final name: Iago |
+
+### Problem
+
+AI agents powered by MCP can call tools that read files, reach the network, run code, and move data. Since prompt injection is structurally unsolved, any agent that reads untrusted text is potentially compromisable. The blast radius of a compromised agent is bounded only by what its tools can reach.
+
+Existing "AI security scanners" answer this question by having a second model grade the first. This produces an opinion, not evidence. gaslight's thesis: a finding is only marked CONFIRMED when something physically happened.
+
+### Architecture
+
+```
+target process (isolated)
+        ↕ MCP stdio or HTTP+SSE
+────────────────── gaslight ──────────────────
+TargetConnection          Canary + Sink
+  - spawns/connects          - secrets.token_hex(4)
+  - enumerates tools         - ThreadingHTTPServer port 0
+  - crash-safe call_tool     - sink.received(token) → bool
+
+17 Attack Modules           Static Surface Pass
+  - fresh connection each    - zero tool calls
+  - returns Finding          - schema hygiene warnings
+
+Scorer (A or F)             Blast Radius (3 rings)
+  - fired_count              - host / net / world
+  - 5 metrics 0-100          - BREACHED only on physical proof
+
+Reporter                    Doctor
+  - Rich terminal            - startup failure diagnosis
+  - HTML (Jinja autoescape)  - plain-language fixes
+  - JSON stdout
+```
+
+### The 17 Attacks
+
+| Key | Proof type | Needs LLM |
+|---|---|---|
+| `injection-exfil` | Canary at sink | Yes |
+| `tool-authz-probe` | Canary at sink | No |
+| `tool-metadata-poisoning` | Canary at sink (Scripted obedience) | Scripted |
+| `memory-poisoning` | State check | Scripted |
+| `output-leakage` | Secret regex on tool output | No |
+| `baseline-disclosure` | Secret regex on ordinary use | Scripted |
+| `resource-exposure` | Secret regex on MCP resources | No |
+| `instruction-override` | Model called destructive tool | Scripted |
+| `destructive-authz-probe` | Tool called without rejection | No |
+| `path-traversal` | Known file signature (3 sub-checks) | No |
+| `ssrf-probe` | Canary at loopback sink or `ami-id` in response | No |
+| `code-execution-probe` | Canary at sink via curl/fetch payload | No |
+| `claim-integrity` | State contradiction via target's own read tools | No |
+| `confused-deputy` | Canary at sink via cross-tool chain | No |
+| `argument-smuggling` | Canary or file signature via non-obvious field | No |
+| `error-disclosure` | Secret regex or path leak in error output | No |
+| `denial-of-wallet` | Measured response size (WEAK, not breach) | No |
+
+### Key Engineering Decisions
+
+| Decision | Choice | Why |
+|---|---|---|
+| Proof mechanism | Local HTTP sink (stdlib only) | Deterministic binary: string in text or not. No opinion. Zero third-party deps in this component. |
+| Per-attack fresh connection | New subprocess per attack | Cross-attack state isolation is a correctness requirement — if attack A plants data, attack B can't accidentally read it back |
+| `attempted=False` not `pass` | Honest non-result | Can't run = not tested, never a pass. Metrics exclude from denominator. A clean score on untested checks is not a guarantee |
+| ScriptedProvider | Deterministic test double | Exercises full pipeline without API key. Deterministically obeys injection-shaped text — a pipeline fixture, not a model claim |
+| Field-shape targeting (`_qualify`) | Name+field > description+field > field-only | Domain tools with unconventional names still found via URL/path/code field shape. Consequential guard blocks misclassification |
+| `naive_arguments()` | Fills required fields with placeholders | Schema validation failures would be misread as real rejections. Plausible args ensure probe reaches actual implementation |
+| Entropy false-positive fix | Exclude path-shaped strings from entropy check | Real Confluence API endpoints scored 4.021 entropy bits and were reported as CONFIRMED secret leaks. A false CONFIRMED is the worst output |
+| `autoescape=True` in Jinja | Auto HTML-escape | Report renders arbitrary text from attack targets — the report itself must not be XSS-vulnerable |
+
+### Model-vs-Code 2×2 Verdict
+
+Cross-reference LLM-driven injection result against direct code probe for the same tool:
+
+| | Model refused | Model duped |
+|---|---|---|
+| **Code check rejected** | GENUINELY DEFENDED | DEFENSE-IN-DEPTH WORKING |
+| **No code check** | FRAGILE — NO CODE BACKSTOP | CRITICAL — FULLY EXPOSED |
+
+"FRAGILE — NO CODE BACKSTOP" is the highest-value finding: invisible from injection testing alone. The system surfaces it only because it cross-references both layers.
+
+### Testing Strategy (4 Tiers)
+
+1. **Own fixtures** — vulnerable/hardened MCP server pair per attack. 397 tests. Proves mechanism, not generalization.
+2. **DVMCP** — independently-built deliberately-vulnerable benchmark. 10 challenges. Caught real bugs (path traversal false CONFIRMED on friendly "file not found" strings — fixed to require positive content signature).
+3. **53+ real community MCP servers** — containerized, `--network none`, `--cap-drop=ALL`, read-only filesystem. 5 real confirmed findings. Caught real false-negatives (destructive authz probe misreading "schema validation rejected" as "real authorization check" — fixed by extracting real values and retrying).
+4. **Self-scan** — gaslight pointed at itself.
+
+### Top Interview Q&A
+
+**Q: Why not just use a model to evaluate whether the agent got compromised?**
+Because a model evaluating another model gives you an opinion, not evidence. If I ask GPT-4 "did the agent leak the API key?" and GPT-4 says "yes, it appears to have," that's not a confirmed finding — the evaluator might hallucinate, might miss it, might be wrong. The only trustworthy verdict is: the unique token I planted in the target's data arrived at the HTTP server I control. That's a binary check with no model in the verdict path. This is the same principle as penetration testing generally — you prove compromise, you don't grade it.
+
+**Q: What is a canary token and why does gaslight use one?**
+A canary token is a unique string I mint before the attack and plant in the payload. After the attack runs, I check whether that string arrived at a server I control. If yes, the agent exfiltrated data — not because a model said so, but because the string is either at my server or it isn't. `secrets.token_hex(4)` gives 8 hex chars — short enough to embed naturally in injection payloads, unique enough that collision is not realistic in one run. The local HTTP sink is Python stdlib `ThreadingHTTPServer` on port 0 (OS-assigned) — zero third-party dependencies, intentional.
+
+**Q: 14 of 17 attacks are model-free. Why have an LLM at all?**
+The 3 LLM-driven attacks (`injection-exfil`, `tool-metadata-poisoning`, `instruction-override`) test whether a real model in the agent role would follow injected instructions. This is qualitatively different from a scripted probe — it tests actual model susceptibility. But the deterministic core (canary/sink, path traversal, SSRF, claim integrity, secret detection) does not need a model and should not. Requiring an API key would block the tool on air-gapped systems, add cost, and introduce a dependency for tests that are fundamentally about protocol-level behavior. `ScriptedProvider` is the deterministic test double that obeys injection text — it proves the pipeline works without any API call.
+
+**Q: What is "claim integrity" and why does it matter?**
+A tool can promise in its description: "read-only, does not modify" or "requires approval, does not commit." gaslight's `ClaimIntegrityAttack` tests whether those promises are actually enforced. It reads state (S0), reads again with no action (S0′, to exclude natural churn), calls the tool with a canary in a text field, then reads again (S1). If the canary appears in S1 and committed status words appear — not draft/pending — the claim is false. This matters because a developer may document a tool as safe for autonomous agent use. If that claim is wrong, the agent approval gate is bypassed by the documentation itself.
 
 ---
 
