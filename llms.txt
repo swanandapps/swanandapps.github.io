@@ -1,0 +1,53 @@
+# Swanand Kadam — Portfolio
+
+> Senior AI Engineer. 8 projects spanning AI agent security, sovereign AI platforms, multi-agent systems, data engineering, and programming language design. Based in India.
+
+## About
+
+- Full name: Swanand Kadam
+- Role: Senior AI Engineer / Full-Stack Engineer
+- Specialisation: AI agents, MCP, RAG systems, sovereign AI, data engineering
+
+## System Design Documents
+
+- [All Projects — Architecture & Interview Q&A](https://swanandapps.github.io/design/ALL_PROJECTS.md): Single-file reference covering all 8 projects: architecture, key decisions, technology comparisons, and interview Q&A.
+- [AI Agent System Design](https://swanandapps.github.io/design/AI_AGENT_SYSTEM_DESIGN.md): Deep reference on RAG, agent architecture, memory systems, multi-agent patterns, LLM serving, evaluation, PII governance, EU AI Act, data flywheel, speculative decoding.
+- [System Design Patterns](https://swanandapps.github.io/design/SYSTEM_DESIGN_PATTERNS.md): General distributed systems patterns — consistent hashing, bloom filters, multi-tenant architecture, zero-downtime migrations, CQRS, event sourcing, connection pooling, webhooks, DDD, Strangler Fig.
+- [Munshi System Design](https://swanandapps.github.io/design/system_design_munshi.md): Sovereign GST reconciliation agent (Hermes + MCP + Ollama) plus Snowflake/dbt analytics data platform — full 11-section system design including data engineering layer.
+
+## Projects
+
+### P.01 — Gaslight (AI Agent Security)
+Automated penetration testing CLI for MCP-based AI agents. Physical proof only — a finding is CONFIRMED only when a canary token physically arrived at a local HTTP sink. 17 attacks, 14 model-free, no API key required. OWASP MCP Top 10 coverage. 5 real confirmed findings against production open-source MCP servers. 397 tests across 4 tiers.
+Stack: Python 3.10+, asyncio, MCP SDK, Anthropic (Haiku), OpenAI, Ollama, Rich, Jinja2, pytest.
+
+### P.02 — CodeMas (AI Coding Assessment)
+Secure real-time coding exam platform for Masai School. 10K concurrent users, ~10K submissions/sec. Architecture: Vue 3 + Django + SQS FIFO + AWS Lambda (ephemeral sandbox) + Postgres. AI features: GPT exam generator, rubric scoring, Socratic hints, plagiarism detection (19× improvement). First engineer reporting to CTO. $2M+ per cohort unlocked.
+Stack: Vue 3, Django 4.2, SQS FIFO, AWS Lambda, Postgres, Redis, Celery, Docker, Nginx.
+
+### P.03 — the01.dev (Sovereign AI Tutor)
+Co-founded. Full sovereign AI ed-tech platform. GEPA self-evolving tutor (Pareto gate, SHA-fingerprinted SOUL versions). RAG tutor with grounding enforced in code (threshold 0.45). Two-engine design: Hermes (open-ended tutor) + LangGraph (QuizMe HITL workflow). EU-AI-Act audit log. GDPR erasure endpoint. RAGAS evaluation.
+Stack: React 19, FastAPI, Hermes agent, LangGraph, Ollama/vLLM, pgvector (HNSW), Firebase Auth.
+
+### P.04 — Munshi (Sovereign GST Agent + Data Platform)
+Sovereign GST reconciliation agent for Bharatvarsh Arts (₹5Cr revenue). GST side: local-first, Hermes + MCP tools, Python Decimal, HITL gate, SQLite. Analytics side: Snowflake + dbt ELT platform unifying 4 disconnected e-commerce systems. 247 actionable exceptions surfaced from ~2,100 orders. ₹15.4L revenue reconciled. 37 dbt tests green. Snowflake Dynamic Data Masking for PII governance.
+Stack: FastAPI, Hermes, MCP, Ollama, Snowflake, dbt, Python ELT, SQLite, LangGraph (month-end workflow).
+
+### P.05 — Trade Compliance Researcher (Multi-Agent)
+Two-agent Hermes system: Researcher (MCP tools, tariff DB fetch) → Writer (zero tools, synthesis only). Choreography pattern — Writer coupled only to findings artifact. Model-agnostic: swap Ollama ↔ cloud with one config line.
+Stack: Hermes, MCP, Ollama, Docker Compose, Python.
+
+### P.06 — Kalaam (Hindi Programming Language)
+India's first Hindi programming language. 5 languages (Hindi, Marathi, Bengali, Telugu, Odia) — adding a new language is one keyword map entry. Fully offline PWA. Pure JS interpreter, 5-phase pipeline. Learning Mode: ExecutionStack[] replays every step in the student's language. 500+ monthly users. TEDx Bangalore speaker.
+Stack: Vue 2, Quasar PWA, CodeMirror, pure JS interpreter, npm (kalaam v2.3.3).
+
+### P.07 — stringy-core (JS String Library)
+Zero-dependency JavaScript string utility library. 50+ pure functions across 9 modules. Tree-shakeable ESM with `_s` namespace. Published to npm. 19 forks.
+Stack: ESM, Jest, Intl API, Husky + lint-staged.
+
+### P.08 — Bharatvarsh.art (D2C E-Commerce)
+Indian cultural wall art platform. Built and led engineering end-to-end: architecture, payments, inventory, delivery integrations. ₹2Cr+ in revenue.
+
+## Optional
+
+- [Full context (llms-full.txt)](https://swanandapps.github.io/llms-full.txt): Complete design documents concatenated — use this when you need deep architecture detail for interview prep or technical discussion.

@@ -766,6 +766,12 @@ footer {
   margin-bottom: 6px;
 }
 </style>
+  <!-- LLM context discovery -->
+  <link rel="alternate" type="text/plain" href="llms.txt" title="LLM context index">
+  <link rel="alternate" type="text/markdown" href="design/ALL_PROJECTS.md" title="All Projects — Architecture and Interview Q&A">
+  <link rel="alternate" type="text/markdown" href="design/AI_AGENT_SYSTEM_DESIGN.md" title="AI Agent System Design Reference">
+  <link rel="alternate" type="text/markdown" href="design/SYSTEM_DESIGN_PATTERNS.md" title="System Design Patterns Reference">
+  <link rel="alternate" type="text/markdown" href="design/system_design_munshi.md" title="Munshi System Design">
 </head>
 <body>
 
@@ -876,6 +882,18 @@ footer {
       </div>
     </div>
 
+    <div class="exp-card">
+      <div class="exp-num">04</div>
+      <div class="exp-title">AI Agent<br>Security</div>
+      <div class="exp-org">Gaslight · MCP Pentest</div>
+      <div class="exp-desc">Automated penetration testing for MCP-based AI agents. 17 attacks, 14 model-free. Physical proof only — a finding is CONFIRMED only when a canary token physically arrived at a sink gaslight controls. 5 real confirmed findings against production MCP servers.</div>
+      <div class="exp-tags">
+        <span class="exp-tag">MCP</span>
+        <span class="exp-tag">asyncio</span>
+        <span class="exp-tag">OWASP</span>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -884,13 +902,63 @@ footer {
 <!-- PROJECTS -->
 <div class="projects" id="projects">
   <div class="section-tag">Selected Work</div>
-  <h2 class="section-heading">Seven projects<span class="period">.</span> Real outcomes<span class="period">.</span></h2>
+  <h2 class="section-heading">Eight projects<span class="period">.</span> Real outcomes<span class="period">.</span></h2>
 
   <div class="project-table">
 
+    <!-- Gaslight — MCP Pentest -->
+    <div class="project-row">
+      <div class="project-idx">P.01</div>
+      <div class="project-main">
+        <div class="project-name">Gaslight — Automated Pentest CLI for MCP AI Agents</div>
+        <div class="project-tagline">Physical proof · 17 attacks · 14 model-free · No API key required · OWASP MCP Top 10</div>
+        <ul class="project-bullets">
+          <li><strong>Physical proof only — never opinions.</strong> A finding is CONFIRMED only when something physically happened: a unique canary token arrived at a local HTTP sink gaslight controls, real out-of-bounds data returned, or a tool's own state contradicted its own description. No second model grades the first. <span class="impact">5 real confirmed findings against production open-source MCP servers.</span></li>
+          <li><strong>17 attacks, 14 model-free.</strong> Full attack suite runs with zero API key — ScriptedProvider deterministically obeys injection-shaped text. LLM backends (Anthropic, OpenAI, Ollama) are optional; the deterministic core is not. <span class="impact">OWASP MCP Top 10 — 7 fully covered, 1 partial, 2 out of scope by design.</span></li>
+          <li><strong>Per-attack fresh connection.</strong> Every attack spawns its own MCP subprocess — no cross-attack state pollution. Schema targeting finds tools by field shape, not just name, so domain tools with unconventional names are still found. <span class="impact">397 tests across 4 tiers including 53+ real community MCP servers.</span></li>
+        </ul>
+        <div class="project-flow">
+          <div class="pf-title">Attack Pipeline — Canary/Sink Physical Proof + 17 Attack Modules</div>
+          <div class="pf-pipe">
+            <div class="pf-col"><div class="pf-step bl">Target MCP Server</div><div class="pf-lbl">stdio or SSE<br>transport</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step">Tool Enumeration<br>+ Surface Pass</div><div class="pf-lbl">schema hygiene<br>static only</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step am">17 Attacks<br>(fresh conn each)</div><div class="pf-lbl">injection · traversal<br>SSRF · authz · claims</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step gr">Local HTTP Sink<br>canary.appears_in()</div><div class="pf-lbl">port 0 · stdlib only<br>physical proof</div></div>
+            <div class="pf-arrow">→</div>
+            <div class="pf-col"><div class="pf-step" style="background:#4a1a6b;">Scorer + Blast<br>Radius</div><div class="pf-lbl">A/F grade<br>3-ring diagram</div></div>
+          </div>
+          <div class="pf-sub" style="margin-top:8px;">
+            <div class="pf-sub-title">Attack Categories</div>
+            <div class="pf-pipe" style="gap:5px; flex-wrap:wrap;">
+              <div class="pf-col"><div class="pf-step" style="background:#8b1a1a;font-size:0.55rem;">Prompt Injection<br>+ Exfil</div><div class="pf-lbl">canary at sink</div></div>
+              <div class="pf-col"><div class="pf-step" style="background:#1a3a6b;font-size:0.55rem;">Path Traversal<br>SSRF · Code Exec</div><div class="pf-lbl">content signature</div></div>
+              <div class="pf-col"><div class="pf-step" style="background:#1d3a2e;font-size:0.55rem;">Claim Integrity<br>Read-only · Approval</div><div class="pf-lbl">state diff</div></div>
+              <div class="pf-col"><div class="pf-step am" style="font-size:0.55rem;">Secret Leakage<br>Error Disclosure</div><div class="pf-lbl">regex + entropy</div></div>
+              <div class="pf-col"><div class="pf-step" style="background:#3a3a1a;font-size:0.55rem;">Authz Probes<br>Confused Deputy</div><div class="pf-lbl">tool rejection</div></div>
+            </div>
+          </div>
+          <div class="pf-note">Model-vs-code 2×2 verdict per tool: GENUINELY DEFENDED · DEFENSE-IN-DEPTH · FRAGILE (no backstop) · CRITICAL (fully exposed). <code style="font-family:var(--mono);font-size:0.75em;background:#ede8dc;padding:1px 4px;">fired=True</code> iff something physically happened — no opinion, no heuristic.</div>
+        </div>
+      </div>
+      <div class="project-right">
+        <div class="project-tags-r">
+          <span class="project-tag-r">Python</span>
+          <span class="project-tag-r">asyncio</span>
+          <span class="project-tag-r">MCP</span>
+          <span class="project-tag-r">Security</span>
+          <span class="project-tag-r">Anthropic</span>
+          <span class="project-tag-r">Ollama</span>
+          <span class="project-tag-r">pytest</span>
+        </div>
+      </div>
+    </div>
+
     <!-- CodeMas -->
     <div class="project-row" onclick="window.location.href='design/codemas_design.html'">
-      <div class="project-idx">P.01</div>
+      <div class="project-idx">P.02</div>
       <div class="project-main">
         <div class="project-name">CodeMas — AI Coding Assessment Platform</div>
         <div class="project-tagline">Masai School · First engineer reporting to CTO · 10K concurrent users · ~10K submissions/sec</div>
@@ -957,7 +1025,7 @@ footer {
 
     <!-- the01.dev -->
     <div class="project-row" onclick="window.location.href='design/01dev_design.html'">
-      <div class="project-idx">P.02</div>
+      <div class="project-idx">P.03</div>
       <div class="project-main">
         <div class="project-name">the01.dev — Sovereign AI Tutor Platform</div>
         <div class="project-tagline">Co-founder · Led engineering (2-person team) · Architecture owned end-to-end · 8 deep CS courses</div>
@@ -1040,7 +1108,7 @@ footer {
 
     <!-- Munshi — GST Agent -->
     <div class="project-row" onclick="window.location.href='munshi_design.html'">
-      <div class="project-idx">P.03</div>
+      <div class="project-idx">P.04</div>
       <div class="project-main">
         <div class="project-name">Munshi — Sovereign GST &amp; Trade Compliance Agent</div>
         <div class="project-tagline">Bharatvarsh Arts · Local-first · Hermes runtime · Human-in-the-loop · ₹5Cr revenue scale</div>
@@ -1132,7 +1200,7 @@ footer {
 
     <!-- Trade Compliance Researcher -->
     <div class="project-row" onclick="window.location.href='trade_design.html'">
-      <div class="project-idx">P.04</div>
+      <div class="project-idx">P.05</div>
       <div class="project-main">
         <div class="project-name">Trade Compliance Researcher — Multi-Agent Hermes System</div>
         <div class="project-tagline">Nous Research Hermes runtime · Researcher → Writer workflow · Open-weight &amp; hosted models</div>
@@ -1180,7 +1248,7 @@ footer {
 
     <!-- Kalaam -->
     <div class="project-row" onclick="window.location.href='kalaam_design.html'">
-      <div class="project-idx">P.05</div>
+      <div class="project-idx">P.06</div>
       <div class="project-main">
         <div class="project-name">Kalaam — India's First Hindi Programming Language</div>
         <div class="project-tagline">Open Source · TEDx Bangalore · npm · kalaam-core · 500+ monthly users</div>
@@ -1219,26 +1287,6 @@ footer {
         </div>
         <div class="project-links-r">
           <a href="kalaam_design.html" class="proj-link" onclick="event.stopPropagation()">System Design</a>
-        </div>
-      </div>
-    </div>
-
-    <!-- Bharatvarsh -->
-    <div class="project-row">
-      <div class="project-idx">P.06</div>
-      <div class="project-main">
-        <div class="project-name">Bharatvarsh.art — D2C E-Commerce Platform</div>
-        <div class="project-tagline">Indian cultural wall art · Built and led engineering end-to-end</div>
-        <ul class="project-bullets">
-          <li>Architecture, payments, inventory, and delivery integrations from scratch.</li>
-          <li><span class="impact">₹2Cr+ in revenue.</span></li>
-        </ul>
-      </div>
-      <div class="project-right">
-        <div class="project-tags-r">
-          <span class="project-tag-r">E-commerce</span>
-          <span class="project-tag-r">Payments</span>
-          <span class="project-tag-r">Full-stack</span>
         </div>
       </div>
     </div>
@@ -1283,53 +1331,22 @@ footer {
       </div>
     </div>
 
-    <!-- Gaslight — MCP Pentest -->
+    <!-- Bharatvarsh -->
     <div class="project-row">
       <div class="project-idx">P.08</div>
       <div class="project-main">
-        <div class="project-name">Gaslight — Automated Pentest CLI for MCP AI Agents</div>
-        <div class="project-tagline">Physical proof · 17 attacks · 14 model-free · No API key required · OWASP MCP Top 10</div>
+        <div class="project-name">Bharatvarsh.art — D2C E-Commerce Platform</div>
+        <div class="project-tagline">Indian cultural wall art · Built and led engineering end-to-end</div>
         <ul class="project-bullets">
-          <li><strong>Physical proof only — never opinions.</strong> A finding is CONFIRMED only when something physically happened: a unique canary token arrived at a local HTTP sink gaslight controls, real out-of-bounds data returned, or a tool's own state contradicted its own description. No second model grades the first. <span class="impact">5 real confirmed findings against production open-source MCP servers.</span></li>
-          <li><strong>17 attacks, 14 model-free.</strong> Full attack suite runs with zero API key — ScriptedProvider deterministically obeys injection-shaped text. LLM backends (Anthropic, OpenAI, Ollama) are optional; the deterministic core is not. <span class="impact">OWASP MCP Top 10 — 7 fully covered, 1 partial, 2 out of scope by design.</span></li>
-          <li><strong>Per-attack fresh connection.</strong> Every attack spawns its own MCP subprocess — no cross-attack state pollution. Schema targeting finds tools by field shape, not just name, so domain tools with unconventional names are still found. <span class="impact">397 tests across 4 tiers including 53+ real community MCP servers.</span></li>
+          <li>Architecture, payments, inventory, and delivery integrations from scratch.</li>
+          <li><span class="impact">₹2Cr+ in revenue.</span></li>
         </ul>
-
-        <div class="project-flow">
-          <div class="pf-title">Attack Pipeline — Canary/Sink Physical Proof + 17 Attack Modules</div>
-          <div class="pf-pipe">
-            <div class="pf-col"><div class="pf-step bl">Target MCP Server</div><div class="pf-lbl">stdio or SSE<br>transport</div></div>
-            <div class="pf-arrow">→</div>
-            <div class="pf-col"><div class="pf-step">Tool Enumeration<br>+ Surface Pass</div><div class="pf-lbl">schema hygiene<br>static only</div></div>
-            <div class="pf-arrow">→</div>
-            <div class="pf-col"><div class="pf-step am">17 Attacks<br>(fresh conn each)</div><div class="pf-lbl">injection · traversal<br>SSRF · authz · claims</div></div>
-            <div class="pf-arrow">→</div>
-            <div class="pf-col"><div class="pf-step gr">Local HTTP Sink<br>canary.appears_in()</div><div class="pf-lbl">port 0 · stdlib only<br>physical proof</div></div>
-            <div class="pf-arrow">→</div>
-            <div class="pf-col"><div class="pf-step" style="background:#4a1a6b;">Scorer + Blast<br>Radius</div><div class="pf-lbl">A/F grade<br>3-ring diagram</div></div>
-          </div>
-          <div class="pf-sub" style="margin-top:8px;">
-            <div class="pf-sub-title">Attack Categories</div>
-            <div class="pf-pipe" style="gap:5px; flex-wrap:wrap;">
-              <div class="pf-col"><div class="pf-step" style="background:#8b1a1a;font-size:0.55rem;">Prompt Injection<br>+ Exfil</div><div class="pf-lbl">canary at sink</div></div>
-              <div class="pf-col"><div class="pf-step" style="background:#1a3a6b;font-size:0.55rem;">Path Traversal<br>SSRF · Code Exec</div><div class="pf-lbl">content signature</div></div>
-              <div class="pf-col"><div class="pf-step" style="background:#1d3a2e;font-size:0.55rem;">Claim Integrity<br>Read-only · Approval</div><div class="pf-lbl">state diff</div></div>
-              <div class="pf-col"><div class="pf-step am" style="font-size:0.55rem;">Secret Leakage<br>Error Disclosure</div><div class="pf-lbl">regex + entropy</div></div>
-              <div class="pf-col"><div class="pf-step" style="background:#3a3a1a;font-size:0.55rem;">Authz Probes<br>Confused Deputy</div><div class="pf-lbl">tool rejection</div></div>
-            </div>
-          </div>
-          <div class="pf-note">Model-vs-code 2×2 verdict per tool: GENUINELY DEFENDED · DEFENSE-IN-DEPTH · FRAGILE (no backstop) · CRITICAL (fully exposed). <code style="font-family:var(--mono);font-size:0.75em;background:#ede8dc;padding:1px 4px;">fired=True</code> iff something physically happened — no opinion, no heuristic.</div>
-        </div>
       </div>
       <div class="project-right">
         <div class="project-tags-r">
-          <span class="project-tag-r">Python</span>
-          <span class="project-tag-r">asyncio</span>
-          <span class="project-tag-r">MCP</span>
-          <span class="project-tag-r">Security</span>
-          <span class="project-tag-r">Anthropic</span>
-          <span class="project-tag-r">Ollama</span>
-          <span class="project-tag-r">pytest</span>
+          <span class="project-tag-r">E-commerce</span>
+          <span class="project-tag-r">Payments</span>
+          <span class="project-tag-r">Full-stack</span>
         </div>
       </div>
     </div>
