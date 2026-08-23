@@ -10,10 +10,10 @@
 
 ## System Design Documents
 
-- [All Projects — Architecture & Interview Q&A](https://swanandapps.github.io/design/ALL_PROJECTS.md): Single-file reference covering all 8 projects: architecture, key decisions, technology comparisons, and interview Q&A.
-- [AI Agent System Design](https://swanandapps.github.io/design/AI_AGENT_SYSTEM_DESIGN.md): Deep reference on RAG, agent architecture, memory systems, multi-agent patterns, LLM serving, evaluation, PII governance, EU AI Act, data flywheel, speculative decoding.
-- [System Design Patterns](https://swanandapps.github.io/design/SYSTEM_DESIGN_PATTERNS.md): General distributed systems patterns — consistent hashing, bloom filters, multi-tenant architecture, zero-downtime migrations, CQRS, event sourcing, connection pooling, webhooks, DDD, Strangler Fig.
-- [Munshi System Design](https://swanandapps.github.io/design/system_design_munshi.md): Sovereign GST reconciliation agent (Hermes + MCP + Ollama) plus Snowflake/dbt analytics data platform — full 11-section system design including data engineering layer.
+- [All Projects — Architecture & Interview Q&A](https://swanandkadam.com/design/ALL_PROJECTS.md): Single-file reference covering all 8 projects: architecture, key decisions, technology comparisons, and interview Q&A.
+- [AI Agent System Design](https://swanandkadam.com/design/AI_AGENT_SYSTEM_DESIGN.md): Deep reference on RAG, agent architecture, memory systems, multi-agent patterns, LLM serving, evaluation, PII governance, EU AI Act, data flywheel, speculative decoding.
+- [System Design Patterns](https://swanandkadam.com/design/SYSTEM_DESIGN_PATTERNS.md): General distributed systems patterns — consistent hashing, bloom filters, multi-tenant architecture, zero-downtime migrations, CQRS, event sourcing, connection pooling, webhooks, DDD, Strangler Fig.
+- [Munshi System Design](https://swanandkadam.com/design/system_design_munshi.md): Sovereign GST reconciliation agent (Hermes + MCP + Ollama) plus Snowflake/dbt analytics data platform — full 11-section system design including data engineering layer.
 
 ## Projects
 
@@ -50,4 +50,4 @@ Indian cultural wall art platform. Built and led engineering end-to-end: archite
 
 ## Optional
 
-- [Full context (llms-full.txt)](https://swanandapps.github.io/llms-full.txt): Complete design documents concatenated — use this when you need deep architecture detail for interview prep or technical discussion.
+- [Full context (llms-full.txt)](https://swanandkadam.com/llms-full.txt): Complete design documents concatenated — use this when you need deep architecture detail for interview prep or technical discussion.
