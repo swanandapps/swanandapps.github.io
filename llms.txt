@@ -17,9 +17,9 @@
 
 ## Projects
 
-### P.01 — Gaslight (AI Agent Security)
-Automated penetration testing CLI for MCP-based AI agents. Physical proof only — a finding is CONFIRMED only when a canary token physically arrived at a local HTTP sink. 17 attacks, 14 model-free, no API key required. OWASP MCP Top 10 coverage. 5 real confirmed findings against production open-source MCP servers. 397 tests across 4 tiers.
-Stack: Python 3.10+, asyncio, MCP SDK, Anthropic (Haiku), OpenAI, Ollama, Rich, Jinja2, pytest.
+### P.01 — Gaslight (AI Agent Security) — v0.2.4 on PyPI
+Automated penetration testing CLI for MCP-based AI agents. Physical proof only — a finding is CONFIRMED only when a canary token physically arrived at a local HTTP sink, real out-of-bounds data returned, or a tool's own state contradicted its own description. 17 core attacks (14 model-free, no API key required) + 7 auth probe checks targeting the HTTP auth front door (no-credential, alg:none JWT, audience passthrough, cleartext transport). A/B/C/F severity-tiered grading: F = proven exploit, C = data disclosed, B = internal info gap, A = nothing fired. Multi-language auto-discovery (Python/Node/Go/Rust), interactive wizard, self-healing venv retry. Scope-creep baseline v2 tracks per-tool capability fingerprint for CI. OWASP MCP Top 10 — 7 fully covered. 5 real confirmed findings against a 136-server registry-verified corpus. Explicit sdist whitelist guards scan results from accidental PyPI publish.
+Stack: Python 3.10+, asyncio, MCP SDK, Anthropic (Haiku 4.5), OpenAI (GPT-4o), Ollama, Rich, Jinja2, pytest, hatchling. PyPI Trusted Publishing.
 
 ### P.02 — CodeMas (AI Coding Assessment)
 Secure real-time coding exam platform for Masai School. 10K concurrent users, ~10K submissions/sec. Architecture: Vue 3 + Django + SQS FIFO + AWS Lambda (ephemeral sandbox) + Postgres. AI features: GPT exam generator, rubric scoring, Socratic hints, plagiarism detection (19× improvement). First engineer reporting to CTO. $2M+ per cohort unlocked.

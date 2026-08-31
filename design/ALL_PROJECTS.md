@@ -537,14 +537,14 @@ If a compliance officer needs to review raw findings before the Writer synthesis
 |---|---|
 | What | Black-box automated penetration testing CLI for any running MCP server |
 | Core thesis | Physical proof only — a finding is CONFIRMED only when something physically happened, never when a model says so |
-| Attack count | 17 attacks; 14 are model-free (no API key required) |
+| Attack count | 17 core attacks + 7 auth probe checks (HTTP targets); 14 core attacks model-free |
 | Proof mechanism | Canary tokens minted via `secrets.token_hex(4)`; local `ThreadingHTTPServer` on port 0 catches them |
 | LLM backends | Anthropic (Haiku 4.5), OpenAI (GPT-4o), Ollama (qwen2.5:3b) — all optional |
 | Coverage | OWASP MCP Top 10 — 7 fully covered, 1 partial, 2 out of scope by design |
-| Tests | 397 tests across 4 tiers; 5 real confirmed findings against production open-source MCP servers |
+| Tests | 397+ tests across 4 tiers; 136-server registry-verified corpus; 5 real confirmed findings |
 | Stack | Python 3.10+ · asyncio · MCP SDK · Rich · Jinja2 · pytest · hatchling |
-| Distribution | `pip install gaslight` (PyPI); Apache-2.0 |
-| Status | v0.1.1 pre-launch; final name: Iago |
+| Distribution | `pip install gaslight` (PyPI); Apache-2.0; PyPI Trusted Publishing |
+| Version | v0.2.4 (launched); final product name: Iago |
 
 ### Problem
 
@@ -552,32 +552,54 @@ AI agents powered by MCP can call tools that read files, reach the network, run 
 
 Existing "AI security scanners" answer this question by having a second model grade the first. This produces an opinion, not evidence. gaslight's thesis: a finding is only marked CONFIRMED when something physically happened.
 
-### Architecture
+### Architecture (v0.2.4)
 
 ```
-target process (isolated)
-        ↕ MCP stdio or HTTP+SSE
-────────────────── gaslight ──────────────────
-TargetConnection          Canary + Sink
-  - spawns/connects          - secrets.token_hex(4)
-  - enumerates tools         - ThreadingHTTPServer port 0
-  - crash-safe call_tool     - sink.received(token) → bool
+target process (local stdio OR remote HTTP)
+        ↕ MCP stdio / Streamable HTTP / SSE (auto-detected)
+────────────────────── gaslight ──────────────────────────
+Auto-Discovery              Wizard (no-args TTY)
+  - pyproject.toml/scripts    - arrow-key menu
+  - Node package.json         - auto-detects command
+  - Go mod / Cargo.toml       - saves .gaslight.json
+  - .mcp.json / .cursor/mcp   - API key inline
 
-17 Attack Modules           Static Surface Pass
-  - fresh connection each    - zero tool calls
-  - returns Finding          - schema hygiene warnings
+TargetConnection              Canary + Sink
+  - spawns/connects            - secrets.token_hex(4)
+  - schema repair pump         - ThreadingHTTPServer port 0
+  - self-healing venv retry    - sink.received(token) → bool
+  - unresponsive/backend flags
 
-Scorer (A or F)             Blast Radius (3 rings)
-  - fired_count              - host / net / world
-  - 5 metrics 0-100          - BREACHED only on physical proof
+17 Attack Modules             Static Surface Pass
+  - fresh connection each      - zero tool calls
+  - SSRF: decimal/hex/short    - schema hygiene warnings
+    IP encoding evasions
 
-Reporter                    Doctor
-  - Rich terminal            - startup failure diagnosis
-  - HTML (Jinja autoescape)  - plain-language fixes
-  - JSON stdout
+Auth Probe Layer (HTTP only)  Scope-Creep Baseline (v2)
+  - 7 checks on auth front      - capability fingerprint
+  - no-credential / alg:none    - per-tool: file/net/code
+  - cleartext transport         - diff_scope_creep() CI gate
+  - audience passthrough        - only flags privilege growth
+
+Scorer (A / B / C / F)       Blast Radius (3 rings)
+  - F: proven exploit           - host / net / world
+  - C: data disclosed           - BREACHED on physical proof
+  - B: internal info gap
+  - A: nothing fired
+
+Live Pipeline UI (TTY)        Reporter
+  - 5-phase horizontal bar      - Rich terminal
+  - per-check ✓/✗/– live        - HTML (Jinja autoescape)
+  - never shown in --json       - JSON stdout / auth section
+
+Doctor                        Distribution
+  - startup failure diagnosis   - explicit sdist whitelist
+  - plain-language fixes        - PyPI Trusted Publishing
 ```
 
-### The 17 Attacks
+### The 17 Core Attacks + Auth Probe Layer
+
+**17 core attacks (same keys since v0.1.1):**
 
 | Key | Proof type | Needs LLM |
 |---|---|---|
@@ -591,13 +613,25 @@ Reporter                    Doctor
 | `instruction-override` | Model called destructive tool | Scripted |
 | `destructive-authz-probe` | Tool called without rejection | No |
 | `path-traversal` | Known file signature (3 sub-checks) | No |
-| `ssrf-probe` | Canary at loopback sink or `ami-id` in response | No |
+| `ssrf-probe` | Canary at loopback (incl. decimal/hex/shorthand IP evasions) or `ami-id` | No |
 | `code-execution-probe` | Canary at sink via curl/fetch payload | No |
 | `claim-integrity` | State contradiction via target's own read tools | No |
 | `confused-deputy` | Canary at sink via cross-tool chain | No |
 | `argument-smuggling` | Canary or file signature via non-obvious field | No |
-| `error-disclosure` | Secret regex or path leak in error output | No |
+| `error-disclosure` | Secret regex or path leak in error output (false-positive fix: reflected input excluded) | No |
 | `denial-of-wallet` | Measured response size (WEAK, not breach) | No |
+
+**7 auth probe checks (HTTP/`--url` targets only — the "front door" layer):**
+
+| Key | What it tests | Severity |
+|---|---|---|
+| `auth-no-credential` | Server honored a request with NO Authorization header | Critical → F |
+| `auth-token-not-validated` | Server accepted alg:none JWT or garbage bearer | Critical → F |
+| `auth-transport` | Non-loopback endpoint served over cleartext http:// | High → C |
+| `auth-session-as-auth` | Bare session ID honored as auth (MCP spec MUST-NOT) | Critical → F |
+| `auth-token-passthrough` | Token minted for a different audience was accepted | Critical → F |
+| `auth-token-hygiene` | JWT has no expiry or no audience claim | Medium → B |
+| `auth-oauth-flow` | Always "not tested" — PKCE/redirect-URI needs the OAuth server | N/A |
 
 ### Key Engineering Decisions
 
@@ -611,6 +645,13 @@ Reporter                    Doctor
 | `naive_arguments()` | Fills required fields with placeholders | Schema validation failures would be misread as real rejections. Plausible args ensure probe reaches actual implementation |
 | Entropy false-positive fix | Exclude path-shaped strings from entropy check | Real Confluence API endpoints scored 4.021 entropy bits and were reported as CONFIRMED secret leaks. A false CONFIRMED is the worst output |
 | `autoescape=True` in Jinja | Auto HTML-escape | Report renders arbitrary text from attack targets — the report itself must not be XSS-vulnerable |
+| A/B/C/F grading (v0.2.2) | Letter reflects worst confirmed severity tier | Old "any confirmed = F" was too blunt — a leaked internal path is not the same severity as exfiltrated data crossing a network boundary |
+| Auth probes as a separate layer | Not mixed with the 17 core attacks | Auth probes target the HTTP front door before MCP tools are called — different attack surface, different transport requirement, different reporting section |
+| Scope-creep baseline v2 | Capability fingerprint per tool | Rug-pull detection (tool disappeared) ≠ privilege growth (tool gained network access). Both matter but warrant different responses in CI |
+| SSRF encoding evasions | Decimal IP, hex, shorthand `127.1` | Real WAFs and MCP server denylists often check only `127.0.0.1` literally. Encoding variants bypass naive checks — gaslight tests all of them |
+| Auto-discovery (multi-language) | Read pyproject.toml/package.json/Cargo.toml | Reduces "how do I start this server" friction to zero — correct command derived from project metadata, not user guessing |
+| Self-healing venv retry | `list_venv_pythons()` on ModuleNotFoundError | Projects with complex venvs fail with a confusing error; retrying each known venv interpreter fixes the most common launch failure automatically |
+| Explicit sdist whitelist | Only `src/gaslight` + essential files | Harness scan results contain real secrets from real production servers. Accidental PyPI publish of `harness/` would be a real disclosure incident |
 
 ### Model-vs-Code 2×2 Verdict
 
@@ -623,11 +664,22 @@ Cross-reference LLM-driven injection result against direct code probe for the sa
 
 "FRAGILE — NO CODE BACKSTOP" is the highest-value finding: invisible from injection testing alone. The system surfaces it only because it cross-references both layers.
 
+### Grading Scale (v0.2.2+)
+
+| Grade | Meaning | Triggered by |
+|---|---|---|
+| **F** | Proven exploit | Data exfiltrated, SSRF/code-exec fired, destructive call completed without rejection, auth bypassed |
+| **C** | Data disclosed (not exfiltrated) | `baseline-disclosure`, `output-leakage`, cleartext auth transport |
+| **B** | Internal info / integrity gap | `error-disclosure` path/stack, `resource-exposure`, `claim-integrity` failure, JWT hygiene issue |
+| **A** | Nothing fired | All applicable attacks found nothing |
+
+No D or E grades. Auth probe findings map into the same tiers (no-credential, alg:none, passthrough → F; cleartext → C; JWT hygiene → B).
+
 ### Testing Strategy (4 Tiers)
 
-1. **Own fixtures** — vulnerable/hardened MCP server pair per attack. 397 tests. Proves mechanism, not generalization.
+1. **Own fixtures** — vulnerable/hardened MCP server pair per attack. 397+ tests. Proves mechanism, not generalization.
 2. **DVMCP** — independently-built deliberately-vulnerable benchmark. 10 challenges. Caught real bugs (path traversal false CONFIRMED on friendly "file not found" strings — fixed to require positive content signature).
-3. **53+ real community MCP servers** — containerized, `--network none`, `--cap-drop=ALL`, read-only filesystem. 5 real confirmed findings. Caught real false-negatives (destructive authz probe misreading "schema validation rejected" as "real authorization check" — fixed by extracting real values and retrying).
+3. **136-server registry-verified corpus** — containerized, `--network none`, `--cap-drop=ALL`, read-only filesystem. 5 real confirmed findings. Scale harness `targets_100.json` + `scale_repos.json`. Caught real false-negatives (destructive authz probe misreading "schema validation rejected" as real rejection — fixed by extracting real values and retrying).
 4. **Self-scan** — gaslight pointed at itself.
 
 ### Top Interview Q&A
@@ -643,6 +695,18 @@ The 3 LLM-driven attacks (`injection-exfil`, `tool-metadata-poisoning`, `instruc
 
 **Q: What is "claim integrity" and why does it matter?**
 A tool can promise in its description: "read-only, does not modify" or "requires approval, does not commit." gaslight's `ClaimIntegrityAttack` tests whether those promises are actually enforced. It reads state (S0), reads again with no action (S0′, to exclude natural churn), calls the tool with a canary in a text field, then reads again (S1). If the canary appears in S1 and committed status words appear — not draft/pending — the claim is false. This matters because a developer may document a tool as safe for autonomous agent use. If that claim is wrong, the agent approval gate is bypassed by the documentation itself.
+
+**Q: Why did you change from A/F to A/B/C/F grading?**
+The original "any confirmed finding = F" was too blunt to be actionable. A tool leaking an internal path in an error message is not the same risk as a tool that exfiltrated data to an attacker-controlled server. Both got F under the old scale — a developer couldn't distinguish "hygiene issue" from "critical breach." The new scale maps directly to incident response priority: F = drop everything, C = fix before prod, B = fix in sprint, A = ship. Severity tiers also align with the blast radius diagram — a C finding lights up disclosure without lighting up the "world" ring.
+
+**Q: What is the auth probe layer and how is it different from the 17 core attacks?**
+The 17 core attacks target what's reachable after the MCP session is established. The auth probe layer attacks the HTTP front door before any tool is called: does the server require a valid credential? Does it validate the JWT signature? Does it accept tokens minted for a different audience? These are HTTP-layer checks, `--url` targets only. The distinction matters: you can have 17 perfectly hardened tools and still be fully compromised if any request with no Authorization header is honored. The auth layer tests a different threat model — the authentication boundary, not the tool boundary.
+
+**Q: How does auto-discovery work?**
+gaslight reads project metadata to derive the correct launch command — `pyproject.toml [project.scripts]` for Python, `package.json` for Node/TypeScript, `go.mod` for Go, `Cargo.toml` for Rust. If launch fails with `ModuleNotFoundError`, it retries every known venv interpreter automatically (`list_venv_pythons()`) before surfacing an error. Result: `gaslight` with no arguments in a project directory just works for most MCP projects.
+
+**Q: Why does the sdist have an explicit file whitelist?**
+Scale testing against 136 real MCP servers accumulated scan results containing real confirmed findings — real secrets from real production systems in `harness/` directories. A standard `.gitignore`-based sdist would have shipped those to PyPI if someone ran `python -m build` without cleaning. An explicit whitelist (`src/gaslight`, `README.md`, `LICENSE`, `pyproject.toml`, `CONTRIBUTING.md` only) makes it physically impossible to accidentally publish internal tooling or scan results. Correctness over convenience — same principle as per-attack fresh connections.
 
 ---
 
